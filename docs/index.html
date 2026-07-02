@@ -3,6 +3,7 @@
 <head>
   <script>
     (function() {
+      // 1. Dynamic base href resolution
       const path = window.location.pathname;
       const base = document.createElement('base');
       if (path.includes('/Bhujal_Track_Odisha')) {
@@ -11,6 +12,45 @@
         base.href = '/';
       }
       document.head.appendChild(base);
+
+      // 2. Global Error Overlay for Debugging
+      window.onerror = function(message, source, lineno, colno, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '10px';
+        errDiv.style.left = '10px';
+        errDiv.style.right = '10px';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '15px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.borderRadius = '5px';
+        errDiv.style.fontSize = '14px';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.whiteSpace = 'pre-wrap';
+        errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+        errDiv.textContent = `JS Error: ${message}\\nSource: ${source}\\nLine: ${lineno}\\nStack: ${error ? error.stack : 'N/A'}`;
+        document.body.appendChild(errDiv);
+      };
+
+      window.onunhandledrejection = function(event) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '10px';
+        errDiv.style.left = '10px';
+        errDiv.style.right = '10px';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '15px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.borderRadius = '5px';
+        errDiv.style.fontSize = '14px';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.whiteSpace = 'pre-wrap';
+        errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+        errDiv.textContent = `Promise Rejection: ${event.reason ? (event.reason.stack || event.reason) : 'Unknown reason'}`;
+        document.body.appendChild(errDiv);
+      };
     })();
   </script>
   <meta charset="UTF-8">
