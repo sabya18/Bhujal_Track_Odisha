@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      const path = window.location.pathname;
+      const base = document.createElement('base');
+      if (path.includes('/Bhujal_Track_Odisha')) {
+        base.href = '/Bhujal_Track_Odisha/';
+      } else {
+        base.href = '/';
+      }
+      document.head.appendChild(base);
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Groundwater Level Monitoring Automation</title>
