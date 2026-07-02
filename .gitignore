@@ -1,0 +1,10 @@
+*.apk
+backups/
+uploads/
+gw-desktop/
+gw-mobile/
+excel_handler.py
+server.js
+package-lock.json
+package.json
+*.xlsx
