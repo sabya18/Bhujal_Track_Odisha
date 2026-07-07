@@ -1952,3 +1952,19 @@ body.light-theme {
 .news-btn:hover {
   color: var(--accent-blue);
 }
+
+/* --- Auth User Profile Styling --- */
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+body.light-theme .user-profile-badge {
+  background: rgba(15, 23, 42, 0.05);
+}

@@ -1,6 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      // 1. Dynamic base href resolution
+      const path = window.location.pathname;
+      const base = document.createElement('base');
+      if (path.includes('/Bhujal_Track_Odisha')) {
+        base.href = '/Bhujal_Track_Odisha/';
+      } else {
+        base.href = '/';
+      }
+      document.head.appendChild(base);
+
+      // 2. Client-side Auth Check
+      if (sessionStorage.getItem('gwd_authenticated') !== 'true') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 3. Global Error Overlay for Debugging
+      window.onerror = function(message, source, lineno, colno, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '10px';
+        errDiv.style.left = '10px';
+        errDiv.style.right = '10px';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '15px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.borderRadius = '5px';
+        errDiv.style.fontSize = '14px';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.whiteSpace = 'pre-wrap';
+        errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+        errDiv.textContent = `JS Error: ${message}\\nSource: ${source}\\nLine: ${lineno}\\nStack: ${error ? error.stack : 'N/A'}`;
+        document.body.appendChild(errDiv);
+      };
+
+      window.onunhandledrejection = function(event) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '10px';
+        errDiv.style.left = '10px';
+        errDiv.style.right = '10px';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#fff';
+        errDiv.style.padding = '15px';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.borderRadius = '5px';
+        errDiv.style.fontSize = '14px';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.whiteSpace = 'pre-wrap';
+        errDiv.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+        errDiv.textContent = `Promise Rejection: ${event.reason ? (event.reason.stack || event.reason) : 'Unknown reason'}`;
+        document.body.appendChild(errDiv);
+      };
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Groundwater Level Monitoring Automation</title>
@@ -63,8 +121,18 @@
         </button>
       </nav>
       <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <span style="font-size: 1.2rem;">👤</span>
+          <div style="display: flex; flex-direction: column; overflow: hidden;">
+            <span id="lbl-logged-user" style="font-size: 0.85rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Officer</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">GWD Department</span>
+          </div>
+        </div>
         <button id="btn-toggle-theme" class="btn btn-secondary w-100 mb-2">
           🌙 Toggle Theme
+        </button>
+        <button id="btn-logout-sidebar" class="btn btn-danger w-100 mb-2" style="background: #ef4444 !important; border: none !important; color: #fff !important; font-weight: 600;">
+          🚪 Log Out
         </button>
         <button id="btn-export-sidebar" class="btn btn-secondary w-100">
           📥 Export Excel

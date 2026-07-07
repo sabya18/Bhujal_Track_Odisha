@@ -13,7 +13,13 @@
       }
       document.head.appendChild(base);
 
-      // 2. Global Error Overlay for Debugging
+      // 2. Client-side Auth Check
+      if (sessionStorage.getItem('gwd_authenticated') !== 'true') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 3. Global Error Overlay for Debugging
       window.onerror = function(message, source, lineno, colno, error) {
         const errDiv = document.createElement('div');
         errDiv.style.position = 'fixed';
@@ -115,8 +121,18 @@
         </button>
       </nav>
       <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <span style="font-size: 1.2rem;">👤</span>
+          <div style="display: flex; flex-direction: column; overflow: hidden;">
+            <span id="lbl-logged-user" style="font-size: 0.85rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Officer</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">GWD Department</span>
+          </div>
+        </div>
         <button id="btn-toggle-theme" class="btn btn-secondary w-100 mb-2">
           🌙 Toggle Theme
+        </button>
+        <button id="btn-logout-sidebar" class="btn btn-danger w-100 mb-2" style="background: #ef4444 !important; border: none !important; color: #fff !important; font-weight: 600;">
+          🚪 Log Out
         </button>
         <button id="btn-export-sidebar" class="btn btn-secondary w-100">
           📥 Export Excel

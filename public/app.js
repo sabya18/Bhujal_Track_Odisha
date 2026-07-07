@@ -266,6 +266,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupModalEventListeners();
   setupFilterEventListeners();
   
+  // Set up User profile display
+  const loggedUser = document.getElementById('lbl-logged-user');
+  if (loggedUser) {
+    loggedUser.textContent = sessionStorage.getItem('gwd_username') || 'GWD Officer';
+  }
+  
+  // Set up Logout button handler
+  const logoutBtn = document.getElementById('btn-logout-sidebar');
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+      sessionStorage.clear();
+      try {
+        await fetch('api/logout', { method: 'POST' });
+      } catch (e) {}
+      window.location.href = 'login.html';
+    };
+  }
+  
   // Show Loading state
   setConnectionStatus('loading', 'Loading Map Boundaries & Databases...');
   
@@ -287,7 +305,12 @@ async function loadAllData() {
     // 1. Fetch wells from server API or static wells fallback
     let fetchedWells = [];
     if (!isStandaloneMode) {
-      const res = await fetch('/api/wells');
+      const res = await fetch('api/wells');
+      if (res.status === 401) {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        return;
+      }
       if (res.ok) fetchedWells = await res.json();
     }
     
@@ -908,7 +931,12 @@ function setupActionButtons() {
   document.getElementById('btn-reload-data').onclick = async () => {
     setConnectionStatus('loading', 'Syncing and Reloading Excel Database...');
     if (!isStandaloneMode) {
-      const res = await fetch('/api/wells/reload', { method: 'POST' });
+      const res = await fetch('api/wells/reload', { method: 'POST' });
+      if (res.status === 401) {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        return;
+      }
       if (res.ok) {
         showToast("Excel spreadsheet successfully synced and reloaded!");
       }
@@ -1226,7 +1254,7 @@ function setupModalEventListeners() {
     if (!isStandaloneMode && navigator.onLine) {
       setConnectionStatus('loading', 'Syncing visits to server...');
       try {
-        const updateRes = await fetch('/api/wells/update', {
+        const updateRes = await fetch('api/wells/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1239,6 +1267,12 @@ function setupModalEventListeners() {
             well_number: selectedWell.well_number
           })
         });
+        
+        if (updateRes.status === 401) {
+          sessionStorage.clear();
+          window.location.href = 'login.html';
+          return;
+        }
         
         if (updateRes.ok) {
           showToast("Field visit data synced and saved successfully!");
@@ -1391,10 +1425,15 @@ function snapPhoto() {
       formData.append('well_number', selectedWell.well_number);
       
       try {
-        const uploadRes = await fetch('/api/wells/upload-photo', {
+        const uploadRes = await fetch('api/wells/upload-photo', {
           method: 'POST',
           body: formData
         });
+        if (uploadRes.status === 401) {
+          sessionStorage.clear();
+          window.location.href = 'login.html';
+          return;
+        }
         if (uploadRes.ok) {
           const result = await uploadRes.json();
           // Update local cached URL
