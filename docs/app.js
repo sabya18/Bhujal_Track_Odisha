@@ -1880,107 +1880,80 @@ function parseTelemetryDate(dateStr) {
   return new Date(year, month - 1, day, hour, minute);
 }
 
+const ODISHA_DISTRICTS = [
+  "ANUGUL",
+  "BALANGIR",
+  "BALESHWAR",
+  "BARGARH",
+  "BAUDH",
+  "BHADRAK",
+  "CUTTACK",
+  "DEBAGARH",
+  "DHENKANAL",
+  "GAJAPATI",
+  "GANJAM",
+  "JAGATSINGHAPUR",
+  "JAJAPUR",
+  "JHARSUGUDA",
+  "KALAHANDI",
+  "KANDHAMAL",
+  "KENDRAPARA",
+  "KENDUJHAR",
+  "KHORDHA",
+  "KORAPUT",
+  "MALKANGIRI",
+  "MAYURBHANJ",
+  "NABARANGAPUR",
+  "NAYAGARH",
+  "NUAPADA",
+  "PURI",
+  "RAYAGADA",
+  "SAMBALPUR",
+  "SUBARNAPUR",
+  "SUNDARGARH"
+];
+
+const TELEMETRY_AGENCIES = [
+  "Odisha GW",
+  "CGWB"
+];
+
 async function populateTelemetryFilters() {
   if (telemetryFiltersPopulated) return;
   
-  const stateVal = document.getElementById('telemetry-filter-state').value;
   const statusLbl = document.getElementById('lbl-telemetry-count');
-  statusLbl.textContent = "Loading filter options...";
+  statusLbl.textContent = "Setting up search options...";
   
   try {
-    const payload = {
-      resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
-      filters: { "State": stateVal },
-      limit: 1000
-    };
-    
-    let res = await fetch('api/nwic/telemetry', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(() => ({ ok: false }));
-    
-    if (!res.ok) {
-      console.warn("Proxy metadata fetch failed. Trying direct link...");
-      res = await fetch('https://nwdp.nwic.gov.in/api/3/action/datastore_search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(() => ({ ok: false }));
-    }
-    
-    if (!res.ok) {
-      statusLbl.textContent = "Failed to load telemetry metadata";
-      return;
-    }
-    
-    const data = await res.json();
-    if (!data.success) {
-      statusLbl.textContent = "Datastore returned error";
-      return;
-    }
-    
-    const records = data.result.records || [];
-    const uniqueDistricts = new Set();
-    const uniqueAgencies = new Set();
-    const parsedDates = [];
-    
-    records.forEach(row => {
-      if (row["District"] && row["District"].trim() !== "-" && row["District"].trim() !== "") {
-        uniqueDistricts.add(row["District"].trim().toUpperCase());
-      }
-      if (row["Agency"] && row["Agency"].trim() !== "-" && row["Agency"].trim() !== "") {
-        uniqueAgencies.add(row["Agency"].trim());
-      }
-      if (row["Data Acquisition Time"]) {
-        const d = parseTelemetryDate(row["Data Acquisition Time"]);
-        if (d) parsedDates.push(d);
-      }
-    });
-    
-    // Populate dropdowns
     const distSelect = document.getElementById('telemetry-filter-district');
     distSelect.innerHTML = '<option value="">-- All Districts --</option>';
-    Array.from(uniqueDistricts).sort().forEach(d => {
+    ODISHA_DISTRICTS.forEach(d => {
       distSelect.innerHTML += `<option value="${d}">${d}</option>`;
     });
     
     const agencySelect = document.getElementById('telemetry-filter-agency');
     agencySelect.innerHTML = '<option value="">-- All Agencies --</option>';
-    Array.from(uniqueAgencies).sort().forEach(a => {
+    TELEMETRY_AGENCIES.forEach(a => {
       agencySelect.innerHTML += `<option value="${a}">${a}</option>`;
     });
     
-    // Set default dates
-    if (parsedDates.length > 0) {
-      const minDate = new Date(Math.min(...parsedDates));
-      const maxDate = new Date(Math.max(...parsedDates));
-      
-      const toInputDate = d => d.toISOString().split("T")[0];
-      const minStr = toInputDate(minDate);
-      const maxStr = toInputDate(maxDate);
-      
-      const startElem = document.getElementById('telemetry-filter-start-date');
-      const endElem = document.getElementById('telemetry-filter-end-date');
-      
-      startElem.min = minStr;
-      startElem.max = maxStr;
-      endElem.min = minStr;
-      endElem.max = maxStr;
-      
-      // Default to showing latest 60 days
-      const defaultStart = new Date(maxDate.getTime() - 60 * 24 * 60 * 60 * 1000);
-      startElem.value = toInputDate(defaultStart < minDate ? minDate : defaultStart);
-      endElem.value = maxStr;
-    }
+    const maxDate = new Date();
+    const minDate = new Date(maxDate.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const toInputDate = d => d.toISOString().split("T")[0];
+    
+    const startElem = document.getElementById('telemetry-filter-start-date');
+    const endElem = document.getElementById('telemetry-filter-end-date');
+    
+    startElem.value = toInputDate(minDate);
+    endElem.value = toInputDate(maxDate);
     
     setupTelemetryEvents();
     telemetryFiltersPopulated = true;
     statusLbl.textContent = "Ready to fetch live data";
   } catch (err) {
     console.error("Filter loading failed:", err);
-    statusLbl.textContent = "Offline/API error loading metadata";
-    setupTelemetryEvents(); // Fallback setup
+    statusLbl.textContent = "Error setting up options";
+    setupTelemetryEvents();
   }
 }
 
@@ -2017,10 +1990,18 @@ function setupTelemetryEvents() {
         const limit = 2000;
         let total = 0;
         
+        const queryFilters = { "State": stateVal };
+        if (districtVal) {
+          queryFilters["District"] = districtVal;
+        }
+        if (agencyVal) {
+          queryFilters["Agency"] = agencyVal;
+        }
+
         do {
           const payload = {
             resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
-            filters: { "State": stateVal },
+            filters: queryFilters,
             limit: limit,
             offset: offset
           };
@@ -2053,14 +2034,7 @@ function setupTelemetryEvents() {
           if (allRecords.length >= total) break;
         } while (offset < total);
         
-        // Client-side filtering
         const filtered = allRecords.filter(row => {
-          if (districtVal && row["District"] && row["District"].trim().toUpperCase() !== districtVal.toUpperCase()) {
-            return false;
-          }
-          if (agencyVal && row["Agency"] && row["Agency"].trim() !== agencyVal) {
-            return false;
-          }
           if (row["Data Acquisition Time"]) {
             const d = parseTelemetryDate(row["Data Acquisition Time"]);
             if (d) {
