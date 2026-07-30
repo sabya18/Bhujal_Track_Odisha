@@ -470,6 +470,9 @@ function setupTabs() {
       setTimeout(() => initMap(), 100);
     } else if (activeTab === 'trends-view') {
       updateTrendsTab();
+    } else if (activeTab === 'telemetry-view') {
+      setTimeout(() => initTelemetryMap(), 100);
+      populateTelemetryFilters();
     }
   }
   
@@ -1837,4 +1840,358 @@ function showToast(message, type = 'success') {
   setTimeout(() => {
     toast.classList.remove('show-toast');
   }, 4000);
+}
+
+// --- NWIC Live Telemetry Integration ---
+let telemetryMap = null;
+let telemetryLayerGroup = null;
+let telemetryFiltersPopulated = false;
+
+function initTelemetryMap() {
+  if (telemetryMap) {
+    telemetryMap.invalidateSize();
+    return;
+  }
+  
+  telemetryMap = L.map('telemetry-leaflet-map', {
+    zoomControl: true,
+    attributionControl: true
+  }).setView([20.95, 84.8], 7.0);
+  
+  const isDark = theme === 'dark';
+  const tileUrl = isDark 
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    
+  L.tileLayer(tileUrl, {
+    maxZoom: 19
+  }).addTo(telemetryMap);
+  
+  telemetryLayerGroup = L.layerGroup().addTo(telemetryMap);
+}
+
+function parseTelemetryDate(dateStr) {
+  if (!dateStr) return null;
+  const cleaned = dateStr.replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").trim();
+  const normalized = cleaned.includes(":") ? cleaned : `${cleaned} 00:00`;
+  const match = normalized.match(/^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const [, day, month, year, hour, minute] = match.map(Number);
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+async function populateTelemetryFilters() {
+  if (telemetryFiltersPopulated) return;
+  
+  const stateVal = document.getElementById('telemetry-filter-state').value;
+  const statusLbl = document.getElementById('lbl-telemetry-count');
+  statusLbl.textContent = "Loading filter options...";
+  
+  try {
+    const payload = {
+      resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
+      filters: { "State": stateVal },
+      limit: 1000
+    };
+    
+    let res = await fetch('api/nwic/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => ({ ok: false }));
+    
+    if (!res.ok) {
+      console.warn("Proxy metadata fetch failed. Trying direct link...");
+      res = await fetch('https://nwdp.nwic.gov.in/api/3/action/datastore_search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => ({ ok: false }));
+    }
+    
+    if (!res.ok) {
+      statusLbl.textContent = "Failed to load telemetry metadata";
+      return;
+    }
+    
+    const data = await res.json();
+    if (!data.success) {
+      statusLbl.textContent = "Datastore returned error";
+      return;
+    }
+    
+    const records = data.result.records || [];
+    const uniqueDistricts = new Set();
+    const uniqueAgencies = new Set();
+    const parsedDates = [];
+    
+    records.forEach(row => {
+      if (row["District"] && row["District"].trim() !== "-" && row["District"].trim() !== "") {
+        uniqueDistricts.add(row["District"].trim().toUpperCase());
+      }
+      if (row["Agency"] && row["Agency"].trim() !== "-" && row["Agency"].trim() !== "") {
+        uniqueAgencies.add(row["Agency"].trim());
+      }
+      if (row["Data Acquisition Time"]) {
+        const d = parseTelemetryDate(row["Data Acquisition Time"]);
+        if (d) parsedDates.push(d);
+      }
+    });
+    
+    // Populate dropdowns
+    const distSelect = document.getElementById('telemetry-filter-district');
+    distSelect.innerHTML = '<option value="">-- All Districts --</option>';
+    Array.from(uniqueDistricts).sort().forEach(d => {
+      distSelect.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+    
+    const agencySelect = document.getElementById('telemetry-filter-agency');
+    agencySelect.innerHTML = '<option value="">-- All Agencies --</option>';
+    Array.from(uniqueAgencies).sort().forEach(a => {
+      agencySelect.innerHTML += `<option value="${a}">${a}</option>`;
+    });
+    
+    // Set default dates
+    if (parsedDates.length > 0) {
+      const minDate = new Date(Math.min(...parsedDates));
+      const maxDate = new Date(Math.max(...parsedDates));
+      
+      const toInputDate = d => d.toISOString().split("T")[0];
+      const minStr = toInputDate(minDate);
+      const maxStr = toInputDate(maxDate);
+      
+      const startElem = document.getElementById('telemetry-filter-start-date');
+      const endElem = document.getElementById('telemetry-filter-end-date');
+      
+      startElem.min = minStr;
+      startElem.max = maxStr;
+      endElem.min = minStr;
+      endElem.max = maxStr;
+      
+      // Default to showing latest 60 days
+      const defaultStart = new Date(maxDate.getTime() - 60 * 24 * 60 * 60 * 1000);
+      startElem.value = toInputDate(defaultStart < minDate ? minDate : defaultStart);
+      endElem.value = maxStr;
+    }
+    
+    setupTelemetryEvents();
+    telemetryFiltersPopulated = true;
+    statusLbl.textContent = "Ready to fetch live data";
+  } catch (err) {
+    console.error("Filter loading failed:", err);
+    statusLbl.textContent = "Offline/API error loading metadata";
+    setupTelemetryEvents(); // Fallback setup
+  }
+}
+
+function setupTelemetryEvents() {
+  const fetchBtn = document.getElementById('btn-fetch-telemetry');
+  const searchInput = document.getElementById('telemetry-search-input');
+  
+  if (fetchBtn) {
+    fetchBtn.onclick = async () => {
+      fetchBtn.disabled = true;
+      fetchBtn.textContent = '⚡ Querying...';
+      
+      const stateVal = document.getElementById('telemetry-filter-state').value;
+      const districtVal = document.getElementById('telemetry-filter-district').value;
+      const agencyVal = document.getElementById('telemetry-filter-agency').value;
+      const startDateVal = document.getElementById('telemetry-filter-start-date').value;
+      const endDateVal = document.getElementById('telemetry-filter-end-date').value;
+      
+      const startLimit = startDateVal ? new Date(startDateVal + "T00:00:00") : null;
+      const endLimit = endDateVal ? new Date(endDateVal + "T23:59:59") : null;
+      
+      const tbody = document.getElementById('telemetry-table-body');
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">⚡ Fetching live telemetry from NWIC database...</td></tr>`;
+      
+      if (telemetryLayerGroup) {
+        telemetryLayerGroup.clearLayers();
+      }
+      
+      document.getElementById('lbl-map-pins-count').textContent = '0 pins plotted';
+      
+      try {
+        let allRecords = [];
+        let offset = 0;
+        const limit = 2000;
+        let total = 0;
+        
+        do {
+          const payload = {
+            resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
+            filters: { "State": stateVal },
+            limit: limit,
+            offset: offset
+          };
+          
+          let res = await fetch('api/nwic/telemetry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).catch(() => ({ ok: false }));
+          
+          if (!res.ok) {
+            console.warn("Proxy search failed. Trying direct link...");
+            res = await fetch('https://nwdp.nwic.gov.in/api/3/action/datastore_search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }).catch(() => ({ ok: false }));
+          }
+          
+          if (!res.ok) throw new Error("CORS or network connection failed.");
+          
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || "NWIC server error");
+          
+          const records = data.result.records || [];
+          total = data.result.total;
+          allRecords.push(...records);
+          offset += limit;
+          
+          if (allRecords.length >= total) break;
+        } while (offset < total);
+        
+        // Client-side filtering
+        const filtered = allRecords.filter(row => {
+          if (districtVal && row["District"] && row["District"].trim().toUpperCase() !== districtVal.toUpperCase()) {
+            return false;
+          }
+          if (agencyVal && row["Agency"] && row["Agency"].trim() !== agencyVal) {
+            return false;
+          }
+          if (row["Data Acquisition Time"]) {
+            const d = parseTelemetryDate(row["Data Acquisition Time"]);
+            if (d) {
+              if (startLimit && d < startLimit) return false;
+              if (endLimit && d > endLimit) return false;
+            }
+          }
+          return true;
+        });
+        
+        // Sort newest first
+        filtered.sort((a, b) => {
+          const dA = parseTelemetryDate(a["Data Acquisition Time"]) || 0;
+          const dB = parseTelemetryDate(b["Data Acquisition Time"]) || 0;
+          return dB - dA;
+        });
+        
+        document.getElementById('lbl-telemetry-count').textContent = `Loaded ${filtered.length} telemetry records`;
+        renderTelemetryTable(filtered);
+        plotTelemetryMarkers(filtered);
+        showToast(`Loaded ${filtered.length} live records successfully!`);
+        
+      } catch (err) {
+        console.error("Telemetry query failed:", err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 40px;">⚠️ Query Failed: ${err.message}. Ensure local Node.js proxy is running.</td></tr>`;
+        showToast("Telemetry query failed", "error");
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.textContent = '⚡ Fetch Live Telemetry';
+      }
+    };
+  }
+  
+  if (searchInput) {
+    searchInput.onkeyup = (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#telemetry-table-body tr');
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (row.cells.length > 1) { // Skip empty placeholder row
+          row.style.display = text.includes(query) ? '' : 'none';
+        }
+      });
+    };
+  }
+}
+
+function renderTelemetryTable(records) {
+  const tbody = document.getElementById('telemetry-table-body');
+  if (records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">No telemetry records match your filter criteria.</td></tr>`;
+    return;
+  }
+  
+  const displayRecords = records.slice(0, 300); // limit to 300 for browser DOM speed
+  tbody.innerHTML = displayRecords.map(row => {
+    return `
+      <tr>
+        <td class="text-highlight" style="font-family: monospace; font-weight: 600;">${row["Station"] || '-'}</td>
+        <td>${row["Agency"] || '-'}</td>
+        <td>${row["District"] || '-'}</td>
+        <td>${row["Latitude"] ? parseFloat(row["Latitude"]).toFixed(5) : '-'}</td>
+        <td>${row["Longitude"] ? parseFloat(row["Longitude"]).toFixed(5) : '-'}</td>
+        <td style="font-weight: 700; color: #38bdf8;">${row["Groundwater Level Telemetry 6 Hourly (meter)"] || '-'}</td>
+        <td style="font-size: 0.85rem; color: var(--text-muted);">${row["Data Acquisition Time"] || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function plotTelemetryMarkers(records) {
+  if (!telemetryMap || !telemetryLayerGroup) return;
+  
+  const uniqueStations = {};
+  records.forEach(row => {
+    const sId = row["Station"];
+    if (!sId) return;
+    
+    const parsedDate = parseTelemetryDate(row["Data Acquisition Time"]);
+    if (!uniqueStations[sId] || (parsedDate && parsedDate > uniqueStations[sId].date)) {
+      uniqueStations[sId] = {
+        row: row,
+        date: parsedDate
+      };
+    }
+  });
+  
+  const stationsList = Object.values(uniqueStations);
+  document.getElementById('lbl-map-pins-count').textContent = `${stationsList.length} stations plotted`;
+  
+  const bounds = [];
+  stationsList.forEach(item => {
+    const row = item.row;
+    const lat = parseFloat(row["Latitude"]);
+    const lng = parseFloat(row["Longitude"]);
+    
+    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+    
+    const val = row["Groundwater Level Telemetry 6 Hourly (meter)"] || 'N/A';
+    const time = row["Data Acquisition Time"] || 'N/A';
+    const agency = row["Agency"] || 'N/A';
+    const district = row["District"] || 'N/A';
+    
+    const popupHtml = `
+      <div class="well-popup-card" style="padding: 5px;">
+        <h4 style="margin: 0 0 6px 0; color: #38bdf8; font-family: monospace;">🔌 Station: ${row["Station"]}</h4>
+        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px; color: #fff;">
+          <div><strong>Agency:</strong> ${agency}</div>
+          <div><strong>District:</strong> ${district}</div>
+          <div style="margin-top: 6px; padding: 6px; background: rgba(56, 189, 248, 0.1); border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">
+            <strong style="color: #38bdf8;">Latest Level:</strong> ${val} m
+          </div>
+          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Acquired: ${time}</div>
+        </div>
+      </div>
+    `;
+    
+    const marker = L.circleMarker([lat, lng], {
+      radius: 6,
+      fillColor: '#38bdf8',
+      color: '#ffffff',
+      weight: 1,
+      opacity: 1.0,
+      fillOpacity: 0.85
+    }).bindPopup(popupHtml);
+    
+    telemetryLayerGroup.addLayer(marker);
+    bounds.push([lat, lng]);
+  });
+  
+  if (bounds.length > 0) {
+    telemetryMap.fitBounds(bounds, { padding: [30, 30] });
+  }
 }

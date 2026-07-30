@@ -345,6 +345,48 @@ app.get('/api/export/district', async (req, res) => {
   }
 });
 
+// Proxy endpoint to query NWIC datastore API securely (bypasses CORS blocks)
+const https = require('https');
+app.post('/api/nwic/telemetry', (req, res) => {
+  const { resource_id, filters, limit, offset } = req.body;
+  const postData = JSON.stringify({
+    resource_id: resource_id || '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
+    filters: filters || {},
+    limit: limit || 1000,
+    offset: offset || 0
+  });
+
+  const options = {
+    hostname: 'nwdp.nwic.gov.in',
+    port: 443,
+    path: '/api/3/action/datastore_search',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData),
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+  };
+
+  const nwReq = https.request(options, (nwRes) => {
+    let body = '';
+    nwRes.on('data', (chunk) => body += chunk);
+    nwRes.on('end', () => {
+      res.setHeader('Content-Type', 'application/json');
+      res.status(nwRes.statusCode || 200).send(body);
+    });
+  });
+
+  nwReq.on('error', (err) => {
+    console.error("NWIC Proxy Error:", err);
+    res.status(500).json({ error: "Failed to connect to NWIC server: " + err.message });
+  });
+
+  nwReq.write(postData);
+  nwReq.end();
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Groundwater server listening at http://localhost:${PORT}`);
