@@ -256,30 +256,107 @@
 
         <div class="dashboard-charts-grid">
           <!-- Submission Controls -->
-          <div class="dashboard-panel submissions-panel">
+          <div class="dashboard-panel submissions-panel" style="grid-column: span 2;">
             <div class="panel-header">
-              <h2>Quarterly Submission Actions</h2>
+              <h2>Data Export & Template Actions</h2>
             </div>
-            <div class="panel-body actions-panel">
-              <p>Automate your monitoring submission process. Export the fully completed Excel book directly from the server after field entries.</p>
-              <div class="action-buttons-group">
-                <button id="btn-export-dashboard" class="btn btn-primary btn-large mb-3">
-                  Download Full Field Book (.xlsx)
-                </button>
-                <div class="district-export-label">Download Individual District Report:</div>
-                <div class="district-export-buttons">
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Cuttack">Cuttack</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Jagatsinghpur">Jagatsinghpur</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Jajpur">Jajpur</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Kendrapara">Kendrapara</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Mayurbhanj">Mayurbhanj</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Bhadrak">Bhadrak</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Balasore">Balasore</button>
-                  <button class="btn btn-secondary btn-sm btn-export-dist" data-district="Bolangir">Bolangir</button>
+            <div class="panel-body actions-panel" style="display: flex; flex-direction: column; gap: 20px;">
+              <p style="margin: 0; color: var(--text-muted, #94a3b8); font-size: 0.9rem;">
+                Replicated advanced export formats and custom WTTO templates directly from your browser.
+              </p>
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                
+                <!-- Section 1: Field Book -->
+                <div class="export-box" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                  <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">📖 Field Book Export</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 12px;">Export division-specific field books filled with measurements.</p>
+                  <div style="display: flex; gap: 10px; flex-direction: column;">
+                    <select id="sel-export-division" class="form-control">
+                      <option value="all">-- All Divisions --</option>
+                      <option value="CUTTACK DIVISION">Cuttack Division</option>
+                      <option value="SAMBALPUR DIVISION">Sambalpur Division</option>
+                      <option value="BERHAMPUR DIVISION">Berhampur Division</option>
+                      <option value="BALASORE DIVISION">Balasore Division</option>
+                      <option value="BOLANGIR DIVISION">Bolangir Division</option>
+                      <option value="KORAPUT DIVISION">Koraput Division</option>
+                      <option value="BHAWANIPATNA DIVISION">Bhawanipatna Division</option>
+                      <option value="ANGUL DIVISION">Angul Division</option>
+                      <option value="RS DIVISION">RS Division</option>
+                      <option value="AD HP DIVISION">AD HP Division</option>
+                    </select>
+                    <button id="btn-export-fieldbook" class="btn btn-primary w-100">Download Excel (.xlsx)</button>
+                  </div>
                 </div>
-              </div>
-              <div class="backup-note">
-                <span>Automated backups of the original spreadsheet are saved in the <code>/backups</code> folder on every edit.</span>
+
+                <!-- Section 2: GRASP Export -->
+                <div class="export-box" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                  <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">📊 GRASP Export (CSV)</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 12px;">Export CSV formatted for GRASP data submission by district.</p>
+                  <div style="display: flex; gap: 10px; flex-direction: column;">
+                    <select id="sel-export-grasp-district" class="form-control">
+                      <option value="Cuttack">Cuttack</option>
+                      <option value="Jagatsinghpur">Jagatsinghpur</option>
+                      <option value="Jajpur">Jajpur</option>
+                      <option value="Kendrapara">Kendrapara</option>
+                      <option value="Mayurbhanj">Mayurbhanj</option>
+                      <option value="Bhadrak">Bhadrak</option>
+                      <option value="Balasore">Balasore</option>
+                      <option value="Bolangir">Bolangir</option>
+                    </select>
+                    <button id="btn-export-grasp" class="btn btn-primary w-100">Export CSV</button>
+                  </div>
+                </div>
+
+                <!-- Section 3: Not Monitored Report -->
+                <div class="export-box" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                  <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">🚫 Not Monitored Report</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 12px;">Export all active stations that are missing measurements for this season.</p>
+                  <div style="display: flex; gap: 10px; flex-direction: column; justify-content: flex-end; height: 75px;">
+                    <button id="btn-export-notmonitored" class="btn btn-primary w-100">Download Report (.xlsx)</button>
+                  </div>
+                </div>
+
+                <!-- Section 4: WTTO Custom Export -->
+                <div class="export-box" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                  <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">📄 WTTO Custom Export</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 12px;">Fill and download a custom WTTO template with monitoring data.</p>
+                  <div style="display: flex; gap: 10px; flex-direction: column;">
+                    <select id="sel-export-wtto-district" class="form-control">
+                      <option value="Cuttack">Cuttack</option>
+                      <option value="Jagatsinghpur">Jagatsinghpur</option>
+                      <option value="Jajpur">Jajpur</option>
+                      <option value="Kendrapara">Kendrapara</option>
+                    </select>
+                    <select id="sel-export-wtto-option" class="form-control">
+                      <option value="all">All Sheets</option>
+                      <option value="blocks">Blocks Sheet Only</option>
+                      <option value="urban">Urban Sheet Only</option>
+                    </select>
+                    <button id="btn-export-wtto" class="btn btn-primary w-100">Export WTTO Excel</button>
+                  </div>
+                </div>
+
+                <!-- Section 5: WTTO Template Manager -->
+                <div class="export-box" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; grid-column: span 1;">
+                  <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">⚙️ WTTO Template Manager</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 12px;">Upload raw WTTO workbooks to serve as templates for custom export.</p>
+                  <div style="display: flex; gap: 10px; flex-direction: column;">
+                    <select id="sel-template-target" class="form-control">
+                      <option value="Cuttack">Cuttack / Cuttack Division</option>
+                      <option value="Jagatsinghpur">Jagatsinghpur</option>
+                      <option value="Jajpur">Jajpur</option>
+                      <option value="Kendrapara">Kendrapara</option>
+                    </select>
+                    <div style="display: flex; gap: 10px;">
+                      <button id="btn-trigger-upload-template" class="btn btn-secondary w-50" style="font-size: 0.8rem;">📤 Upload</button>
+                      <button id="btn-remove-template" class="btn btn-danger w-50" style="font-size: 0.8rem; background-color: #ef4444; border-color: #ef4444; color: white;">🗑️ Clear</button>
+                    </div>
+                    <input type="file" id="input-file-wtto-template" accept=".xlsx" style="display: none;" />
+                    <div id="template-status-msg" style="font-size: 0.72rem; color: #10b981; margin-top: 5px; font-family: monospace;">No template uploaded</div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -628,7 +705,12 @@
         <div class="card p-4 mt-4" style="display: flex; flex-direction: column; gap: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;">Telemetry Station Database</h3>
-            <input type="text" id="telemetry-search-input" class="form-control input-sm" style="max-width: 250px;" placeholder="Search stations...">
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%; max-width: 500px; justify-content: flex-end;">
+              <input type="text" id="telemetry-search-input" class="form-control input-sm" style="max-width: 200px;" placeholder="Search stations...">
+              <button id="btn-export-telemetry" class="btn btn-secondary btn-sm" style="font-weight: 600; font-size: 0.85rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+                <span>📊</span> Export Sheet
+              </button>
+            </div>
           </div>
           
           <div class="table-container" style="max-height: 450px; overflow-y: auto;">
@@ -693,6 +775,19 @@
               <input type="hidden" id="form-well-sheet">
               <input type="hidden" id="form-well-row">
               <input type="hidden" id="form-well-number">
+              
+              <div class="form-row mb-3">
+                <div class="form-col">
+                  <label for="input-well-lat" class="form-label">Latitude</label>
+                  <input type="number" id="input-well-lat" class="form-control" step="0.000001" placeholder="e.g. 20.4625" required>
+                  <span class="form-helper">Latitude in decimal degrees</span>
+                </div>
+                <div class="form-col">
+                  <label for="input-well-lon" class="form-label">Longitude</label>
+                  <input type="number" id="input-well-lon" class="form-control" step="0.000001" placeholder="e.g. 85.8755" required>
+                  <span class="form-helper">Longitude in decimal degrees</span>
+                </div>
+              </div>
               
               <div class="form-row mb-3">
                 <div class="form-col">
@@ -773,6 +868,37 @@
     <div class="toast-card" id="toast-card-element">
       <span class="toast-icon" id="toast-icon-svg"></span>
       <span class="toast-text" id="toast-text-content">Successfully saved measurements!</span>
+    </div>
+  </div>
+
+  <!-- Telemetry Trend Modal -->
+  <div class="modal-backdrop" id="telemetry-trend-modal">
+    <div class="modal-box" style="max-width: 700px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid var(--border-color);">
+        <h2 id="telemetry-trend-title" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>📈</span> Station Telemetry Trend
+        </h2>
+        <button class="btn-close-modal" id="btn-close-telemetry-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <div class="well-metadata-summary" style="display: flex; gap: 20px; flex-wrap: wrap; background: rgba(30, 41, 59, 0.5); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div class="meta-item" style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="meta-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Station Code</span>
+            <span class="meta-value text-highlight" id="telemetry-modal-station-id" style="font-weight: 700; font-family: monospace; color: #38bdf8;">-</span>
+          </div>
+          <div class="meta-item" style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="meta-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">District</span>
+            <span class="meta-value" id="telemetry-modal-district" style="font-weight: 600; color: #fff;">-</span>
+          </div>
+          <div class="meta-item" style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="meta-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Agency</span>
+            <span class="meta-value" id="telemetry-modal-agency" style="font-weight: 600; color: #fff;">-</span>
+          </div>
+        </div>
+        <div style="width: 100%; height: 350px; background: #0f172a; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color); position: relative;">
+          <canvas id="chart-telemetry-trend"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 

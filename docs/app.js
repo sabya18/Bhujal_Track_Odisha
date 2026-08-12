@@ -265,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupActionButtons();
   setupModalEventListeners();
   setupFilterEventListeners();
+  initAdvancedExportFeatures();
   
   // Set up User profile display
   const loggedUser = document.getElementById('lbl-logged-user');
@@ -349,7 +350,6 @@ async function loadAllData() {
     // 4. Fetch WTTO preloaded data
     const wttoRes = await fetch('data/wtto_preloaded.json');
     wttoData = await wttoRes.json();
-    
     console.log("All data assets fetched and initialized successfully!");
   } catch (err) {
     console.error("Failed to load databases. Falling back to preloaded caches:", err);
@@ -357,6 +357,14 @@ async function loadAllData() {
     if (typeof initialWellsData !== 'undefined') {
       wellsData = initialWellsData;
     }
+  }
+  
+  // Normalize lat/lon to latitude/longitude
+  if (wellsData && Array.isArray(wellsData)) {
+    wellsData.forEach(w => {
+      if (w.lat !== undefined && w.latitude === undefined) w.latitude = w.lat;
+      if (w.lon !== undefined && w.longitude === undefined) w.longitude = w.lon;
+    });
   }
 }
 
@@ -951,8 +959,14 @@ function setupActionButtons() {
   };
   
   // Sidebar Excel download
-  document.getElementById('btn-export-sidebar').onclick = () => downloadFullExcel();
-  document.getElementById('btn-export-dashboard').onclick = () => downloadFullExcel();
+  const btnExportSidebar = document.getElementById('btn-export-sidebar');
+  if (btnExportSidebar) {
+    btnExportSidebar.onclick = () => downloadFullExcel();
+  }
+  const btnExportDashboard = document.getElementById('btn-export-dashboard');
+  if (btnExportDashboard) {
+    btnExportDashboard.onclick = () => downloadFullExcel();
+  }
   
   // District Excel downloads
   document.querySelectorAll('.btn-export-dist').forEach(btn => {
@@ -1224,6 +1238,8 @@ function setupModalEventListeners() {
     const parapetVal = parseFloat(document.getElementById('input-parapet-height').value);
     const bmpVal = parseFloat(document.getElementById('input-dtgwl-bmp').value);
     const mbglVal = parseFloat(document.getElementById('input-dtgwl-mbgl').value);
+    const latVal = parseFloat(document.getElementById('input-well-lat').value);
+    const lonVal = parseFloat(document.getElementById('input-well-lon').value);
     
     // Reformat date from YYYY-MM-DD to DD.MM.YYYY
     let formattedDate = '';
@@ -1267,7 +1283,9 @@ function setupModalEventListeners() {
             bmp: bmpVal,
             mbgl: mbglVal,
             parapet: parapetVal,
-            well_number: selectedWell.well_number
+            well_number: selectedWell.well_number,
+            lat: latVal,
+            lon: lonVal
           })
         });
         
@@ -1296,6 +1314,18 @@ function setupModalEventListeners() {
       wellsData[wellIdx].date = formattedDate;
       wellsData[wellIdx].dtgwl_bmp = bmpVal;
       wellsData[wellIdx].dtgwl_mbgl = mbglVal;
+      if (!isNaN(latVal)) {
+        wellsData[wellIdx].latitude = latVal;
+        wellsData[wellIdx].lat = latVal;
+        selectedWell.latitude = latVal;
+        selectedWell.lat = latVal;
+      }
+      if (!isNaN(lonVal)) {
+        wellsData[wellIdx].longitude = lonVal;
+        wellsData[wellIdx].lon = lonVal;
+        selectedWell.longitude = lonVal;
+        selectedWell.lon = lonVal;
+      }
     }
     
     hideModal();
@@ -1314,7 +1344,7 @@ function openVisitEditModal(well) {
   // Set UI labels
   document.getElementById('lbl-well-number').textContent = well.well_number;
   document.getElementById('lbl-well-block').textContent = well.block || 'ALL';
-  document.getElementById('lbl-well-coords').textContent = well.latitude ? `${well.latitude.toFixed(4)}, ${well.longitude.toFixed(4)}` : 'N/A';
+  document.getElementById('lbl-well-coords').textContent = (well.latitude || well.lat) ? `${(well.latitude || well.lat).toFixed(4)}, ${(well.longitude || well.lon).toFixed(4)}` : 'N/A';
   document.getElementById('lbl-well-parapet').textContent = well.parapet_height ? `${well.parapet_height.toFixed(2)} m` : '-';
   document.getElementById('lbl-well-remarks').textContent = well.remarks || 'Active';
   
@@ -1330,6 +1360,8 @@ function openVisitEditModal(well) {
   const inputParapet = document.getElementById('input-parapet-height');
   const inputBmp = document.getElementById('input-dtgwl-bmp');
   const inputMbgl = document.getElementById('input-dtgwl-mbgl');
+  const inputLat = document.getElementById('input-well-lat');
+  const inputLon = document.getElementById('input-well-lon');
   
   // Format DD.MM.YYYY to YYYY-MM-DD for native HTML date input
   let formDate = '';
@@ -1347,6 +1379,9 @@ function openVisitEditModal(well) {
   inputParapet.value = well.parapet_height !== null ? well.parapet_height : 0.45;
   inputBmp.value = seasonal.dtgwl_bmp !== null ? seasonal.dtgwl_bmp : '';
   inputMbgl.value = seasonal.dtgwl_mbgl !== null ? seasonal.dtgwl_mbgl : '';
+  
+  inputLat.value = (well.latitude || well.lat) !== undefined ? (well.latitude || well.lat) : '';
+  inputLon.value = (well.longitude || well.lon) !== undefined ? (well.longitude || well.lon) : '';
   
   // Setup photo preview
   const imgPreview = document.getElementById('img-captured-preview');
@@ -1799,13 +1834,95 @@ function updateTrendsTab() {
 }
 
 // --- News Feed rendering ---
-function renderNews() {
+let liveNewsArticles = [];
+
+function parseRssXml(xmlString) {
+  const items = [];
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const xmlItems = xmlDoc.getElementsByTagName("item");
+    
+    for (let i = 0; i < xmlItems.length; i++) {
+      const item = xmlItems[i];
+      const rawTitle = item.getElementsByTagName("title")[0]?.textContent || '';
+      const link = item.getElementsByTagName("link")[0]?.textContent || '#';
+      const pubDate = item.getElementsByTagName("pubDate")[0]?.textContent || '';
+      const source = item.getElementsByTagName("source")[0]?.textContent || 'Google News';
+      
+      let title = rawTitle;
+      let finalSource = source;
+      const dashIdx = rawTitle.lastIndexOf(' - ');
+      if (dashIdx > 0) {
+        title = rawTitle.substring(0, dashIdx).trim();
+        finalSource = rawTitle.substring(dashIdx + 3).trim();
+      }
+      
+      let dateStr = pubDate;
+      try {
+        const d = new Date(pubDate);
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      } catch(e) {}
+
+      items.push({
+        id: link || String(i),
+        title: title,
+        badge: finalSource,
+        date: dateStr,
+        author: finalSource,
+        snippet: `Groundwater monitoring updates regarding ${title}. Check the original Google News article for full briefing.`,
+        link: link
+      });
+    }
+  } catch (err) {
+    console.error("Failed to parse RSS XML:", err);
+  }
+  return items;
+}
+
+async function renderNews() {
   const container = document.getElementById('news-grid-container');
-  container.innerHTML = '';
+  if (!container) return;
   
-  newsArticles.forEach(art => {
+  if (liveNewsArticles.length === 0) {
+    container.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: var(--text-muted);"><p>Fetching latest groundwater news...</p></div>';
+    try {
+      const targetUrl = 'https://news.google.com/rss/search?q=groundwater+india+OR+groundwater+global&hl=en-IN&gl=IN&ceid=IN:en';
+      let xmlText = '';
+      
+      if (!isStandaloneMode) {
+        try {
+          const res = await fetch('/api/news');
+          if (res.ok) xmlText = await res.text();
+        } catch (e) {
+          console.warn("Local proxy fetch failed, trying public CORS proxy...");
+        }
+      }
+      
+      if (!xmlText) {
+        const corsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        const res = await fetch(corsUrl);
+        if (res.ok) xmlText = await res.text();
+      }
+      
+      if (xmlText) {
+        liveNewsArticles = parseRssXml(xmlText);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch live news, falling back to static database:", err);
+    }
+  }
+  
+  const displayList = liveNewsArticles.length > 0 ? liveNewsArticles : newsArticles;
+  
+  container.innerHTML = '';
+  displayList.forEach(art => {
     const card = document.createElement('article');
     card.className = 'news-card';
+    card.style.cursor = 'pointer';
+    card.onclick = () => window.open(art.link, '_blank');
     card.innerHTML = `
       <div class="news-body">
         <span class="news-badge">${art.badge}</span>
@@ -1815,7 +1932,7 @@ function renderNews() {
           <span>${art.date}</span>
         </div>
         <p class="news-snippet">${art.snippet}</p>
-        <button class="news-btn">Read Article Brief ➔</button>
+        <button class="news-btn">Read Full Article ➔</button>
       </div>
     `;
     container.appendChild(card);
@@ -1846,6 +1963,9 @@ function showToast(message, type = 'success') {
 let telemetryMap = null;
 let telemetryLayerGroup = null;
 let telemetryFiltersPopulated = false;
+let fetchedTelemetryRecords = [];
+let telemetryChartInstance = null;
+
 
 function initTelemetryMap() {
   if (telemetryMap) {
@@ -2052,6 +2172,7 @@ function setupTelemetryEvents() {
           return dB - dA;
         });
         
+        fetchedTelemetryRecords = filtered;
         document.getElementById('lbl-telemetry-count').textContent = `Loaded ${filtered.length} telemetry records`;
         renderTelemetryTable(filtered);
         plotTelemetryMarkers(filtered);
@@ -2067,6 +2188,52 @@ function setupTelemetryEvents() {
       }
     };
   }
+  
+  const exportBtn = document.getElementById('btn-export-telemetry');
+  if (exportBtn) {
+    exportBtn.onclick = () => {
+      if (fetchedTelemetryRecords.length === 0) {
+        showToast("No telemetry data to export. Please fetch data first.", "warning");
+        return;
+      }
+      
+      const worksheetData = fetchedTelemetryRecords.map(row => ({
+        "Station Code": row["Station"] || '',
+        "Agency": row["Agency"] || '',
+        "District": row["District"] || '',
+        "Latitude": row["Latitude"] || '',
+        "Longitude": row["Longitude"] || '',
+        "Groundwater Level (m)": row["Groundwater Level Telemetry 6 Hourly (meter)"] || '',
+        "Data Acquisition Time": row["Data Acquisition Time"] || ''
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Telemetry Data");
+      XLSX.writeFile(wb, `Telemetry_Data_Odisha_${Date.now()}.xlsx`);
+      showToast("Telemetry data exported to Excel successfully!");
+    };
+  }
+
+  const closeModalBtn = document.getElementById('btn-close-telemetry-modal');
+  if (closeModalBtn) {
+    closeModalBtn.onclick = () => {
+      document.getElementById('telemetry-trend-modal').classList.remove('open');
+    };
+  }
+
+  // Click handler delegation for table links and map buttons
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.classList.contains('telemetry-station-link')) {
+      e.preventDefault();
+      const stationCode = e.target.getAttribute('data-station');
+      openTelemetryTrendModal(stationCode);
+    } else if (e.target && e.target.classList.contains('telemetry-map-graph-btn')) {
+      e.preventDefault();
+      const stationCode = e.target.getAttribute('data-station');
+      openTelemetryTrendModal(stationCode);
+    }
+  });
   
   if (searchInput) {
     searchInput.onkeyup = (e) => {
@@ -2093,7 +2260,9 @@ function renderTelemetryTable(records) {
   tbody.innerHTML = displayRecords.map(row => {
     return `
       <tr>
-        <td class="text-highlight" style="font-family: monospace; font-weight: 600;">${row["Station"] || '-'}</td>
+        <td class="text-highlight" style="font-family: monospace; font-weight: 600;">
+          <a href="#" class="telemetry-station-link" data-station="${row["Station"]}" style="text-decoration: underline; color: var(--text-highlight);">${row["Station"] || '-'}</a>
+        </td>
         <td>${row["Agency"] || '-'}</td>
         <td>${row["District"] || '-'}</td>
         <td>${row["Latitude"] ? parseFloat(row["Latitude"]).toFixed(5) : '-'}</td>
@@ -2148,6 +2317,11 @@ function plotTelemetryMarkers(records) {
             <strong style="color: #38bdf8;">Latest Level:</strong> ${val} m
           </div>
           <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Acquired: ${time}</div>
+          <div style="margin-top: 8px;">
+            <button class="telemetry-map-graph-btn" data-station="${row["Station"]}" style="width: 100%; font-size: 0.72rem; padding: 6px; font-weight: 600; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 4px; cursor: pointer; text-align: center;">
+              📈 View Trend Graph
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -2168,4 +2342,923 @@ function plotTelemetryMarkers(records) {
   if (bounds.length > 0) {
     telemetryMap.fitBounds(bounds, { padding: [30, 30] });
   }
+}
+
+function openTelemetryTrendModal(stationCode) {
+  const stationRecords = fetchedTelemetryRecords.filter(r => r["Station"] === stationCode);
+  if (stationRecords.length === 0) {
+    showToast("No telemetry data records found for this station.", "warning");
+    return;
+  }
+  
+  // Sort chronologically (oldest to newest) for chart plotting
+  const sortedRecords = [...stationRecords].sort((a, b) => {
+    const dA = parseTelemetryDate(a["Data Acquisition Time"]) || 0;
+    const dB = parseTelemetryDate(b["Data Acquisition Time"]) || 0;
+    return dA - dB;
+  });
+  
+  const latestRec = sortedRecords[sortedRecords.length - 1];
+  
+  document.getElementById('telemetry-modal-station-id').textContent = stationCode;
+  document.getElementById('telemetry-modal-district').textContent = latestRec["District"] || '-';
+  document.getElementById('telemetry-modal-agency').textContent = latestRec["Agency"] || '-';
+  
+  document.getElementById('telemetry-trend-modal').classList.add('open');
+  
+  plotTelemetryChart(sortedRecords);
+}
+
+function plotTelemetryChart(sortedRecords) {
+  const ctx = document.getElementById('chart-telemetry-trend').getContext('2d');
+  
+  if (telemetryChartInstance) {
+    telemetryChartInstance.destroy();
+  }
+  
+  const labels = sortedRecords.map(r => {
+    return r["Data Acquisition Time"] ? r["Data Acquisition Time"].split(' ')[0] : '';
+  });
+  
+  const values = sortedRecords.map(r => {
+    const val = parseFloat(r["Groundwater Level Telemetry 6 Hourly (meter)"]);
+    return isNaN(val) ? null : val;
+  });
+  
+  telemetryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Groundwater Level (meters below ground level)',
+        data: values,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+        borderWidth: 2,
+        tension: 0.3,
+        pointBackgroundColor: '#38bdf8',
+        pointRadius: 4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#e2e8f0',
+            font: { family: 'Outfit, sans-serif', size: 12 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Level: ${context.parsed.y} m`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: {
+            color: '#94a3b8',
+            font: { family: 'Outfit, sans-serif', size: 10 },
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: {
+            color: '#94a3b8',
+            font: { family: 'Outfit, sans-serif' }
+          },
+          title: {
+            display: true,
+            text: 'Groundwater Level (m)',
+            color: '#e2e8f0',
+            font: { family: 'Outfit, sans-serif', weight: 600 }
+          }
+        }
+      }
+    }
+  });
+}
+
+// --- Advanced Export Features & Parity Port ---
+
+function initAdvancedExportFeatures() {
+  const selExportDivision = document.getElementById('sel-export-division');
+  const btnExportFieldBook = document.getElementById('btn-export-fieldbook');
+  const selExportGraspDistrict = document.getElementById('sel-export-grasp-district');
+  const btnExportGrasp = document.getElementById('btn-export-grasp');
+  const btnExportNotMonitored = document.getElementById('btn-export-notmonitored');
+  const selExportWttoDistrict = document.getElementById('sel-export-wtto-district');
+  const selExportWttoOption = document.getElementById('sel-export-wtto-option');
+  const btnExportWtto = document.getElementById('btn-export-wtto');
+  
+  const selTemplateTarget = document.getElementById('sel-template-target');
+  const btnTriggerUploadTemplate = document.getElementById('btn-trigger-upload-template');
+  const btnRemoveTemplate = document.getElementById('btn-remove-template');
+  const inputFileWttoTemplate = document.getElementById('input-file-wtto-template');
+  const templateStatusMsg = document.getElementById('template-status-msg');
+
+  // Update template upload status display
+  function updateTemplateStatus() {
+    if (!selTemplateTarget || !templateStatusMsg) return;
+    const target = selTemplateTarget.value;
+    const key = `gw_custom_excel_template_${target}`;
+    const data = localStorage.getItem(key);
+    if (data) {
+      templateStatusMsg.textContent = `✅ WTTO Template Loaded (${(data.length / 1024).toFixed(0)} KB)`;
+      templateStatusMsg.style.color = '#10b981'; // Green
+    } else {
+      const division = getDivisionForDistrictLocal(target);
+      const divKey = `gw_custom_excel_template_${division}`;
+      const divData = localStorage.getItem(divKey);
+      if (divData) {
+        templateStatusMsg.textContent = `✅ Division Template Loaded (${(divData.length / 1024).toFixed(0)} KB)`;
+        templateStatusMsg.style.color = '#10b981';
+      } else {
+        templateStatusMsg.textContent = '❌ No template loaded';
+        templateStatusMsg.style.color = '#ef4444'; // Red
+      }
+    }
+  }
+
+  if (selTemplateTarget) {
+    selTemplateTarget.onchange = updateTemplateStatus;
+    updateTemplateStatus();
+  }
+
+  // Trigger file upload dialog
+  if (btnTriggerUploadTemplate && inputFileWttoTemplate) {
+    btnTriggerUploadTemplate.onclick = () => inputFileWttoTemplate.click();
+    
+    inputFileWttoTemplate.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const target = selTemplateTarget.value;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const arrayBuffer = evt.target.result;
+          // Verify with SheetJS that it's a valid workbook
+          const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+          const base64 = base64ArrayBuffer(arrayBuffer);
+          
+          localStorage.setItem(`gw_custom_excel_template_${target}`, base64);
+          showToast(`WTTO Template workbook saved successfully for ${target}!`);
+          updateTemplateStatus();
+        } catch (err) {
+          console.error("Template upload failed:", err);
+          showToast("Failed to parse file. Make sure it is a valid .xlsx file.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+  }
+
+  // Remove Custom Template
+  if (btnRemoveTemplate) {
+    btnRemoveTemplate.onclick = () => {
+      const target = selTemplateTarget.value;
+      const key = `gw_custom_excel_template_${target}`;
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        showToast(`Template cleared for ${target}.`);
+      } else {
+        const division = getDivisionForDistrictLocal(target);
+        const divKey = `gw_custom_excel_template_${division}`;
+        if (localStorage.getItem(divKey)) {
+          localStorage.removeItem(divKey);
+          showToast(`Division Template cleared for ${division}.`);
+        } else {
+          showToast("No custom template exists to remove.", "warning");
+        }
+      }
+      updateTemplateStatus();
+    };
+  }
+
+  // 1. Division-wise Field Book Export
+  if (btnExportFieldBook && selExportDivision) {
+    btnExportFieldBook.onclick = async () => {
+      const targetDiv = selExportDivision.value;
+      const activeSeasonStr = `${selectedSeason} ${selectedYear}`;
+      
+      // Map all active wells
+      const enrichedWells = wellsData.map(well => {
+        const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+        return {
+          ...well,
+          date: seasonal.date,
+          dtgwl_mbgl: seasonal.dtgwl_mbgl,
+          dtgwl_bmp: seasonal.dtgwl_bmp
+        };
+      });
+
+      // Filter by division if selected
+      const filteredWells = targetDiv === 'all' 
+        ? enrichedWells 
+        : enrichedWells.filter(w => getDivisionForDistrictLocal(getDistrictFromSheetLocal(w.sheet)) === targetDiv);
+
+      if (filteredWells.length === 0) {
+        showToast("No well records found to export.", "warning");
+        return;
+      }
+
+      // Group wells by sheet
+      const sheetsGroup = {};
+      filteredWells.forEach(well => {
+        const s = well.sheet || 'Other';
+        if (!sheetsGroup[s]) sheetsGroup[s] = [];
+        sheetsGroup[s].push(well);
+      });
+
+      const wb = XLSX.utils.book_new();
+
+      // Write each sheet
+      Object.keys(sheetsGroup).forEach(sheetName => {
+        const wsData = [
+          [`FIELD BOOK - SEASON: ${activeSeasonStr.toUpperCase()}`],
+          ["Sl. No.", "Location", "Well Type", "Well Number", "Latitude", "Longitude", "Parapet Height (m)", "Depth (m)", "Date of Visit", "DTGWL (bmp)", "DTGWL (mbgl)", "Remarks"]
+        ];
+
+        sheetsGroup[sheetName].forEach((well, index) => {
+          wsData.push([
+            well.sl_no || (index + 1),
+            well.location || '',
+            well.well_type || '',
+            well.well_number || '',
+            well.lat || '',
+            well.lon || '',
+            well.parapet_height || '',
+            well.depth || '',
+            well.date || '',
+            well.dtgwl_bmp !== null && well.dtgwl_bmp !== undefined ? Number(well.dtgwl_bmp).toFixed(2) : '',
+            well.dtgwl_mbgl !== null && well.dtgwl_mbgl !== undefined ? Number(well.dtgwl_mbgl).toFixed(2) : '',
+            well.remarks || ''
+          ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        // Column widths auto fit
+        const maxLens = wsData[1].map((_, colIdx) => 
+          Math.max(...wsData.map(row => String(row[colIdx] || '').length))
+        );
+        ws['!cols'] = maxLens.map(len => ({ wch: len + 3 }));
+        XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 30));
+      });
+
+      const filename = targetDiv === 'all'
+        ? `Groundwater_Field_Book_Full_${selectedYear}_${selectedSeason.replace(/\s+/g, '_')}.xlsx`
+        : `${targetDiv.replace(/\s+/g, '_')}_Field_Book_${selectedYear}_${selectedSeason.replace(/\s+/g, '_')}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+      showToast("Field Book exported successfully!");
+    };
+  }
+
+  // 2. GRASP CSV Export
+  if (btnExportGrasp && selExportGraspDistrict) {
+    btnExportGrasp.onclick = () => {
+      const distName = selExportGraspDistrict.value;
+      
+      // Enrich wells with active seasonal data
+      const enrichedWells = wellsData.map(well => {
+        const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+        return {
+          ...well,
+          date: seasonal.date,
+          dtgwl_mbgl: seasonal.dtgwl_mbgl
+        };
+      });
+
+      // Filter by district
+      const districtWells = enrichedWells.filter(w => {
+        const dist = getDistrictFromSheetLocal(w.sheet);
+        return dist.toLowerCase() === distName.toLowerCase();
+      });
+
+      // Filter valid ones (has visit date and reading)
+      const validWells = districtWells.filter(w => w.date && w.dtgwl_mbgl !== null && w.dtgwl_mbgl !== undefined);
+
+      if (validWells.length === 0) {
+        showToast(`No monitored stations found with water level readings in district ${distName}.`, "warning");
+        return;
+      }
+
+      // Helper to format date to DD-MM-YYYY
+      const formatGraspDate = (dateStr) => {
+        if (!dateStr) return '';
+        const cleaned = String(dateStr).replace(/[\.\/]/g, '-');
+        const parts = cleaned.split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+          return `${parts[0]}-${parts[1]}-${parts[2]}`;
+        }
+        return cleaned;
+      };
+
+      const csvContent = validWells.map(w => {
+        const wellId = w.well_number || '';
+        const dateVal = formatGraspDate(w.date);
+        const timeVal = '08:00';
+        const mbglVal = Number(w.dtgwl_mbgl).toFixed(2);
+        return `${wellId},${dateVal},${timeVal},${mbglVal}`;
+      }).join('\r\n');
+
+      const filename = `GRASP_${distName.toUpperCase()}_${selectedYear}_${selectedSeason.replace(/\s+/g, '_')}.csv`;
+      
+      // Download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast(`GRASP CSV exported successfully for ${distName}!`);
+    };
+  }
+
+  // 3. Not Monitored Report Export
+  if (btnExportNotMonitored) {
+    btnExportNotMonitored.onclick = () => {
+      const activeSeasonStr = `${selectedSeason} ${selectedYear}`;
+      
+      // Enrich wells
+      const enrichedWells = wellsData.map(well => {
+        const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+        return {
+          ...well,
+          date: seasonal.date,
+          dtgwl_bmp: seasonal.dtgwl_bmp
+        };
+      });
+
+      // Filter active unmonitored wells
+      const notMonitoredWells = enrichedWells.filter(w => {
+        const rem = (w.remarks || '').toLowerCase();
+        const isActive = !rem.includes('closed') && !rem.includes('cemented') && !rem.includes('dumped');
+        if (!isActive) return false;
+        
+        const hasDate = w.date !== null && w.date !== undefined && w.date !== '';
+        const hasBmp = w.dtgwl_bmp !== null && w.dtgwl_bmp !== undefined && w.dtgwl_bmp !== '' && !isNaN(Number(w.dtgwl_bmp));
+        
+        let dateInRange = false;
+        if (hasDate) {
+          dateInRange = checkDateInSeasonRangeLocal(w.date, activeSeasonStr);
+        }
+        
+        return !hasDate || !hasBmp || !dateInRange;
+      });
+
+      if (notMonitoredWells.length === 0) {
+        showToast("All active stations are successfully monitored for this season!", "info");
+        return;
+      }
+
+      const wsData = [
+        ["Sl. No.", "District", "Block", "Location", "Well Type", "Well Number", "Date of Visit", "DTGWL (bmp) Raw", "Remarks", "Comments"]
+      ];
+
+      notMonitoredWells.forEach((well, idx) => {
+        const dist = getDistrictFromSheetLocal(well.sheet);
+        wsData.push([
+          idx + 1,
+          dist,
+          well.block || "",
+          well.location || "",
+          well.well_type || "",
+          well.well_number || "",
+          well.date || "",
+          (well.dtgwl_bmp !== null && well.dtgwl_bmp !== undefined ? String(well.dtgwl_bmp) : ""),
+          well.remarks || "",
+          well.comment || ""
+        ]);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      
+      const maxLens = wsData[0].map((_, colIdx) => 
+        Math.max(...wsData.map(row => String(row[colIdx] || '').length))
+      );
+      ws['!cols'] = maxLens.map(len => ({ wch: len + 3 }));
+
+      XLSX.utils.book_append_sheet(wb, ws, "Not Monitored");
+      
+      const filename = `Not_Monitored_Stations_${activeSeasonStr.replace(/\s+/g, '_')}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      showToast("Not Monitored Report exported successfully!");
+    };
+  }
+
+  // 4. WTTO Custom Template Export
+  if (btnExportWtto && selExportWttoDistrict && selExportWttoOption) {
+    btnExportWtto.onclick = async () => {
+      const districtName = selExportWttoDistrict.value;
+      const sheetOption = selExportWttoOption.value;
+      const seasonName = `${selectedSeason} ${selectedYear}`;
+      
+      const division = getDivisionForDistrictLocal(districtName);
+      const customB64 = localStorage.getItem(`gw_custom_excel_template_${districtName}`) || localStorage.getItem(`gw_custom_excel_template_${division}`);
+      
+      if (!customB64) {
+        showToast(`Please upload the WTTO Excel template for ${districtName} or ${division} first.`, "warning");
+        return;
+      }
+
+      try {
+        const wb = XLSX.read(customB64, { type: 'base64', cellStyles: true });
+        const allDistrictSheets = districtSheetsMap[districtName] || [];
+        
+        let sheetsToUpdate = [];
+        if (sheetOption === 'blocks') {
+          sheetsToUpdate = allDistrictSheets.filter(sName => sName.toLowerCase().includes('block'));
+        } else if (sheetOption === 'urban') {
+          sheetsToUpdate = allDistrictSheets.filter(sName => sName.toLowerCase().includes('urban'));
+        } else {
+          sheetsToUpdate = allDistrictSheets;
+        }
+        sheetsToUpdate = sheetsToUpdate.filter(sheetName => !!wb.Sheets[sheetName]);
+        
+        if (sheetsToUpdate.length === 0) {
+          showToast(`The uploaded WTTO workbook does not contain ${districtName} sheets.`, "error");
+          return;
+        }
+
+        // Enrich wells
+        const enrichedWells = wellsData.map(well => {
+          const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+          return {
+            ...well,
+            date: seasonal.date,
+            dtgwl_mbgl: seasonal.dtgwl_mbgl,
+            dtgwl_bmp: seasonal.dtgwl_bmp
+          };
+        });
+
+        sheetsToUpdate.forEach(sheetName => {
+          const ws = wb.Sheets[sheetName];
+          if (!ws) return;
+          
+          const sheetWells = enrichedWells.filter(w => w.sheet === sheetName);
+          let range = XLSX.utils.decode_range(ws['!ref'] || 'A1:O1');
+          const maxCol = range.e.c;
+          
+          let headerRow = null;
+          for (let r = 0; r <= 15; r++) {
+            const cellA = ws[XLSX.utils.encode_cell({ r, c: 0 })];
+            const cellB = ws[XLSX.utils.encode_cell({ r, c: 1 })];
+            const valA = cellA && cellA.v ? String(cellA.v).toLowerCase() : '';
+            const valB = cellB && cellB.v ? String(cellB.v).toLowerCase() : '';
+            
+            if (valA.includes("sl") || valA.includes("gwd") || valB.includes("location") || valB.includes("block")) {
+              headerRow = r;
+              break;
+            }
+          }
+          if (headerRow === null) headerRow = 0;
+          
+          const colMap = {};
+          let parapetCol = null;
+          let depthCol = null;
+          let lastSeasonCol = -1;
+          let oldWellIdCol = null;
+          let newWellIdCol = null;
+          
+          for (let c = 0; c <= maxCol; c++) {
+            const cell = ws[XLSX.utils.encode_cell({ r: headerRow, c })];
+            if (cell && cell.v !== undefined) {
+              const sKey = getNormalizedSeasonKey(String(cell.v));
+              if (sKey) {
+                colMap[sKey] = c;
+                if (c > lastSeasonCol) lastSeasonCol = c;
+              }
+              
+              const valStr = String(cell.v).toLowerCase().trim();
+              if (valStr.includes("parapet")) {
+                parapetCol = c;
+              } else if (valStr.includes("depth") && valStr.includes(String(selectedYear))) {
+                depthCol = c;
+              } else if (depthCol === null && valStr.includes("depth")) {
+                depthCol = c;
+              } else if (valStr.includes("old well id") || valStr.includes("old well number") || valStr.includes("old_well")) {
+                oldWellIdCol = c;
+              } else if (valStr.includes("new well id") || valStr.includes("new well number") || valStr.includes("new_well") || valStr.includes("well number") || valStr.includes("well_number")) {
+                newWellIdCol = c;
+              }
+            }
+          }
+
+          const wellRowMap = {};
+          for (let r = headerRow + 1; r <= range.e.r; r++) {
+            let oldId = '';
+            let newId = '';
+            if (oldWellIdCol !== null) {
+              const cell = ws[XLSX.utils.encode_cell({ r, c: oldWellIdCol })];
+              if (cell && cell.v !== undefined) oldId = String(cell.v).trim();
+            }
+            if (newWellIdCol !== null) {
+              const cell = ws[XLSX.utils.encode_cell({ r, c: newWellIdCol })];
+              if (cell && cell.v !== undefined) newId = String(cell.v).trim();
+            }
+            
+            if (newId) wellRowMap[newId.toLowerCase()] = r;
+            if (oldId) wellRowMap[oldId.toLowerCase()] = r;
+          }
+          
+          const seasonKey = `${selectedYear}_${selectedSeason.includes('Pre') ? 'PreMon' : selectedSeason.includes('Mid') ? 'MidMon' : selectedSeason.includes('Post') ? 'PostMon' : 'Winter'}`;
+
+          if (colMap[seasonKey] === undefined) {
+            let insertColIdx = -1;
+            const predecessors = getOrderedSeasonsBefore(seasonKey, 40);
+            for (const pred of predecessors) {
+              if (colMap[pred] !== undefined) {
+                insertColIdx = colMap[pred] + 1;
+                break;
+              }
+            }
+            
+            if (insertColIdx === -1) {
+              const successors = getOrderedSeasonsAfter(seasonKey, 40);
+              for (const succ of successors) {
+                if (colMap[succ] !== undefined) {
+                  insertColIdx = colMap[succ];
+                  break;
+                }
+              }
+            }
+            
+            if (insertColIdx === -1) {
+              insertColIdx = lastSeasonCol !== -1 ? lastSeasonCol + 1 : range.e.c + 1;
+            }
+            
+            for (let c = range.e.c; c >= insertColIdx; c--) {
+              for (let r = range.s.r; r <= range.e.r; r++) {
+                const oldRef = XLSX.utils.encode_cell({ r, c });
+                const newRef = XLSX.utils.encode_cell({ r, c: c + 1 });
+                if (ws[oldRef]) {
+                  ws[newRef] = ws[oldRef];
+                  delete ws[oldRef];
+                }
+              }
+            }
+            
+            if (ws['!cols']) {
+              ws['!cols'].splice(insertColIdx, 0, ws['!cols'][insertColIdx] || { wch: 12 });
+            }
+            
+            range.e.c += 1;
+            ws['!ref'] = XLSX.utils.encode_range(range);
+            
+            Object.keys(colMap).forEach(key => {
+              if (colMap[key] >= insertColIdx) colMap[key] += 1;
+            });
+            if (parapetCol !== null && parapetCol >= insertColIdx) parapetCol += 1;
+            if (depthCol !== null && depthCol >= insertColIdx) depthCol += 1;
+            
+            const newHeader = formatSeasonKeyToHeader(seasonKey);
+            updateCell(ws, headerRow, insertColIdx, newHeader);
+            colMap[seasonKey] = insertColIdx;
+          }
+          
+          sheetWells.forEach(well => {
+            let r = -1;
+            if (well.well_number) {
+              const wNum = well.well_number.toLowerCase().trim();
+              if (wellRowMap[wNum] !== undefined) r = wellRowMap[wNum];
+            }
+            if (r === -1 && well.row_idx) r = well.row_idx - 1;
+            if (r === -1 || r > range.e.r) return;
+            
+            const activeBglVal = well.dtgwl_mbgl !== null && well.dtgwl_mbgl !== undefined ? well.dtgwl_mbgl : '';
+            const activeTargetCol = colMap[seasonKey];
+            if (activeTargetCol !== undefined && activeBglVal !== '') {
+              updateCell(ws, r, activeTargetCol, activeBglVal);
+            }
+            
+            const wellHistory = visitsHistory[well.well_number];
+            if (wellHistory) {
+              Object.keys(wellHistory).forEach(sKey => {
+                const record = wellHistory[sKey];
+                if (record && record.value !== null && record.value !== undefined) {
+                  const targetCol = colMap[sKey];
+                  if (targetCol !== undefined) {
+                    updateCell(ws, r, targetCol, record.value);
+                  }
+                }
+              });
+            }
+            
+            if (parapetCol !== null && well.parapet_height !== null && well.parapet_height !== undefined) {
+              updateCell(ws, r, parapetCol, well.parapet_height);
+            }
+            if (depthCol !== null && well.depth !== null && well.depth !== undefined && well.depth !== '') {
+              updateCell(ws, r, depthCol, well.depth);
+            }
+          });
+        });
+
+        const outBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const outFilename = `WTTO_${districtName}_${seasonName.replace(/\s+/g, '_')}.xlsx`;
+        downloadExcelFromBase64(outBase64, outFilename);
+        showToast("WTTO Template filled and downloaded successfully!");
+      } catch (err) {
+        console.error("WTTO template custom export failed:", err);
+        showToast("WTTO custom export failed: " + err.message, "error");
+      }
+    };
+  }
+}
+
+// --- Parity Helper Utilities ---
+
+const getDistrictFromSheetLocal = (sheet) => {
+  if (!sheet) return 'Other';
+  const s = sheet.toLowerCase().trim();
+  if (s.includes('kendrapara') || s.includes('kdp')) {
+    return s.includes('urban') ? 'Kendrapara Urban' : 'Kendrapara';
+  }
+  if (s.includes('cuttack')) {
+    return s.includes('urban') ? 'Cuttack Urban' : 'Cuttack';
+  }
+  if (s.includes('jajpur')) {
+    return s.includes('urban') ? 'Jajpur Urban' : 'Jajpur';
+  }
+  if (s.includes('jspur') || s.includes('jagatsinghpur')) return 'Jagatsinghpur';
+  const clean = s.replace('_blocks', '').replace('_urban', '');
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+};
+
+const getDivisionForDistrictLocal = (district) => {
+  const d = (district || '').toLowerCase().trim();
+  if (d.includes('rs') || d.includes('research')) return 'RS DIVISION';
+  if (d.includes('hp') || d.includes('hydrology')) return 'AD HP DIVISION';
+  if (['cuttack', 'cuttack urban', 'kendrapara', 'kendrapara urban', 'jajpur', 'jajpur urban', 'jagatsinghpur', 'jspur', 'khordha', 'puri', 'nayagarh'].some(x => d.includes(x))) return 'CUTTACK DIVISION';
+  if (['sambalpur', 'jharsuguda', 'sundargarh', 'deogarh'].includes(d)) return 'SAMBALPUR DIVISION';
+  if (['ganjam', 'gajapati', 'kandhamal', 'boudh'].includes(d)) return 'BERHAMPUR DIVISION';
+  if (['balasore', 'bhadrak', 'mayurbhanj'].includes(d)) return 'BALASORE DIVISION';
+  if (['balangir', 'bolangir', 'subarnapur', 'bargarh'].includes(d)) return 'BOLANGIR DIVISION';
+  if (['koraput', 'nabarangpur', 'malkangiri'].includes(d)) return 'KORAPUT DIVISION';
+  if (['kalahandi', 'nuapada', 'rayagada'].includes(d)) return 'BHAWANIPATNA DIVISION';
+  if (['angul', 'dhenkanal', 'keonjhar'].includes(d)) return 'ANGUL DIVISION';
+  return 'CUTTACK DIVISION';
+};
+
+const districtSheetsMap = {
+  'Kendrapara': ['KDP_BLOCK', 'Kendrapara_Blocks'],
+  'Kendrapara Urban': ['KENDRAPADA_URBAN', 'Kendrapara_urban'],
+  'Cuttack': ['Cuttack_Blocks'],
+  'Cuttack Urban': ['Cuttack_Urban'],
+  'Jajpur': ['Jajpur_Blocks'],
+  'Jajpur Urban': ['Jajpur_Urban'],
+  'Jagatsinghpur': ['Jspur_Blocks']
+};
+
+const parseSeasonKey = (seasonKey) => {
+  const parts = seasonKey.split('_');
+  if (parts.length !== 2) return null;
+  const year = parseInt(parts[0], 10);
+  const type = parts[1]; // Winter, PreMon, MidMon, PostMon
+  return { year, type };
+};
+
+const seasonTypes = ['Winter', 'PreMon', 'MidMon', 'PostMon'];
+
+const getOrderedSeasonsBefore = (seasonKey, count = 40) => {
+  const parsed = parseSeasonKey(seasonKey);
+  if (!parsed) return [];
+  const list = [];
+  let curYear = parsed.year;
+  let curTypeIdx = seasonTypes.indexOf(parsed.type);
+  
+  for (let i = 0; i < count; i++) {
+    curTypeIdx--;
+    if (curTypeIdx < 0) {
+      curTypeIdx = 3;
+      curYear--;
+    }
+    list.push(`${curYear}_${seasonTypes[curTypeIdx]}`);
+  }
+  return list;
+};
+
+const getOrderedSeasonsAfter = (seasonKey, count = 40) => {
+  const parsed = parseSeasonKey(seasonKey);
+  if (!parsed) return [];
+  const list = [];
+  let curYear = parsed.year;
+  let curTypeIdx = seasonTypes.indexOf(parsed.type);
+  
+  for (let i = 0; i < count; i++) {
+    curTypeIdx++;
+    if (curTypeIdx > 3) {
+      curTypeIdx = 0;
+      curYear++;
+    }
+    list.push(`${curYear}_${seasonTypes[curTypeIdx]}`);
+  }
+  return list;
+};
+
+const updateCell = (ws, r, c, val) => {
+  const cellRef = XLSX.utils.encode_cell({ r, c });
+  if (val === null || val === undefined || val === '') {
+    if (ws[cellRef]) {
+      ws[cellRef].v = "";
+      ws[cellRef].t = "s";
+    }
+  } else {
+    const num = Number(val);
+    const isNum = !isNaN(num) && typeof val !== 'boolean' && val !== '';
+    const finalVal = isNum ? num : val.toString();
+    const type = isNum ? 'n' : 's';
+
+    if (ws[cellRef]) {
+      ws[cellRef].v = finalVal;
+      ws[cellRef].t = type;
+    } else {
+      ws[cellRef] = { t: type, v: finalVal };
+    }
+  }
+};
+
+const getNormalizedSeasonKey = (headerStr) => {
+  if (!headerStr) return null;
+  const lower = headerStr.toLowerCase().trim();
+  const yearMatch = lower.match(/(19\d{2}|20\d{2})/);
+  if (!yearMatch) {
+    const shortYearMatch = lower.match(/\b(\d{2})\b/);
+    if (!shortYearMatch) return null;
+    const shortYear = parseInt(shortYearMatch[1]);
+    const year = shortYear >= 80 ? 1900 + shortYear : 2000 + shortYear;
+    return getSeasonKeyWithYear(lower, year);
+  }
+  const year = parseInt(yearMatch[1]);
+  return getSeasonKeyWithYear(lower, year);
+};
+
+const getSeasonKeyWithYear = (lower, year) => {
+  let season = null;
+  if (lower.includes('win')) {
+    season = 'Winter';
+  } else if (lower.includes('pre')) {
+    season = 'PreMon';
+  } else if (lower.includes('post')) {
+    season = 'PostMon';
+  } else if (lower.includes('mon') || lower.includes('mid')) {
+    season = 'MidMon';
+  }
+  if (season) {
+    return `${year}_${season}`;
+  }
+  return null;
+};
+
+const formatSeasonKeyToHeader = (seasonKey) => {
+  const parts = seasonKey.split('_');
+  if (parts.length === 2) {
+    return `${parts[1]}_${parts[0]}`;
+  }
+  return seasonKey;
+};
+
+const checkDateInSeasonRangeLocal = (dateStr, targetSeasonStr) => {
+  if (!dateStr || !targetSeasonStr) return false;
+  
+  let day = 1, month = 1, year = new Date().getFullYear();
+  if (dateStr.includes('.')) {
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+    }
+  } else if (dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
+      } else {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
+      }
+    }
+  }
+  
+  if (isNaN(month) || isNaN(day) || isNaN(year)) return false;
+  
+  const parseSeasonAndYear = (seasonStr) => {
+    if (!seasonStr) return { season: 'Winter', year: new Date().getFullYear() };
+    const lower = seasonStr.toLowerCase();
+    let season = 'Winter';
+    if (lower.includes('pre')) season = 'Pre-Monsoon';
+    else if (lower.includes('mid') || lower.includes('mon')) {
+      if (lower.includes('mid')) season = 'Mid-Monsoon';
+      else if (lower.includes('post')) season = 'Post-Monsoon';
+    } else if (lower.includes('win')) {
+      season = 'Winter';
+    }
+    
+    const match = seasonStr.match(/\d{4}/);
+    const year = match ? parseInt(match[0], 10) : new Date().getFullYear();
+    return { season, year };
+  };
+
+  const parsed = parseSeasonAndYear(targetSeasonStr);
+  const targetSeason = parsed.season;
+  const targetYear = parsed.year;
+  
+  const val = month * 100 + day;
+  let wellSeason = 'Winter';
+  let wellSeasonYear = year;
+  
+  if (val >= 201 && val <= 315) {
+    wellSeason = 'Winter';
+  } else if (val >= 420 && val <= 610) {
+    wellSeason = 'Pre-Monsoon';
+  } else if (val >= 801 && val <= 1010) {
+    wellSeason = 'Mid-Monsoon';
+  } else if (val >= 1101 && val <= 1231) {
+    wellSeason = 'Post-Monsoon';
+  } else if (val >= 101 && val <= 110) {
+    wellSeason = 'Post-Monsoon';
+    wellSeasonYear = year - 1;
+  } else {
+    if (val > 110 && val < 201) wellSeason = 'Winter';
+    else if (val > 315 && val < 420) wellSeason = 'Pre-Monsoon';
+    else if (val > 610 && val < 801) wellSeason = 'Mid-Monsoon';
+    else {
+      wellSeason = 'Post-Monsoon';
+      if (val <= 100) wellSeasonYear = year - 1;
+    }
+  }
+  
+  return wellSeason === targetSeason && wellSeasonYear === targetYear;
+};
+
+function base64ArrayBuffer(arrayBuffer) {
+  let base64 = '';
+  const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const bytes = new Uint8Array(arrayBuffer);
+  const byteLength = bytes.byteLength;
+  const byteRemainder = byteLength % 3;
+  const mainLength = byteLength - byteRemainder;
+  let a, b, c, d;
+  let chunk;
+
+  for (let i = 0; i < mainLength; i += 3) {
+    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    a = (chunk & 16515072) >> 18;
+    b = (chunk & 258048) >> 12;
+    c = (chunk & 4032) >> 6;
+    d = chunk & 63;
+    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d];
+  }
+
+  if (byteRemainder === 1) {
+    chunk = bytes[mainLength];
+    a = (chunk & 252) >> 2;
+    b = (chunk & 3) << 4;
+    base64 += encodings[a] + encodings[b] + '==';
+  } else if (byteRemainder === 2) {
+    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1];
+    a = (chunk & 64512) >> 10;
+    b = (chunk & 1008) >> 4;
+    c = (chunk & 15) << 2;
+    base64 += encodings[a] + encodings[b] + encodings[c] + '=';
+  }
+
+  return base64;
+}
+
+function downloadExcelFromBase64(base64, filename) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const blob = new Blob([bytes.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
