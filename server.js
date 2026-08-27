@@ -135,135 +135,200 @@ app.use('/api', (req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// --- Spreadsheet File Config & Python runner ---
-const EXCEL_FILE_PATH = path.join(__dirname, 'CTC Pre-monsoon Field Book 2026.xlsx');
-const BACKUPS_DIR = path.join(__dirname, 'backups');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+// --- PostgreSQL Database Config ---
+const { Pool } = require('pg');
+const pgPool = new Pool({
+  host: 'localhost',
+  user: 'postgres',
+  password: '1234',
+  database: 'bhujal_monitor',
+  port: 5432,
+  max: 40,
+  idleTimeoutMillis: 30000
+});
 
-// Cache to store wells data in memory
-let wellsCache = [];
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 let isLoaded = false;
 let loadError = null;
 
-// Helper function to run the python excel handler
-function runPythonHandler(args) {
-  return new Promise((resolve, reject) => {
-    execFile('py', ['excel_handler.py', ...args], { cwd: __dirname, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        return reject(error);
-      }
-      resolve(stdout);
-    });
-  });
-}
-
-// Function to load Excel data into memory
-async function loadExcelData() {
-  console.log("Loading Excel data...");
+// Test database connection on startup
+async function initDB() {
   try {
-    const output = await runPythonHandler(['read']);
-    wellsCache = JSON.parse(output);
+    await pgPool.query('SELECT 1');
     isLoaded = true;
     loadError = null;
-    console.log(`Excel data loaded successfully. Total wells: ${wellsCache.length}`);
+    console.log("PostgreSQL database connected successfully.");
   } catch (err) {
     loadError = err.message;
-    console.error("Failed to load Excel data:", err);
+    console.error("Failed to connect to PostgreSQL:", err);
   }
 }
-
-// Load data on startup
-loadExcelData();
+initDB();
 
 // API: Get status/loaded info
-app.get('/api/status', (req, res) => {
-  res.json({
-    loaded: isLoaded,
-    error: loadError,
-    totalWells: wellsCache.length
-  });
-});
-
-// API: Get all wells
-app.get('/api/wells', async (req, res) => {
-  if (!isLoaded) {
-    if (loadError) {
-      return res.status(500).json({ error: "Failed to read excel: " + loadError });
-    }
-    return res.status(503).json({ error: "Data is loading, please try again in a few seconds." });
+app.get('/api/status', async (req, res) => {
+  try {
+    const countRes = await pgPool.query('SELECT count(*) FROM wells');
+    res.json({
+      loaded: isLoaded,
+      error: loadError,
+      totalWells: parseInt(countRes.rows[0].count, 10)
+    });
+  } catch (err) {
+    res.json({
+      loaded: false,
+      error: err.message,
+      totalWells: 0
+    });
   }
-  
-  const enrichedWells = wellsCache.map(well => {
-    const photoPath = path.join(UPLOADS_DIR, `${well.well_number}.jpg`);
-    const hasPhoto = fs.existsSync(photoPath);
-    return {
-      ...well,
-      photoUrl: hasPhoto ? `/uploads/${well.well_number}.jpg` : null
-    };
-  });
-  
-  res.json(enrichedWells);
 });
 
-// API: Force reload data from Excel
+// API: Get all wells (supports optional season/year filters)
+app.get('/api/wells', async (req, res) => {
+  const year = req.query.year || '2026';
+  const season = req.query.season || 'PreMon';
+  
+  let seasonCode = season;
+  if (season.toLowerCase().includes('pre')) seasonCode = 'PreMon';
+  else if (season.toLowerCase().includes('mid') || season.toLowerCase().includes('mon')) seasonCode = 'MidMon';
+  else if (season.toLowerCase().includes('post')) seasonCode = 'PostMon';
+  else if (season.toLowerCase().includes('winter')) seasonCode = 'Winter';
+  
+  const seasonKey = `${year}_${seasonCode}`;
+  
+  try {
+    const dbResult = await pgPool.query(`
+      SELECT 
+        w.well_number, w.sheet, w.district, w.block, w.location, w.well_type,
+        w.lat_raw, w.lon_raw, w.lat, w.lon, w.depth, w.parapet_height, w.msl, w.rl,
+        v.date, v.dtgwl_bmp, v.dtgwl_mbgl, v.remarks
+      FROM wells w
+      LEFT JOIN visits v ON w.well_number = v.well_number AND v.season_key = $1;
+    `, [seasonKey]);
+    
+    const enrichedWells = dbResult.rows.map((row, idx) => {
+      const photoPath = path.join(UPLOADS_DIR, `${row.well_number}.jpg`);
+      const hasPhoto = fs.existsSync(photoPath);
+      return {
+        sheet: row.sheet || '',
+        row_idx: idx + 1,
+        sl_no: (idx + 1).toString(),
+        block: row.block || '',
+        location: row.location || '',
+        well_type: row.well_type || 'DW',
+        well_number: row.well_number,
+        lat_raw: row.lat_raw || '',
+        lon_raw: row.lon_raw || '',
+        lat: row.lat,
+        lon: row.lon,
+        date: row.date || null,
+        depth: row.depth || '',
+        parapet_height: row.parapet_height || 0.0,
+        dtgwl_bmp: row.dtgwl_bmp,
+        dtgwl_mbgl: row.dtgwl_mbgl,
+        remarks: row.remarks || '',
+        msl: row.msl,
+        rl: row.rl,
+        photoUrl: hasPhoto ? `/uploads/${row.well_number}.jpg` : null
+      };
+    });
+    
+    res.json(enrichedWells);
+  } catch (err) {
+    console.error("Failed to query wells from PostgreSQL:", err);
+    res.status(500).json({ error: "Failed to read database: " + err.message });
+  }
+});
+
+// API: Force reload/re-migrate data from Excel baseline
 app.post('/api/wells/reload', async (req, res) => {
   isLoaded = false;
-  await loadExcelData();
-  if (loadError) {
-    return res.status(500).json({ error: "Reload failed: " + loadError });
+  try {
+    const pythonCmd = process.platform === 'win32' ? 'py' : 'python3';
+    execFile(pythonCmd, ['migrate_to_postgres.py'], { cwd: __dirname }, async (error, stdout, stderr) => {
+      if (error) {
+        loadError = error.message;
+        return res.status(500).json({ error: "Reload failed: " + error.message });
+      }
+      await initDB();
+      res.json({ success: true, message: "Database reloaded from Excel baseline." });
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  res.json({ success: true, totalWells: wellsCache.length });
 });
+
+// Helper: Infer season code based on Date of visit
+function inferSeasonKeyFromDate(dateStr) {
+  if (!dateStr) return "2026_PreMon";
+  const parts = dateStr.split('.');
+  if (parts.length !== 3) return "2026_PreMon";
+  
+  const month = parseInt(parts[1], 10);
+  const year = parts[2];
+  
+  let season = "PreMon";
+  if (month === 12 || month === 1 || month === 2) {
+    season = "Winter";
+  } else if (month >= 3 && month <= 5) {
+    season = "PreMon";
+  } else if (month >= 6 && month <= 9) {
+    season = "MidMon";
+  } else if (month >= 10 && month <= 11) {
+    season = "PostMon";
+  }
+  
+  return `${year}_${season}`;
+}
 
 // API: Update groundwater level measurements
 app.post('/api/wells/update', async (req, res) => {
-  const { sheet, row_idx, date, bmp, mbgl, parapet, well_number } = req.body;
+  const { date, bmp, mbgl, parapet, well_number, lat, lon } = req.body;
   
-  if (!sheet || !row_idx) {
-    return res.status(400).json({ error: "Missing sheet or row_idx parameters" });
+  if (!well_number) {
+    return res.status(400).json({ error: "Missing well_number parameter" });
   }
   
   try {
-    if (!fs.existsSync(BACKUPS_DIR)) {
-      fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    // 1. Update well coordinates and parapet height in wells table if provided
+    if (lat !== undefined && lat !== null && lat !== '' && lon !== undefined && lon !== null && lon !== '') {
+      const pHeight = parapet !== undefined && parapet !== null && parapet !== '' ? parseFloat(parapet) : 0.0;
+      await pgPool.query(
+        `UPDATE wells 
+         SET lat = $1, lon = $2, lat_raw = $3, lon_raw = $4, parapet_height = $5
+         WHERE well_number = $6`,
+        [parseFloat(lat), parseFloat(lon), lat.toString(), lon.toString(), pHeight, well_number.toUpperCase()]
+      );
+    } else if (parapet !== undefined && parapet !== null && parapet !== '') {
+      await pgPool.query(
+        `UPDATE wells SET parapet_height = $1 WHERE well_number = $2`,
+        [parseFloat(parapet), well_number.toUpperCase()]
+      );
     }
-    const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-    const backupFileName = `CTC_WINTER_Field_Book_2026_backup_${timestamp}.xlsx`;
-    const backupFilePath = path.join(BACKUPS_DIR, backupFileName);
     
-    if (fs.existsSync(EXCEL_FILE_PATH)) {
-      fs.copyFileSync(EXCEL_FILE_PATH, backupFilePath);
-    }
+    // 2. Insert or update the visit measurement
+    const seasonKey = inferSeasonKeyFromDate(date);
+    await pgPool.query(
+      `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (well_number, season_key) DO UPDATE
+       SET date = EXCLUDED.date,
+           dtgwl_bmp = EXCLUDED.dtgwl_bmp,
+           dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
+           remarks = EXCLUDED.remarks;`,
+      [
+        well_number.toUpperCase(),
+        seasonKey,
+        date || '',
+        bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null,
+        mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null,
+        ''
+      ]
+    );
     
-    const writeArgs = [
-      'write',
-      '--sheet', sheet,
-      '--row', row_idx.toString(),
-      '--date', date || '',
-      '--bmp', bmp !== undefined && bmp !== null ? bmp.toString() : 'null',
-      '--mbgl', mbgl !== undefined && mbgl !== null ? mbgl.toString() : 'null',
-      '--parapet', parapet !== undefined && parapet !== null ? parapet.toString() : 'null'
-    ];
-    
-    const writeOutput = await runPythonHandler(writeArgs);
-    const result = JSON.parse(writeOutput);
-    
-    if (result.success) {
-      const wellIndex = wellsCache.findIndex(w => w.sheet === sheet && w.row_idx === parseInt(row_idx));
-      if (wellIndex !== -1) {
-        wellsCache[wellIndex].date = date || null;
-        wellsCache[wellIndex].dtgwl_bmp = bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null;
-        wellsCache[wellIndex].dtgwl_mbgl = mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null;
-        if (parapet !== undefined && parapet !== null && parapet !== '') {
-          wellsCache[wellIndex].parapet_height = parseFloat(parapet);
-        }
-      }
-      res.json({ success: true });
-    } else {
-      res.status(500).json({ error: result.error || "Failed to update spreadsheet" });
-    }
+    res.json({ success: true });
   } catch (err) {
-    console.error("Error updating well:", err);
+    console.error("Error updating well measurement in PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -385,6 +450,22 @@ app.post('/api/nwic/telemetry', (req, res) => {
 
   nwReq.write(postData);
   nwReq.end();
+});
+
+// Proxy endpoint to query Google News RSS securely
+app.get('/api/news', (req, res) => {
+  const targetUrl = 'https://news.google.com/rss/search?q=groundwater+india+OR+groundwater+global&hl=en-IN&gl=IN&ceid=IN:en';
+  https.get(targetUrl, (nwRes) => {
+    let body = '';
+    nwRes.on('data', (chunk) => body += chunk);
+    nwRes.on('end', () => {
+      res.setHeader('Content-Type', 'application/xml');
+      res.status(nwRes.statusCode || 200).send(body);
+    });
+  }).on('error', (err) => {
+    console.error("News Proxy Error:", err);
+    res.status(500).json({ error: "Failed to connect to Google News: " + err.message });
+  });
 });
 
 // Start the server
