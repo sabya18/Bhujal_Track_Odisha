@@ -172,6 +172,22 @@ def main():
     # Drops existing tables to start fresh
     cursor.execute("DROP TABLE IF EXISTS visits CASCADE;")
     cursor.execute("DROP TABLE IF EXISTS wells CASCADE;")
+    cursor.execute("DROP TABLE IF EXISTS app_users CASCADE;")
+    
+    # Construct app_users table
+    cursor.execute("""
+        CREATE TABLE app_users (
+            username VARCHAR(50) PRIMARY KEY,
+            password VARCHAR(255) NOT NULL
+        );
+    """)
+    
+    # Insert default users
+    cursor.execute("""
+        INSERT INTO app_users (username, password)
+        VALUES ('gwd_officer', 'gwd_password_2026')
+        ON CONFLICT (username) DO NOTHING;
+    """)
     
     # Construct wells table
     cursor.execute("""
@@ -211,7 +227,7 @@ def main():
     cursor.execute("CREATE INDEX idx_wells_block ON wells(block);")
     cursor.execute("CREATE INDEX idx_visits_lookup ON visits(well_number, season_key);")
     
-    print("Schema initialized successfully.")
+    print("Schema initialized and default user seeded successfully.")
     
     # 3. Read the Excel data and insert into tables
     if not os.path.exists(FILE_PATH):

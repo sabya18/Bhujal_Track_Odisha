@@ -27,21 +27,34 @@ function getCookie(req, name) {
   return null;
 }
 
-// --- Users Configuration Loader ---
-const USERS_FILE_PATH = path.join(__dirname, 'users.json');
-let usersConfig = { "gwd_officer": "gwd_password_2026" }; // default fallback
+// --- PostgreSQL Database Config ---
+const { Pool } = require('pg');
+const pgPool = new Pool({
+  host: 'localhost',
+  user: 'postgres',
+  password: '1234',
+  database: 'bhujal_monitor',
+  port: 5432,
+  max: 40,
+  idleTimeoutMillis: 30000
+});
 
-function loadUsersConfig() {
+let isLoaded = false;
+let loadError = null;
+
+// Test database connection on startup
+async function initDB() {
   try {
-    if (fs.existsSync(USERS_FILE_PATH)) {
-      usersConfig = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf8'));
-      console.log("Loaded users configuration successfully.");
-    }
+    await pgPool.query('SELECT 1');
+    isLoaded = true;
+    loadError = null;
+    console.log("PostgreSQL database connected successfully.");
   } catch (err) {
-    console.error("Failed to read users.json:", err);
+    loadError = err.message;
+    console.error("Failed to connect to PostgreSQL:", err);
   }
 }
-loadUsersConfig();
+initDB();
 
 // In-memory active session tracking
 const activeSessions = new Set();
@@ -81,25 +94,35 @@ app.get('/manifest.json', (req, res) => {
 });
 
 // Auth check API
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ message: "Missing username or password" });
   }
 
-  loadUsersConfig(); // reload to get latest config additions
+  try {
+    const dbResult = await pgPool.query(
+      'SELECT password FROM app_users WHERE username = $1',
+      [username.trim()]
+    );
+    
+    if (dbResult.rows.length > 0) {
+      const correctPassword = dbResult.rows[0].password;
+      if (correctPassword === password) {
+        const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        activeSessions.add(token);
 
-  const correctPassword = usersConfig[username];
-  if (correctPassword && correctPassword === password) {
-    const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    activeSessions.add(token);
-
-    // Set Cookie: Max age 7 days, HttpOnly to protect against XSS
-    res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
-    return res.json({ success: true, username: username });
+        // Set Cookie: Max age 7 days, HttpOnly to protect against XSS
+        res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
+        return res.json({ success: true, username: username });
+      }
+    }
+    
+    res.status(401).json({ message: "Invalid username or password" });
+  } catch (err) {
+    console.error("Database login authentication error:", err);
+    res.status(500).json({ message: "Database login verification failed." });
   }
-
-  res.status(401).json({ message: "Invalid username or password" });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -135,35 +158,7 @@ app.use('/api', (req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// --- PostgreSQL Database Config ---
-const { Pool } = require('pg');
-const pgPool = new Pool({
-  host: 'localhost',
-  user: 'postgres',
-  password: '1234',
-  database: 'bhujal_monitor',
-  port: 5432,
-  max: 40,
-  idleTimeoutMillis: 30000
-});
-
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
-let isLoaded = false;
-let loadError = null;
-
-// Test database connection on startup
-async function initDB() {
-  try {
-    await pgPool.query('SELECT 1');
-    isLoaded = true;
-    loadError = null;
-    console.log("PostgreSQL database connected successfully.");
-  } catch (err) {
-    loadError = err.message;
-    console.error("Failed to connect to PostgreSQL:", err);
-  }
-}
-initDB();
 
 // API: Get status/loaded info
 app.get('/api/status', async (req, res) => {
