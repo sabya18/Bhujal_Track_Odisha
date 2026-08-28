@@ -345,7 +345,7 @@ async function loadAllData() {
     const distRes = await fetch('data/odisha_districts_complete.json');
     odishaDistrictsGeoJSON = await distRes.json();
     
-    const blockRes = await fetch('data/odisha_blocks_filtered.json');
+    const blockRes = await fetch('data/ODISHA_BLOCK_BOUNDARY.geojson');
     odishaBlocksGeoJSON = await blockRes.json();
     
     // 3. Fetch Trend datasets
@@ -884,7 +884,7 @@ function initMap() {
   if (blocksOverlayActive) {
     boundaryLayer = L.geoJSON(odishaBlocksGeoJSON, {
       style: feature => {
-        const rawBlock = feature.properties.Block_Name || feature.properties.blockname || '';
+        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || '';
         const blockKey = rawBlock.toLowerCase().trim();
         const data = blockAverages[blockKey];
         const avg = data && data.count > 0 ? (data.sum / data.count) : null;
@@ -898,7 +898,7 @@ function initMap() {
         };
       },
       onEachFeature: (feature, layer) => {
-        const rawBlock = feature.properties.Block_Name || feature.properties.blockname || 'Unknown';
+        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || 'Unknown';
         const blockKey = rawBlock.toLowerCase().trim();
         const data = blockAverages[blockKey];
         const avg = data && data.count > 0 ? (data.sum / data.count).toFixed(2) : null;
