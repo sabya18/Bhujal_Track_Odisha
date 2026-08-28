@@ -139,6 +139,12 @@ function normalizeBlockName(blockName) {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
+function isActiveWell(well) {
+  if (!well) return false;
+  const status = (well.remarks || '').toLowerCase().trim();
+  return status !== 'closed';
+}
+
 function checkDateInSeasonRange(dateStr, targetSeasonStr) {
   if (!dateStr || !targetSeasonStr) return false;
   let day = 1, month = 1, year = new Date().getFullYear();
