@@ -851,16 +851,23 @@ function initMap() {
         
         // Add district labels ONLY if block overlay is not active (to prevent text overlap)
         if (!blocksOverlayActive) {
-          const center = layer.getBounds().getCenter();
-          if (center && center.lat && center.lng) {
-            L.marker(center, {
-              icon: L.divIcon({
-                className: 'map-centroid-label district-centroid-label',
-                html: `<div class="centroid-text">${rawName}</div>`,
-                iconSize: [100, 20],
-                iconAnchor: [50, 10]
-              })
-            }).addTo(mapLabelsGroup);
+          try {
+            const bounds = layer.getBounds();
+            if (bounds && typeof bounds.getCenter === 'function') {
+              const center = bounds.getCenter();
+              if (center && center.lat && center.lng) {
+                L.marker(center, {
+                  icon: L.divIcon({
+                    className: 'map-centroid-label district-centroid-label',
+                    html: `<div class="centroid-text">${rawName}</div>`,
+                    iconSize: [100, 20],
+                    iconAnchor: [50, 10]
+                  })
+                }).addTo(mapLabelsGroup);
+              }
+            }
+          } catch (err) {
+            console.warn("Failed to plot district label:", err);
           }
         }
         
@@ -912,16 +919,23 @@ function initMap() {
         layer.bindTooltip(`Block: ${rawBlock}<br/>Water level: ${avg ? avg + ' m BGL' : 'No Data'}`, { sticky: true });
         
         // Add block labels
-        const center = layer.getBounds().getCenter();
-        if (center && center.lat && center.lng) {
-          L.marker(center, {
-            icon: L.divIcon({
-              className: 'map-centroid-label block-centroid-label',
-              html: `<div class="centroid-text block-text">${rawBlock}</div>`,
-              iconSize: [80, 16],
-              iconAnchor: [40, 8]
-            })
-          }).addTo(mapLabelsGroup);
+        try {
+          const bounds = layer.getBounds();
+          if (bounds && typeof bounds.getCenter === 'function') {
+            const center = bounds.getCenter();
+            if (center && center.lat && center.lng) {
+              L.marker(center, {
+                icon: L.divIcon({
+                  className: 'map-centroid-label block-centroid-label',
+                  html: `<div class="centroid-text block-text">${rawBlock}</div>`,
+                  iconSize: [80, 16],
+                  iconAnchor: [40, 8]
+                })
+              }).addTo(mapLabelsGroup);
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to plot block label:", err);
         }
         
         layer.on('click', () => {
