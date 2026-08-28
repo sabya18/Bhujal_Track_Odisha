@@ -624,6 +624,43 @@ body {
   z-index: 1;
 }
 
+/* Centroid Labels inside districts and blocks */
+.map-centroid-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.centroid-text {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  color: #f8fafc;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0px 2px 4px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  pointer-events: none !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+body.light-theme .centroid-text {
+  color: #0f172a;
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0px 2px 4px rgba(255,255,255,0.8);
+}
+
+.block-text {
+  font-size: 8.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-shadow: -1px -1px 0 #1e293b, 1px -1px 0 #1e293b, -1px 1px 0 #1e293b, 1px 1px 0 #1e293b;
+}
+
+body.light-theme .block-text {
+  color: #475569;
+  text-shadow: -1px -1px 0 #f8fafc, 1px -1px 0 #f8fafc, -1px 1px 0 #f8fafc, 1px 1px 0 #f8fafc;
+}
+
 .map-legend {
   margin-top: auto;
   padding-top: 24px;

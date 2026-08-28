@@ -21,6 +21,7 @@ let miniMap = null;
 let boundaryLayer = null;
 let miniBoundaryLayer = null;
 let mainMarkersGroup = null;
+let mapLabelsGroup = null;
 let selectedWell = null;
 let cameraStream = null;
 
@@ -780,7 +781,9 @@ function initMap() {
     attributionControl: false
   }).setView([20.4, 84.5], 7);
   
-  // Calculate average water levels per district for the current selection
+  mapLabelsGroup = L.layerGroup().addTo(mainMap);
+  
+  // Calculate average water levels per district
   const districtAverages = {};
   wellsData.forEach(well => {
     if (isActiveWell(well)) {
@@ -796,6 +799,25 @@ function initMap() {
       }
     }
   });
+
+  // Calculate average water levels per block
+  const blockAverages = {};
+  wellsData.forEach(well => {
+    if (isActiveWell(well)) {
+      const blockKey = (well.block || '').toLowerCase().trim();
+      if (!blockAverages[blockKey]) {
+        blockAverages[blockKey] = { sum: 0, count: 0 };
+      }
+      const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+      if (seasonal.dtgwl_mbgl !== null) {
+        blockAverages[blockKey].sum += seasonal.dtgwl_mbgl;
+        blockAverages[blockKey].count++;
+      }
+    }
+  });
+  
+  // Determine if block overlay is visible
+  const blocksOverlayActive = showBlocksOverlay && odishaBlocksGeoJSON;
   
   // 1. Draw district choropleth water level map
   if (showWaterDepthMap) {
@@ -810,7 +832,7 @@ function initMap() {
           color: border,
           weight: 1.5,
           fillColor: avg !== null ? getDepthColor(avg) : (isDark ? '#1e293b' : '#cbd5e1'),
-          fillOpacity: avg !== null ? 0.75 : 0.15
+          fillOpacity: blocksOverlayActive ? 0.2 : (avg !== null ? 0.75 : 0.15) // dim districts if blocks are on top
         };
       },
       onEachFeature: (feature, layer) => {
@@ -821,10 +843,23 @@ function initMap() {
         
         layer.bindTooltip(`District: ${rawName}<br/>Water level: ${avg ? avg + ' m BGL' : 'No Data'}`, { sticky: true });
         
+        // Add district labels ONLY if block overlay is not active (to prevent text overlap)
+        if (!blocksOverlayActive) {
+          const center = layer.getBounds().getCenter();
+          if (center && center.lat && center.lng) {
+            L.marker(center, {
+              icon: L.divIcon({
+                className: 'map-centroid-label district-centroid-label',
+                html: `<div class="centroid-text">${rawName}</div>`,
+                iconSize: [100, 20],
+                iconAnchor: [50, 10]
+              })
+            }).addTo(mapLabelsGroup);
+          }
+        }
+        
         layer.on('click', () => {
-          // Highlight and zoom to district
           mainMap.fitBounds(layer.getBounds());
-          // Set filters
           const distFilter = document.getElementById('map-filter-district');
           const matchedOption = Array.from(distFilter.options).find(o => normalizeGeoJSONDistrict(o.value) === key);
           if (matchedOption) {
@@ -835,7 +870,6 @@ function initMap() {
       }
     }).addTo(mainMap);
   } else {
-    // Normal baseline boundaries
     L.geoJSON(odishaDistrictsGeoJSON, {
       style: {
         color: border,
@@ -846,15 +880,55 @@ function initMap() {
     }).addTo(mainMap);
   }
   
-  // 2. Draw blocks overlay if enabled
-  if (showBlocksOverlay && odishaBlocksGeoJSON) {
+  // 2. Draw blocks overlay with color-coding and labels if enabled
+  if (blocksOverlayActive) {
     boundaryLayer = L.geoJSON(odishaBlocksGeoJSON, {
-      style: {
-        color: isDark ? '#38bdf8' : '#0284c7',
-        weight: 1,
-        dashArray: '3, 3',
-        fillColor: 'transparent',
-        fillOpacity: 0
+      style: feature => {
+        const rawBlock = feature.properties.Block_Name || feature.properties.blockname || '';
+        const blockKey = rawBlock.toLowerCase().trim();
+        const data = blockAverages[blockKey];
+        const avg = data && data.count > 0 ? (data.sum / data.count) : null;
+        
+        return {
+          color: isDark ? '#38bdf8' : '#0284c7',
+          weight: 1,
+          dashArray: '3, 3',
+          fillColor: avg !== null ? getDepthColor(avg) : 'transparent',
+          fillOpacity: avg !== null ? 0.7 : 0
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const rawBlock = feature.properties.Block_Name || feature.properties.blockname || 'Unknown';
+        const blockKey = rawBlock.toLowerCase().trim();
+        const data = blockAverages[blockKey];
+        const avg = data && data.count > 0 ? (data.sum / data.count).toFixed(2) : null;
+        
+        layer.bindTooltip(`Block: ${rawBlock}<br/>Water level: ${avg ? avg + ' m BGL' : 'No Data'}`, { sticky: true });
+        
+        // Add block labels
+        const center = layer.getBounds().getCenter();
+        if (center && center.lat && center.lng) {
+          L.marker(center, {
+            icon: L.divIcon({
+              className: 'map-centroid-label block-centroid-label',
+              html: `<div class="centroid-text block-text">${rawBlock}</div>`,
+              iconSize: [80, 16],
+              iconAnchor: [40, 8]
+            })
+          }).addTo(mapLabelsGroup);
+        }
+        
+        layer.on('click', () => {
+          mainMap.fitBounds(layer.getBounds());
+          const blockFilter = document.getElementById('map-filter-block');
+          if (blockFilter) {
+            const matchedOption = Array.from(blockFilter.options).find(o => o.value.toLowerCase().trim() === blockKey);
+            if (matchedOption) {
+              blockFilter.value = matchedOption.value;
+              blockFilter.dispatchEvent(new Event('change'));
+            }
+          }
+        });
       }
     }).addTo(mainMap);
   }
@@ -895,21 +969,28 @@ function plotMarkersOnMap() {
     }
     
     if (well.latitude && well.longitude) {
-      // Determine pin color
+      // Determine pin color based on exact depth if monitored, otherwise status
       let color = '#94a3b8'; // Grey (Closed)
+      let tooltipValText = 'No Data';
       if (isAct) {
-        color = isMon ? '#10b981' : '#ef4444'; // Green if Monitored, Red if Pending
+        if (isMon) {
+          color = getDepthColor(seasonal.dtgwl_mbgl);
+          tooltipValText = `${seasonal.dtgwl_mbgl} m BGL`;
+        } else {
+          color = '#ef4444'; // Red if Pending
+          tooltipValText = 'Pending';
+        }
       }
       
       const marker = L.circleMarker([well.latitude, well.longitude], {
         radius: 6,
         fillColor: color,
         color: '#fff',
-        weight: 1,
+        weight: 1.2,
         fillOpacity: 0.95
       });
       
-      marker.bindTooltip(`Well: ${well.well_number}<br/>Location: ${well.location}<br/>Remarks: ${well.remarks || 'Active'}`, { sticky: true });
+      marker.bindTooltip(`Well: ${well.well_number}<br/>Location: ${well.location}<br/>Water Level: ${tooltipValText}<br/>Remarks: ${well.remarks || 'Active'}`, { sticky: true });
       
       marker.on('click', () => {
         // Open edit/visit modal
