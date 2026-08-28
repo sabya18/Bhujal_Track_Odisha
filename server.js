@@ -211,6 +211,51 @@ app.get('/api/visits/history', async (req, res) => {
   }
 });
 
+// API: Get year-wise average groundwater level data by District
+app.get('/api/stats/district/yearly', async (req, res) => {
+  try {
+    const dbResult = await pgPool.query(`
+      SELECT 
+        w.district,
+        SPLIT_PART(v.season_key, '_', 1) as year,
+        ROUND(AVG(v.dtgwl_mbgl)::numeric, 2) as avg_mbgl,
+        COUNT(v.id) as measurement_count
+      FROM wells w
+      JOIN visits v ON w.well_number = v.well_number
+      WHERE v.dtgwl_mbgl IS NOT NULL
+      GROUP BY w.district, year
+      ORDER BY w.district, year;
+    `);
+    res.json(dbResult.rows);
+  } catch (err) {
+    console.error("Failed to query district yearly averages:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get year-wise average groundwater level data by Block
+app.get('/api/stats/block/yearly', async (req, res) => {
+  try {
+    const dbResult = await pgPool.query(`
+      SELECT 
+        w.district,
+        w.block,
+        SPLIT_PART(v.season_key, '_', 1) as year,
+        ROUND(AVG(v.dtgwl_mbgl)::numeric, 2) as avg_mbgl,
+        COUNT(v.id) as measurement_count
+      FROM wells w
+      JOIN visits v ON w.well_number = v.well_number
+      WHERE v.dtgwl_mbgl IS NOT NULL
+      GROUP BY w.district, w.block, year
+      ORDER BY w.district, w.block, year;
+    `);
+    res.json(dbResult.rows);
+  } catch (err) {
+    console.error("Failed to query block yearly averages:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API: Get all wells (supports optional season/year filters)
 app.get('/api/wells', async (req, res) => {
   const year = req.query.year || '2026';
