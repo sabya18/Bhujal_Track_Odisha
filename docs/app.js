@@ -327,6 +327,19 @@ async function loadAllData() {
       visitsHistory = JSON.parse(storedHistory);
     }
     
+    // Fetch central visits history from PostgreSQL server
+    if (!isStandaloneMode) {
+      try {
+        const historyRes = await fetch('api/visits/history');
+        if (historyRes.ok) {
+          const serverHistory = await historyRes.json();
+          visitsHistory = { ...visitsHistory, ...serverHistory };
+        }
+      } catch (err) {
+        console.log("Could not fetch visits history from Postgres, using local memory:", err);
+      }
+    }
+    
     // 2. Fetch GeoJSON boundaries
     const distRes = await fetch('data/odisha_districts_complete.json');
     odishaDistrictsGeoJSON = await distRes.json();

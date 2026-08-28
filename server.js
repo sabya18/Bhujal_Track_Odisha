@@ -183,6 +183,34 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
+// API: Get all historical visits (for charts and trend plotting)
+app.get('/api/visits/history', async (req, res) => {
+  try {
+    const dbResult = await pgPool.query(`
+      SELECT well_number, season_key, date, dtgwl_mbgl, remarks
+      FROM visits
+    `);
+    
+    const historyMap = {};
+    dbResult.rows.forEach(row => {
+      const wNum = row.well_number;
+      if (!historyMap[wNum]) {
+        historyMap[wNum] = {};
+      }
+      historyMap[wNum][row.season_key] = {
+        date: row.date,
+        value: row.dtgwl_mbgl,
+        remarks: row.remarks || ''
+      };
+    });
+    
+    res.json(historyMap);
+  } catch (err) {
+    console.error("Failed to query visits history from PostgreSQL:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API: Get all wells (supports optional season/year filters)
 app.get('/api/wells', async (req, res) => {
   const year = req.query.year || '2026';
