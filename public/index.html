@@ -517,12 +517,36 @@
       </section>
 
       <!-- TAB content: Trends Analysis -->
-      <section id="tab-trends-view" class="tab-content">
-        <div class="trends-control-panel">
-          <label for="trends-well-select">Select Monitoring Station:</label>
-          <select id="trends-well-select" class="form-control select-large">
-            <option value="">-- Choose Well Number --</option>
-          </select>
+        <div class="trends-control-panel" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: rgba(30, 41, 59, 0.4); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+          <div class="form-group" style="margin: 0;">
+            <label for="trends-level-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">ANALYSIS LEVEL:</label>
+            <select id="trends-level-select" class="form-control" style="min-width: 180px;">
+              <option value="station">📍 Station Level (Well)</option>
+              <option value="block">🏛️ Block Level (Average)</option>
+              <option value="district">🗺️ District Level (Average)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-trends-district" style="margin: 0;">
+            <label for="trends-district-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">DISTRICT:</label>
+            <select id="trends-district-select" class="form-control" style="min-width: 160px;">
+              <option value="ALL">All Districts</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-trends-block" style="margin: 0;">
+            <label for="trends-block-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">BLOCK:</label>
+            <select id="trends-block-select" class="form-control" style="min-width: 160px;">
+              <option value="ALL">All Blocks</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-trends-station" style="margin: 0; flex: 1; min-width: 240px;">
+            <label for="trends-well-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">MONITORING STATION:</label>
+            <select id="trends-well-select" class="form-control select-large">
+              <option value="">-- Choose Well Number --</option>
+            </select>
+          </div>
         </div>
 
         <!-- Selected Well Details Card -->

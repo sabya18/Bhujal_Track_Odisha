@@ -1711,26 +1711,107 @@ function snapPhoto() {
 }
 
 // --- Trends & Chart.js Integration ---
+let trendAnalysisLevel = 'station'; // 'station', 'block', or 'district'
+let selectedTrendDistrict = 'ALL';
+let selectedTrendBlock = 'ALL';
+
 function populateTrendsDropdown() {
-  const trendsSelect = document.getElementById('trends-well-select');
-  trendsSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
-  
-  wellsData.forEach(well => {
-    trendsSelect.innerHTML += `<option value="${well.well_number}">${well.well_number} - ${well.location || 'Unknown'}</option>`;
-  });
-  
-  trendsSelect.addEventListener('change', (e) => {
+  const levelSelect = document.getElementById('trends-level-select');
+  const distSelect = document.getElementById('trends-district-select');
+  const blockSelect = document.getElementById('trends-block-select');
+  const wellSelect = document.getElementById('trends-well-select');
+
+  if (!wellSelect) return;
+
+  // Populate District dropdown
+  if (distSelect) {
+    const districtsSet = new Set();
+    wellsData.forEach(w => {
+      const d = getDistrictFromSheet(w.sheet);
+      if (d && d !== 'Other') districtsSet.add(d);
+    });
+    distSelect.innerHTML = '<option value="ALL">All Districts</option>';
+    Array.from(districtsSet).sort().forEach(d => {
+      distSelect.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  // Update block dropdown
+  const updateBlockDropdown = () => {
+    if (!blockSelect) return;
+    const curDist = distSelect ? distSelect.value : 'ALL';
+    const blocksSet = new Set();
+    wellsData.forEach(w => {
+      const d = getDistrictFromSheet(w.sheet);
+      if ((curDist === 'ALL' || d === curDist) && w.block) {
+        blocksSet.add(w.block);
+      }
+    });
+    blockSelect.innerHTML = '<option value="ALL">All Blocks</option>';
+    Array.from(blocksSet).sort().forEach(b => {
+      blockSelect.innerHTML += `<option value="${b}">${b}</option>`;
+    });
+  };
+
+  // Update wells dropdown
+  const updateWellDropdown = () => {
+    if (!wellSelect) return;
+    const curDist = distSelect ? distSelect.value : 'ALL';
+    const curBlock = blockSelect ? blockSelect.value : 'ALL';
+    wellSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
+
+    wellsData.forEach(well => {
+      const d = getDistrictFromSheet(well.sheet);
+      if (curDist !== 'ALL' && d !== curDist) return;
+      if (curBlock !== 'ALL' && well.block !== curBlock) return;
+      wellSelect.innerHTML += `<option value="${well.well_number}">${well.well_number} - ${well.location || 'Unknown'}</option>`;
+    });
+  };
+
+  updateBlockDropdown();
+  updateWellDropdown();
+
+  if (levelSelect) {
+    levelSelect.onchange = (e) => {
+      trendAnalysisLevel = e.target.value;
+      const distGroup = document.getElementById('group-trends-district');
+      const blockGroup = document.getElementById('group-trends-block');
+      const stationGroup = document.getElementById('group-trends-station');
+      
+      if (distGroup) distGroup.style.display = 'block';
+      if (blockGroup) blockGroup.style.display = trendAnalysisLevel === 'district' ? 'none' : 'block';
+      if (stationGroup) stationGroup.style.display = trendAnalysisLevel === 'station' ? 'block' : 'none';
+
+      updateTrendsTab();
+    };
+  }
+
+  if (distSelect) {
+    distSelect.onchange = (e) => {
+      selectedTrendDistrict = e.target.value;
+      updateBlockDropdown();
+      updateWellDropdown();
+      updateTrendsTab();
+    };
+  }
+
+  if (blockSelect) {
+    blockSelect.onchange = (e) => {
+      selectedTrendBlock = e.target.value;
+      updateWellDropdown();
+      updateTrendsTab();
+    };
+  }
+
+  wellSelect.onchange = (e) => {
     const wellNo = e.target.value;
     if (wellNo) {
-      const well = wellsData.find(w => w.well_number === wellNo);
-      selectedWell = well;
-      updateTrendsTab();
+      selectedWell = wellsData.find(w => w.well_number === wellNo);
     } else {
       selectedWell = null;
-      document.getElementById('trends-well-card').style.display = 'none';
-      document.getElementById('trends-content-box').style.display = 'none';
     }
-  });
+    updateTrendsTab();
+  };
 }
 
 // Mann-Kendall statistics calculator in JS
@@ -1827,55 +1908,125 @@ function calculateMannKendallAndSensSlope(valuesList) {
 }
 
 function updateTrendsTab() {
-  if (!selectedWell) return;
+  const isDark = theme === 'dark'; // Fix: Define isDark inside updateTrendsTab!
+
+  const cardPanel = document.getElementById('trends-well-card');
+  const contentBox = document.getElementById('trends-content-box');
   
-  const dist = getDistrictFromSheet(selectedWell.sheet);
-  
-  // Show details panel
-  document.getElementById('trends-well-card').style.display = 'flex';
-  document.getElementById('trends-content-box').style.display = 'grid';
-  
-  document.getElementById('trends-well-id').textContent = selectedWell.well_number;
-  document.getElementById('trends-well-desc').textContent = selectedWell.location || 'Observation Well';
-  document.getElementById('trends-well-dist').textContent = dist;
-  document.getElementById('trends-well-block').textContent = selectedWell.block || 'ALL';
-  document.getElementById('trends-well-aquifer').textContent = selectedWell.well_type || 'DW';
-  
-  // Calculate trends lists
-  const historicalList = [];
+  let historicalList = [];
+  let titleStr = '';
+  let descStr = '';
+  let distStr = '';
+  let blockStr = '';
+  let aquiferStr = '';
+
   const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
   const seasons = ['PreMon', 'MidMon', 'PostMon', 'Winter'];
-  
-  years.forEach(yr => {
-    seasons.forEach(sea => {
-      const key = `${yr}_${sea}`;
-      
-      // Look up in user visit history
-      let val = null;
-      if (visitsHistory[selectedWell.well_number]?.[key]) {
-        val = visitsHistory[selectedWell.well_number][key].value;
+
+  if (trendAnalysisLevel === 'station') {
+    if (!selectedWell) {
+      // Default to first available well if none explicitly picked
+      if (wellsData && wellsData.length > 0) {
+        selectedWell = wellsData[0];
+      } else {
+        if (cardPanel) cardPanel.style.display = 'none';
+        if (contentBox) contentBox.style.display = 'none';
+        return;
       }
-      
-      // Fallback to preloaded history
-      if (val === null && selectedWell.history && selectedWell.history[key] !== undefined) {
-        val = parseFloat(selectedWell.history[key]);
-      }
-      
-      // Fallback to historical_trends block average
-      if (val === null && historicalTrends && historicalTrends.blocks && selectedWell.block) {
-        const blockNorm = normalizeBlockName(selectedWell.block);
-        const blockStats = historicalTrends.blocks[blockNorm];
-        if (blockStats && blockStats[key] !== undefined) {
-          val = parseFloat(blockStats[key]);
+    }
+    titleStr = selectedWell.well_number;
+    descStr = selectedWell.location || 'Observation Well';
+    distStr = getDistrictFromSheet(selectedWell.sheet);
+    blockStr = selectedWell.block || 'ALL';
+    aquiferStr = selectedWell.well_type || 'DW';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let val = null;
+        if (visitsHistory[selectedWell.well_number]?.[key]) {
+          val = visitsHistory[selectedWell.well_number][key].value;
         }
-      }
-      
-      if (val !== null && !isNaN(val)) {
-        historicalList.push({ season: key, value: val });
-      }
+        if (val === null && selectedWell.history && selectedWell.history[key] !== undefined) {
+          val = parseFloat(selectedWell.history[key]);
+        }
+        if (val !== null && !isNaN(val)) {
+          historicalList.push({ season: key, value: val });
+        }
+      });
     });
-  });
-  
+  } else if (trendAnalysisLevel === 'block') {
+    const curDist = selectedTrendDistrict;
+    const curBlock = selectedTrendBlock !== 'ALL' ? selectedTrendBlock : (wellsData[0] ? wellsData[0].block : 'Angul');
+    
+    titleStr = `${curBlock} Block`;
+    descStr = `Average Groundwater Level Trend for ${curBlock} Block`;
+    distStr = curDist;
+    blockStr = curBlock;
+    aquiferStr = 'Block Composite';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let sum = 0, count = 0;
+        wellsData.forEach(w => {
+          const d = getDistrictFromSheet(w.sheet);
+          if ((curDist === 'ALL' || d === curDist) && (curBlock === 'ALL' || w.block === curBlock)) {
+            let val = null;
+            if (visitsHistory[w.well_number]?.[key]) val = visitsHistory[w.well_number][key].value;
+            if (val === null && w.history && w.history[key] !== undefined) val = parseFloat(w.history[key]);
+            if (val !== null && !isNaN(val) && val > 0) {
+              sum += val;
+              count++;
+            }
+          }
+        });
+        if (count > 0) {
+          historicalList.push({ season: key, value: sum / count });
+        }
+      });
+    });
+  } else if (trendAnalysisLevel === 'district') {
+    const curDist = selectedTrendDistrict !== 'ALL' ? selectedTrendDistrict : 'Cuttack';
+    
+    titleStr = `${curDist} District`;
+    descStr = `Statewide Average Groundwater Level Trend for ${curDist} District`;
+    distStr = curDist;
+    blockStr = 'All District Blocks';
+    aquiferStr = 'District Composite';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let sum = 0, count = 0;
+        wellsData.forEach(w => {
+          const d = getDistrictFromSheet(w.sheet);
+          if (d === curDist) {
+            let val = null;
+            if (visitsHistory[w.well_number]?.[key]) val = visitsHistory[w.well_number][key].value;
+            if (val === null && w.history && w.history[key] !== undefined) val = parseFloat(w.history[key]);
+            if (val !== null && !isNaN(val) && val > 0) {
+              sum += val;
+              count++;
+            }
+          }
+        });
+        if (count > 0) {
+          historicalList.push({ season: key, value: sum / count });
+        }
+      });
+    });
+  }
+
+  if (cardPanel) cardPanel.style.display = 'flex';
+  if (contentBox) contentBox.style.display = 'grid';
+
+  document.getElementById('trends-well-id').textContent = titleStr;
+  document.getElementById('trends-well-desc').textContent = descStr;
+  document.getElementById('trends-well-dist').textContent = distStr;
+  document.getElementById('trends-well-block').textContent = blockStr;
+  document.getElementById('trends-well-aquifer').textContent = aquiferStr;
+
   // 1. Calculate Mann-Kendall statistics
   const mkValues = historicalList.map(h => h.value);
   const mkStats = calculateMannKendallAndSensSlope(mkValues);
@@ -1886,10 +2037,12 @@ function updateTrendsTab() {
   document.getElementById('mk-sens-slope').textContent = mkStats.sensSlope + ' m/year';
   
   const statusBox = document.getElementById('mk-trend-status');
-  statusBox.textContent = mkStats.trendText;
-  statusBox.style.backgroundColor = mkStats.trendColor;
-  statusBox.style.color = '#fff';
-  
+  if (statusBox) {
+    statusBox.textContent = mkStats.trendText;
+    statusBox.style.backgroundColor = mkStats.trendColor;
+    statusBox.style.color = '#fff';
+  }
+
   // 2. Generate Linear Projections
   const annualAverages = [];
   const yrSums = {};
@@ -1940,14 +2093,18 @@ function updateTrendsTab() {
     forecastHTML = '<p class="text-muted text-center p-3">Insufficient historical average data to run projections.</p>';
   }
   
-  document.getElementById('forecast-years-list').innerHTML = forecastHTML;
+  const forecastListElem = document.getElementById('forecast-years-list');
+  if (forecastListElem) forecastListElem.innerHTML = forecastHTML;
+
   const warningBox = document.getElementById('forecast-warning-box');
-  if (warningActive) {
-    warningBox.className = 'forecast-warning-box warning-active';
-    warningBox.textContent = '⚠️ CRITICAL WARNING: Groundwater table depth is projected to deplete beyond safety threshold of 8.5 meters BGL within the next 5 years. Immediate regulation of extraction is recommended.';
-  } else {
-    warningBox.className = 'forecast-warning-box';
-    warningBox.textContent = '✅ Stable Projections: Water table levels are forecasted to remain within stable and safe depths (<8.5m BGL).';
+  if (warningBox) {
+    if (warningActive) {
+      warningBox.className = 'forecast-warning-box warning-active';
+      warningBox.textContent = '⚠️ CRITICAL WARNING: Groundwater table depth is projected to deplete beyond safety threshold of 8.5 meters BGL within the next 5 years. Immediate regulation of extraction is recommended.';
+    } else {
+      warningBox.className = 'forecast-warning-box';
+      warningBox.textContent = '✅ Stable Projections: Water table levels are forecasted to remain within stable and safe depths (<8.5m BGL).';
+    }
   }
   
   // 3. Render Chart.js Level Trends
@@ -1991,10 +2148,11 @@ function updateTrendsTab() {
     chartRainfall.destroy();
   }
   
-  // Grab block rainfall data
+  // Grab block or district rainfall data
   let rainList = [];
-  if (rainfallData && rainfallData.blocks && selectedWell.block) {
-    const blockNorm = normalizeBlockName(selectedWell.block);
+  const targetBlock = (selectedWell && selectedWell.block) ? selectedWell.block : 'Cuttack';
+  if (rainfallData && rainfallData.blocks) {
+    const blockNorm = normalizeBlockName(targetBlock);
     const blockRain = rainfallData.blocks[blockNorm];
     if (blockRain) {
       Object.entries(blockRain).forEach(([yr, val]) => {
