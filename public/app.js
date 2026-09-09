@@ -94,7 +94,7 @@ function getDistrictFromSheet(sheet) {
   if (s.includes('ganjam')) return 'Ganjam';
   if (s.includes('jagatsingh') || s.includes('jspur')) return 'Jagatsinghpur';
   if (s.includes('jajpur')) return 'Jajpur';
-  if (s.includes('jharsuguda')) return 'Jharsuguda';
+  if (s.includes('jharsug')) return 'Jharsuguda';
   if (s.includes('kalahandi')) return 'Kalahandi';
   if (s.includes('kandhamal')) return 'Kandhamal';
   if (s.includes('kendrapara')) return 'Kendrapara';
@@ -108,9 +108,9 @@ function getDistrictFromSheet(sheet) {
   if (s.includes('nuapada')) return 'Nuapada';
   if (s.includes('puri')) return 'Puri';
   if (s.includes('rayagada')) return 'Rayagada';
-  if (s.includes('sambalpur')) return 'Sambalpur';
+  if (s.includes('sambal')) return 'Sambalpur';
   if (s.includes('subarnapur') || s.includes('sonepur')) return 'Subarnapur';
-  if (s.includes('sundargarh')) return 'Sundargarh';
+  if (s.includes('sundar') || s.includes('sunder')) return 'Sundargarh';
   return 'Other';
 }
 
@@ -130,7 +130,7 @@ function normalizeGeoJSONDistrict(distName) {
   if (d.includes('ganjam')) return 'ganjam';
   if (d.includes('jagatsingh') || d.includes('jspur')) return 'jagatsinghpur';
   if (d.includes('jajpur')) return 'jajpur';
-  if (d.includes('jharsuguda')) return 'jharsuguda';
+  if (d.includes('jharsug')) return 'jharsuguda';
   if (d.includes('kalahandi')) return 'kalahandi';
   if (d.includes('kandhamal')) return 'kandhamal';
   if (d.includes('kendrapara')) return 'kendrapara';
@@ -144,9 +144,9 @@ function normalizeGeoJSONDistrict(distName) {
   if (d.includes('nuapada')) return 'nuapada';
   if (d.includes('puri')) return 'puri';
   if (d.includes('rayagada')) return 'rayagada';
-  if (d.includes('sambalpur')) return 'sambalpur';
+  if (d.includes('sambal')) return 'sambalpur';
   if (d.includes('subarnapur') || d.includes('sonepur')) return 'subarnapur';
-  if (d.includes('sundargarh')) return 'sundargarh';
+  if (d.includes('sundar') || d.includes('sunder')) return 'sundargarh';
   return d.replace(/_blocks/g, '').replace(/_urban/g, '').trim();
 }
 
@@ -602,23 +602,25 @@ function renderDashboard() {
     total++;
     statsByDistrict[dist].total++;
     
-    const isAct = isActiveWell(well);
-    if (isAct) {
+    // Primary active monitoring network wells have sl_no <= 1535
+    const isPrimaryActive = (well.sl_no ? well.sl_no <= 1535 : true) && isActiveWell(well);
+    if (isPrimaryActive) {
       active++;
       statsByDistrict[dist].active++;
-      
-      const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
-      if (seasonal.dtgwl_mbgl !== null) {
-        monitored++;
-        statsByDistrict[dist].monitored++;
-        statsByDistrict[dist].sumMbgl += seasonal.dtgwl_mbgl;
-        statsByDistrict[dist].countMbgl++;
-      } else {
-        pending++;
-      }
+    }
+
+    const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+    if (seasonal.dtgwl_mbgl !== null) {
+      monitored++;
+      statsByDistrict[dist].monitored++;
+      statsByDistrict[dist].sumMbgl += seasonal.dtgwl_mbgl;
+      statsByDistrict[dist].countMbgl++;
     }
   });
   
+  // Pending visits are remaining primary active wells requiring completion
+  pending = Math.max(0, active - monitored);
+
   document.getElementById('val-total-wells').textContent = total;
   document.getElementById('val-active-wells').textContent = active;
   document.getElementById('val-monitored-wells').textContent = monitored;
