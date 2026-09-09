@@ -13,7 +13,7 @@ let visitsHistory = {};
 let selectedYear = '2026';
 let selectedSeason = 'Pre-Monsoon';
 let activeTab = 'dashboard';
-let theme = 'dark'; // default theme
+let theme = localStorage.getItem('gw_theme') || 'dark'; // theme state
 
 // Map & Table state
 let mainMap = null;
@@ -442,25 +442,39 @@ async function loadAllData() {
 // --- Theme Switcher ---
 function setupThemeToggle() {
   const toggleBtn = document.getElementById('btn-toggle-theme');
-  toggleBtn.addEventListener('click', () => {
-    if (theme === 'dark') {
-      document.body.className = 'light-theme';
-      theme = 'light';
-      toggleBtn.textContent = '☀️ Light Theme';
-    } else {
-      document.body.className = 'dark-theme';
-      theme = 'dark';
-      toggleBtn.textContent = '🌙 Dark Theme';
-    }
-    // Redraw maps and charts if active to adjust theme colors
-    if (activeTab === 'dashboard') {
-      renderDashboard();
-    } else if (activeTab === 'map-view') {
-      initMap();
-    } else if (activeTab === 'trends-view') {
-      updateTrendsTab();
-    }
-  });
+  
+  // Apply saved theme state on load
+  if (theme === 'light') {
+    document.body.className = 'light-theme';
+    if (toggleBtn) toggleBtn.textContent = '☀️ Light Theme';
+  } else {
+    document.body.className = 'dark-theme';
+    if (toggleBtn) toggleBtn.textContent = '🌙 Dark Theme';
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (theme === 'dark') {
+        document.body.className = 'light-theme';
+        theme = 'light';
+        localStorage.setItem('gw_theme', 'light');
+        toggleBtn.textContent = '☀️ Light Theme';
+      } else {
+        document.body.className = 'dark-theme';
+        theme = 'dark';
+        localStorage.setItem('gw_theme', 'dark');
+        toggleBtn.textContent = '🌙 Dark Theme';
+      }
+      // Redraw maps and charts if active to adjust theme colors
+      if (activeTab === 'dashboard') {
+        renderDashboard();
+      } else if (activeTab === 'map-view') {
+        initMap();
+      } else if (activeTab === 'trends-view') {
+        updateTrendsTab();
+      }
+    });
+  }
 }
 
 // --- Global Selectors ---
