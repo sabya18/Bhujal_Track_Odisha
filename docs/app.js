@@ -2247,12 +2247,14 @@ function setupTelemetryEvents() {
           }).catch(() => ({ ok: false }));
           
           if (!res.ok) {
-            console.warn("Proxy search failed. Trying direct link...");
-            res = await fetch('https://nwdp.nwic.gov.in/api/3/action/datastore_search', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            }).catch(() => ({ ok: false }));
+            console.warn("Proxy search failed. Trying direct GET request with query params...");
+            const queryParams = new URLSearchParams({
+              resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
+              filters: JSON.stringify(queryFilters),
+              limit: limit.toString(),
+              offset: offset.toString()
+            });
+            res = await fetch(`https://nwdp.nwic.gov.in/api/3/action/datastore_search?${queryParams.toString()}`).catch(() => ({ ok: false }));
           }
           
           if (!res.ok) throw new Error("CORS or network connection failed.");
@@ -3080,9 +3082,6 @@ function initAdvancedExportFeatures() {
             if (depthCol !== null && well.depth !== null && well.depth !== undefined && well.depth !== '') {
               updateCell(ws, r, depthCol, well.depth);
             }
-          });
-        });
-
         const outBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
         const outFilename = `WTTO_${districtName}_${seasonName.replace(/\s+/g, '_')}.xlsx`;
         downloadExcelFromBase64(outBase64, outFilename);
@@ -3376,3 +3375,351 @@ function downloadExcelFromBase64(base64, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// --- STANDARD FIELD BOOK FORMAT & IMPORT SYSTEM ---
+let parsedFieldBookRecords = [];
+
+function setupFieldBookImportSystem() {
+  const btnCsv = document.getElementById('btn-download-fieldbook-csv');
+  const btnXlsx = document.getElementById('btn-download-fieldbook-xlsx');
+  const dropZone = document.getElementById('fieldbook-drop-zone');
+  const fileInput = document.getElementById('fieldbook-file-input');
+  const previewCard = document.getElementById('fieldbook-preview-card');
+  const btnCommit = document.getElementById('btn-commit-fieldbook-import');
+
+  if (btnCsv) {
+    btnCsv.addEventListener('click', downloadSampleFieldBookCSV);
+  }
+  if (btnXlsx) {
+    btnXlsx.addEventListener('click', downloadSampleFieldBookXLSX);
+  }
+
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#38bdf8';
+      dropZone.style.background = 'rgba(56, 189, 248, 0.1)';
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = '#334155';
+      dropZone.style.background = 'rgba(15, 23, 42, 0.4)';
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#334155';
+      dropZone.style.background = 'rgba(15, 23, 42, 0.4)';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFieldBookFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFieldBookFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  if (btnCommit) {
+    btnCommit.addEventListener('click', commitFieldBookImport);
+  }
+}
+
+function parseDMSCoordinate(val) {
+  if (!val) return null;
+  if (typeof val === 'number') return val;
+  const str = String(val).trim();
+  if (!str) return null;
+  if (!isNaN(parseFloat(str)) && !str.includes('_') && !str.includes('-')) {
+    return parseFloat(str);
+  }
+  // Parse format 20_33_51 or 20-30-37
+  const parts = str.split(/[_:-]/).map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+  if (parts.length >= 3) {
+    const deg = parts[0];
+    const min = parts[1];
+    const sec = parts[2];
+    const dd = deg + (min / 60) + (sec / 3600);
+    return parseFloat(dd.toFixed(6));
+  } else if (parts.length === 2) {
+    return parseFloat((parts[0] + (parts[1] / 60)).toFixed(6));
+  } else if (parts.length === 1) {
+    return parts[0];
+  }
+  return null;
+}
+
+function downloadSampleFieldBookCSV() {
+  const csvHeaders = "District,BLOCK,Location of Observation wells,Well Type,Well Number,Lat(DMS),Long(DMS),Dt_SiteVisit [dd/mm/yy],Total Depth in mtr,Height of Parapet in mtr,DTGWL [bmp],DTGWL [mbgl],Remarks\n";
+  const sampleRows = [
+    "Cuttack,Athagarh,Gurudijhatia : Girl's High School,BW,07M01BW001,20_33_51,85_48_37,30/05/2026,30.5,0.48,8.58,8.10,Active",
+    "Cuttack,Banki,Baideswar : Bus Stand,DW,07M03DW005,20_21_10,85_23_11,28/05/2026,8.2,0.60,5.45,4.85,Active",
+    "Kendrapara,Aul,Gopinathpur Sasan : Sidheswar Mahadev Temple,DW,17BR01DW001,20_39_12,86_38_11,01/06/2026,4.4,0.65,2.62,1.97,Active",
+    "Jajpur,Badachana,Baisimauza: Inside High School Compound,DW,13BR01DW003,20_29_00,86_09_00,03/06/2026,5.8,0.50,6.30,5.80,Closed"
+  ].join("\n");
+
+  const blob = new Blob([csvHeaders + sampleRows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "Division_Groundwater_Field_Book_Template.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded Official Division Field Book CSV Template! 📥", "success");
+}
+
+function downloadSampleFieldBookXLSX() {
+  if (typeof XLSX === 'undefined') {
+    showToast("XLSX library not loaded.", "error");
+    return;
+  }
+
+  const sampleData = [
+    {
+      "District": "Cuttack",
+      "BLOCK": "Athagarh",
+      "Location of Observation wells": "Gurudijhatia : Girl's High School",
+      "Well Type": "BW",
+      "Well Number": "07M01BW001",
+      "Lat(DMS)": "20_33_51",
+      "Long(DMS)": "85_48_37",
+      "Dt_SiteVisit [dd/mm/yy]": "30/05/2026",
+      "Total Depth in mtr": 30.5,
+      "Height of Parapet in mtr": 0.48,
+      "DTGWL [bmp]": 8.58,
+      "DTGWL [mbgl]": 8.10,
+      "Remarks": "Active"
+    },
+    {
+      "District": "Kendrapara",
+      "BLOCK": "Aul",
+      "Location of Observation wells": "Gopinathpur Sasan : Sidheswar Mahadev Temple",
+      "Well Type": "DW",
+      "Well Number": "17BR01DW001",
+      "Lat(DMS)": "20_39_12",
+      "Long(DMS)": "86_38_11",
+      "Dt_SiteVisit [dd/mm/yy]": "01/06/2026",
+      "Total Depth in mtr": 4.4,
+      "Height of Parapet in mtr": 0.65,
+      "DTGWL [bmp]": 2.62,
+      "DTGWL [mbgl]": 1.97,
+      "Remarks": "Active"
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(sampleData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Division Field Book");
+  XLSX.writeFile(wb, "Division_Groundwater_Field_Book_Template.xlsx");
+  showToast("Downloaded Official Division Field Book Excel Template! 📥", "success");
+}
+
+function handleFieldBookFileSelect(file) {
+  if (!file) return;
+  const fileName = file.name;
+  document.getElementById('fieldbook-file-name').textContent = fileName;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let rawRows = [];
+      if (fileName.endsWith('.csv')) {
+        const text = e.target.result;
+        rawRows = parseCSVToJSON(text);
+      } else {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const firstSheet = wb.SheetNames[0];
+        rawRows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet]);
+      }
+
+      processAndPreviewFieldBookData(rawRows, fileName);
+    } catch (err) {
+      console.error("Field Book Parse Error:", err);
+      showToast(`Error reading file: ${err.message}`, "error");
+    }
+  };
+
+  if (fileName.endsWith('.csv')) {
+    reader.readAsText(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseCSVToJSON(csvText) {
+  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length === 0) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+  const results = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+    if (values.length === headers.length) {
+      const obj = {};
+      headers.forEach((h, idx) => {
+        obj[h] = values[idx];
+      });
+      results.push(obj);
+    }
+  }
+  return results;
+}
+
+function processAndPreviewFieldBookData(rawRows, fileName) {
+  parsedFieldBookRecords = [];
+  let validCount = 0;
+  let invalidCount = 0;
+  const districtsSet = new Set();
+  const tbody = document.getElementById('fieldbook-preview-tbody');
+  tbody.innerHTML = '';
+
+  rawRows.forEach((row, idx) => {
+    const district = row['District'] || row['district'] || row['District Name'] || row['DISTRICT'] || '';
+    const block = row['BLOCK'] || row['Block'] || row['block'] || row['Block Name'] || row['Urban Area'] || '';
+    const stationName = row['Location of Observation wells'] || row['Location'] || row['Station_Name'] || row['Village'] || `Station_${idx+1}`;
+    const stationCode = row['Well Number'] || row['Well ID'] || row['New Well ID'] || row['Old Well ID'] || row['Station_Code'] || `W_${idx+1}`;
+    const wellType = row['Well Type'] || row['Well_Type'] || row['Type'] || 'DW';
+    const visitDate = row['Dt_SiteVisit [dd/mm/yy]'] || row['Dt_SiteVisit'] || row['Reading_Date'] || row['Date'] || new Date().toISOString().split('T')[0];
+    
+    const depthVal = parseFloat(row['Total Depth in mtr'] || row['Total Depth bgl in mtr'] || row['Total Depth'] || row['Well Depth'] || '');
+    const parapetVal = parseFloat(row['Height of Parapet in mtr'] || row['Parapet'] || '');
+    const dtgwlBmpVal = parseFloat(row['DTGWL [bmp]'] || row['DTGWL bmp'] || '');
+    const dtgwlMbglVal = parseFloat(row['DTGWL [mbgl]'] || row['DTGWL mbgl'] || row['Water_Level_m_bgl'] || row['DTGWL'] || '');
+    const remarks = row['Remarks'] || row['Present Well Status'] || row['Well Status'] || 'Active';
+
+    const latRaw = row['Lat(DMS)'] || row['Lat(DD)'] || row['Latitude'] || row['Lat'] || '';
+    const lngRaw = row['Long(DMS)'] || row['Long(DD)'] || row['Longitude'] || row['Long'] || '';
+    const lat = parseDMSCoordinate(latRaw);
+    const lng = parseDMSCoordinate(lngRaw);
+
+    const waterLevel = !isNaN(dtgwlMbglVal) ? dtgwlMbglVal : (!isNaN(dtgwlBmpVal) && !isNaN(parapetVal) ? dtgwlBmpVal - parapetVal : dtgwlBmpVal);
+    const isValid = district.trim().length > 0 && block.trim().length > 0 && (!isNaN(waterLevel) || remarks.toLowerCase() === 'closed');
+
+    if (district.trim()) districtsSet.add(district.trim());
+
+    if (isValid) {
+      validCount++;
+    } else {
+      invalidCount++;
+    }
+
+    const recordObj = {
+      district: district.trim(),
+      block: block.trim(),
+      well_id: String(stationCode).trim(),
+      location: String(stationName).trim(),
+      well_type: String(wellType).trim(),
+      dtgwl_mbgl: isNaN(waterLevel) ? null : parseFloat(waterLevel.toFixed(2)),
+      dtgwl_bmp: isNaN(dtgwlBmpVal) ? null : parseFloat(dtgwlBmpVal.toFixed(2)),
+      total_depth: isNaN(depthVal) ? null : depthVal,
+      parapet_height: isNaN(parapetVal) ? null : parapetVal,
+      date: String(visitDate).trim(),
+      latitude: lat,
+      longitude: lng,
+      remarks: String(remarks).trim(),
+      isValid: isValid
+    };
+    parsedFieldBookRecords.push(recordObj);
+
+    if (idx < 50) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <span style="padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; background: ${isValid ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${isValid ? '#34d399' : '#f87171'}; border: 1px solid ${isValid ? '#10b981' : '#ef4444'};">
+            ${isValid ? '✓ Valid' : '⚠ Missing Data'}
+          </span>
+        </td>
+        <td><strong>${district || '<span style="color:#ef4444">Missing</span>'}</strong></td>
+        <td>${block || '<span style="color:#ef4444">Missing</span>'}</td>
+        <td><code>${stationCode}</code></td>
+        <td>${stationName}</td>
+        <td><span class="badge" style="background:#1e293b; color:#38bdf8; font-size:0.75rem;">${wellType}</span></td>
+        <td style="color: #38bdf8; font-weight: 700;">${isNaN(waterLevel) ? 'N/A' : waterLevel.toFixed(2) + ' m'}</td>
+        <td>${isNaN(dtgwlBmpVal) ? '-' : dtgwlBmpVal.toFixed(2) + ' m'}</td>
+        <td>${isNaN(depthVal) ? '-' : depthVal + ' m'}</td>
+        <td>${isNaN(parapetVal) ? '-' : parapetVal + ' m'}</td>
+        <td>${visitDate}</td>
+        <td><span style="color:#94a3b8;">${remarks}</span></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+
+  document.getElementById('fb-stat-total').textContent = rawRows.length;
+  document.getElementById('fb-stat-valid').textContent = validCount;
+  document.getElementById('fb-stat-invalid').textContent = invalidCount;
+  document.getElementById('fb-stat-districts').textContent = districtsSet.size;
+
+  document.getElementById('fieldbook-preview-card').style.display = 'block';
+  showToast(`Parsed ${rawRows.length} rows (${validCount} valid) across ${districtsSet.size} districts.`, "success");
+}
+
+function commitFieldBookImport() {
+  const validRecords = parsedFieldBookRecords.filter(r => r.isValid);
+  if (validRecords.length === 0) {
+    showToast("No valid records to import.", "error");
+    return;
+  }
+
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  validRecords.forEach(rec => {
+    const existingIndex = wellsData.findIndex(w => 
+      (w.well_id && w.well_id.toLowerCase() === rec.well_id.toLowerCase()) ||
+      (w.district && w.district.toLowerCase() === rec.district.toLowerCase() &&
+       w.block && w.block.toLowerCase() === rec.block.toLowerCase() &&
+       w.location && w.location.toLowerCase() === rec.location.toLowerCase())
+    );
+
+    if (existingIndex >= 0) {
+      wellsData[existingIndex].dtgwl_mbgl = rec.dtgwl_mbgl;
+      wellsData[existingIndex].date = rec.date;
+      if (rec.dtgwl_bmp) wellsData[existingIndex].dtgwl_bmp = rec.dtgwl_bmp;
+      if (rec.total_depth) wellsData[existingIndex].depth = rec.total_depth;
+      if (rec.parapet_height) wellsData[existingIndex].parapet = rec.parapet_height;
+      if (rec.latitude) wellsData[existingIndex].latitude = rec.latitude;
+      if (rec.longitude) wellsData[existingIndex].longitude = rec.longitude;
+      if (rec.well_type) wellsData[existingIndex].well_type = rec.well_type;
+      if (rec.remarks) wellsData[existingIndex].remarks = rec.remarks;
+      updatedCount++;
+    } else {
+      wellsData.push({
+        district: rec.district,
+        block: rec.block,
+        well_id: rec.well_id,
+        location: rec.location,
+        dtgwl_mbgl: rec.dtgwl_mbgl,
+        dtgwl_bmp: rec.dtgwl_bmp,
+        depth: rec.total_depth,
+        parapet: rec.parapet_height,
+        date: rec.date,
+        latitude: rec.latitude || 20.4625,
+        longitude: rec.longitude || 85.8828,
+        well_type: rec.well_type || 'DW',
+        remarks: rec.remarks || 'Active'
+      });
+      addedCount++;
+    }
+  });
+
+  try {
+    localStorage.setItem('gw_wells_data', JSON.stringify(wellsData));
+  } catch (err) {
+    console.warn("Could not save wells to localStorage:", err);
+  }
+
+  if (typeof updateDashboard === 'function') updateDashboard();
+  if (typeof renderDashboardMap === 'function') renderDashboardMap();
+  if (typeof updateDirectoryTable === 'function') updateDirectoryTable();
+
+  showToast(`Successfully imported Division Field Book! 🟢 Added ${addedCount} new stations, updated ${updatedCount} existing records.`, "success");
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setupFieldBookImportSystem();
+});

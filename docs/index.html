@@ -123,6 +123,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a3 3 0 0 1 0-5M3 17.5a6 6 0 0 1 0-10M1 22a9 9 0 0 1 0-15"/><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-2.12-6.36a3 3 0 0 1 0 4.24"/></svg>
           Live Telemetry
         </button>
+        <button class="nav-item" data-tab="fieldbook-view">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v6m-3-3h6"/></svg>
+          Field Book Format
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="user-profile-badge">
@@ -732,6 +736,130 @@
                     Select filters and click "Fetch Live Telemetry" to pull real-time NWIC groundwater data.
                   </td>
                 </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB content: Standard Field Book Format & Import -->
+      <section id="tab-fieldbook-view" class="tab-content">
+        <div class="active-season-banner" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+          <div class="pulse-effect"></div>
+          <span class="banner-title">STANDARD DISTRICT FIELD BOOK FORMAT & DATA IMPORT</span>
+          <span class="banner-value">Upload & Integrate Multi-District Field Observations</span>
+          <span class="banner-icon">📘</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <!-- Format Spec Card -->
+          <div class="card p-4">
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px; color: #38bdf8;">
+              <span>📋</span> Standard Field Book Specification
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+              To ensure all districts in Odisha (or other regions) can import data seamlessly into <strong>Bhujal Track</strong>, use this standard CSV or Excel field book layout.
+            </p>
+
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin: 12px 0;">
+              <h4 style="margin: 0 0 8px 0; font-size: 0.85rem; color: #cbd5e1;">Official Division Field Book Headers:</h4>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
+                <li><strong style="color: #38bdf8;">District</strong>: District Name (e.g. Cuttack, Puri, Kendrapara, Jajpur)</li>
+                <li><strong style="color: #38bdf8;">BLOCK / Urban Area</strong>: Block or Municipality Name</li>
+                <li><strong style="color: #38bdf8;">Location of Observation wells</strong>: Location / Village Description</li>
+                <li><strong style="color: #38bdf8;">Well Type</strong>: Well Type (`DW`, `PZ`, `TW`, `BW`)</li>
+                <li><strong style="color: #38bdf8;">Well Number / Well ID</strong>: Unique Station ID (e.g. `07M01BW001`)</li>
+                <li><strong style="color: #38bdf8;">DTGWL [mbgl] / [bmp]</strong>: Depth to water level below ground level / measuring point</li>
+                <li><strong style="color: #38bdf8;">Dt_SiteVisit [dd/mm/yy]</strong>: Date of site visit observation</li>
+                <li><span style="color: #a855f7;">Total Depth in mtr</span>: Total well depth in meters</li>
+                <li><span style="color: #a855f7;">Height of Parapet in mtr</span>: Parapet height above ground level</li>
+                <li><span style="color: #a855f7;">Lat(DMS / DD) & Long(DMS / DD)</span>: Coordinates (DMS or Decimal)</li>
+                <li><span style="color: #a855f7;">Remarks</span>: Well Status (Active, Closed, Inactive, Defunct, Chocked)</li>
+              </ul>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <button id="btn-download-fieldbook-csv" class="btn btn-primary flex-1" style="font-weight: 600;">
+                📥 Download Division Field Book CSV
+              </button>
+              <button id="btn-download-fieldbook-xlsx" class="btn btn-secondary flex-1" style="font-weight: 600;">
+                📥 Download Division Field Book Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- File Upload Card -->
+          <div class="card p-4" style="display: flex; flex-direction: column;">
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px; color: #10b981;">
+              <span>📤</span> Upload District Field Book
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              Select or drop an official Division Field Book file (`.csv` or `.xlsx`) to parse, validate, and merge records into the system database.
+            </p>
+
+            <div id="fieldbook-drop-zone" style="border: 2px dashed #334155; border-radius: 12px; padding: 32px 20px; text-align: center; background: rgba(15, 23, 42, 0.4); cursor: pointer; transition: all 0.2s ease; margin-top: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+              <span style="font-size: 2.8rem; margin-bottom: 8px;">📁</span>
+              <p style="margin: 0; font-weight: 600; color: #f8fafc; font-size: 1rem;">Click or Drag & Drop Field Book File Here</p>
+              <span style="font-size: 0.8rem; color: #64748b; margin-top: 6px;">Supports official Division Field Book formats (.csv, .xlsx, .xls)</span>
+              <input type="file" id="fieldbook-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation & Preview Results Card -->
+        <div id="fieldbook-preview-card" class="card p-4" style="margin-top: 20px; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+              <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span>🔍</span> Division Field Book Parsed Preview & Validation
+              </h3>
+              <span id="fieldbook-file-name" style="font-size: 0.85rem; color: var(--text-muted);">file.csv</span>
+            </div>
+            <button id="btn-commit-fieldbook-import" class="btn btn-primary" style="background: #10b981; border: none; font-weight: 700; padding: 10px 20px; font-size: 0.95rem;">
+              💾 Save & Merge to Database
+            </button>
+          </div>
+
+          <!-- Stats Badges -->
+          <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+            <div style="background: #1e293b; padding: 10px 16px; border-radius: 8px; flex: 1; text-align: center;">
+              <span style="font-size: 0.75rem; color: #94a3b8; display: block;">Total Rows</span>
+              <strong id="fb-stat-total" style="font-size: 1.4rem; color: #38bdf8;">0</strong>
+            </div>
+            <div style="background: #1e293b; padding: 10px 16px; border-radius: 8px; flex: 1; text-align: center;">
+              <span style="font-size: 0.75rem; color: #94a3b8; display: block;">Valid Records</span>
+              <strong id="fb-stat-valid" style="font-size: 1.4rem; color: #4ade80;">0</strong>
+            </div>
+            <div style="background: #1e293b; padding: 10px 16px; border-radius: 8px; flex: 1; text-align: center;">
+              <span style="font-size: 0.75rem; color: #94a3b8; display: block;">Warnings / Errors</span>
+              <strong id="fb-stat-invalid" style="font-size: 1.4rem; color: #f87171;">0</strong>
+            </div>
+            <div style="background: #1e293b; padding: 10px 16px; border-radius: 8px; flex: 1; text-align: center;">
+              <span style="font-size: 0.75rem; color: #94a3b8; display: block;">Districts Found</span>
+              <strong id="fb-stat-districts" style="font-size: 1.4rem; color: #c084fc;">0</strong>
+            </div>
+          </div>
+
+          <!-- Preview Data Table -->
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>District</th>
+                  <th>BLOCK</th>
+                  <th>Well Number / ID</th>
+                  <th>Location</th>
+                  <th>Well Type</th>
+                  <th>DTGWL (mbgl)</th>
+                  <th>DTGWL (bmp)</th>
+                  <th>Total Depth (m)</th>
+                  <th>Parapet (m)</th>
+                  <th>Dt_SiteVisit</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="fieldbook-preview-tbody">
               </tbody>
             </table>
           </div>

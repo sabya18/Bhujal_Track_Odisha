@@ -2247,12 +2247,14 @@ function setupTelemetryEvents() {
           }).catch(() => ({ ok: false }));
           
           if (!res.ok) {
-            console.warn("Proxy search failed. Trying direct link...");
-            res = await fetch('https://nwdp.nwic.gov.in/api/3/action/datastore_search', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            }).catch(() => ({ ok: false }));
+            console.warn("Proxy search failed. Trying direct GET request with query params...");
+            const queryParams = new URLSearchParams({
+              resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
+              filters: JSON.stringify(queryFilters),
+              limit: limit.toString(),
+              offset: offset.toString()
+            });
+            res = await fetch(`https://nwdp.nwic.gov.in/api/3/action/datastore_search?${queryParams.toString()}`).catch(() => ({ ok: false }));
           }
           
           if (!res.ok) throw new Error("CORS or network connection failed.");

@@ -178,16 +178,34 @@ def main():
     cursor.execute("""
         CREATE TABLE app_users (
             username VARCHAR(50) PRIMARY KEY,
-            password VARCHAR(255) NOT NULL
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(20) DEFAULT 'division',
+            division VARCHAR(100) DEFAULT 'ALL'
         );
     """)
     
-    # Insert default users
-    cursor.execute("""
-        INSERT INTO app_users (username, password)
-        VALUES ('gwd_officer', 'gwd_password_2026')
-        ON CONFLICT (username) DO NOTHING;
-    """)
+    # Insert default admin and division users
+    default_users = [
+        ('admin', 'admin_password_2026', 'admin', 'ALL'),
+        ('gwd_officer', 'gwd_password_2026', 'admin', 'ALL'),
+        ('cuttack_div', 'cuttack2026', 'division', 'CUTTACK DIVISION'),
+        ('balasore_div', 'balasore2026', 'division', 'BALASORE DIVISION'),
+        ('berhampur_div', 'berhampur2026', 'division', 'BERHAMPUR DIVISION'),
+        ('sambalpur_div', 'sambalpur2026', 'division', 'SAMBALPUR DIVISION'),
+        ('bolangir_div', 'bolangir2026', 'division', 'BOLANGIR DIVISION'),
+        ('koraput_div', 'koraput2026', 'division', 'KORAPUT DIVISION'),
+        ('bhawanipatna_div', 'bhawanipatna2026', 'division', 'BHAWANIPATNA DIVISION'),
+        ('angul_div', 'angul2026', 'division', 'ANGUL DIVISION'),
+        ('rs_div', 'rsdiv2026', 'division', 'RS DIVISION'),
+        ('ad_hp_div', 'adhp2026', 'division', 'AD HP DIVISION'),
+    ]
+    for u, p, r, d in default_users:
+        cursor.execute("""
+            INSERT INTO app_users (username, password, role, division)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (username) DO UPDATE
+            SET password = EXCLUDED.password, role = EXCLUDED.role, division = EXCLUDED.division;
+        """, (u, p, r, d))
     
     # Construct wells table
     cursor.execute("""

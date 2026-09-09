@@ -29,15 +29,20 @@ function getCookie(req, name) {
 
 // --- PostgreSQL Database Config ---
 const { Pool } = require('pg');
-const pgPool = new Pool({
-  host: 'localhost',
-  user: 'postgres',
-  password: '1234',
-  database: 'bhujal_monitor',
-  port: 5432,
-  max: 40,
-  idleTimeoutMillis: 30000
-});
+const pgPool = new Pool(
+  process.env.DATABASE_URL ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  } : {
+    host: 'localhost',
+    user: 'postgres',
+    password: '1234',
+    database: 'bhujal_monitor',
+    port: 5432,
+    max: 40,
+    idleTimeoutMillis: 30000
+  }
+);
 
 let isLoaded = false;
 let loadError = null;
@@ -56,13 +61,21 @@ async function initDB() {
 }
 initDB();
 
-// In-memory active session tracking
-const activeSessions = new Set();
+// In-memory active session tracking (Map of token -> { username, role, division })
+const activeSessions = new Map();
 
 // --- Auth Middleware ---
 function authMiddleware(req, res, next) {
-  const token = getCookie(req, 'gwd_session_token');
+  let token = getCookie(req, 'gwd_session_token');
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+
   if (token && activeSessions.has(token)) {
+    req.user = activeSessions.get(token);
     return next();
   }
   
@@ -102,19 +115,30 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const dbResult = await pgPool.query(
-      'SELECT password FROM app_users WHERE username = $1',
+      'SELECT username, password, role, division FROM app_users WHERE LOWER(username) = LOWER($1)',
       [username.trim()]
     );
     
     if (dbResult.rows.length > 0) {
-      const correctPassword = dbResult.rows[0].password;
-      if (correctPassword === password) {
+      const user = dbResult.rows[0];
+      if (user.password === password) {
         const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        activeSessions.add(token);
+        const userSession = {
+          username: user.username,
+          role: user.role || 'division',
+          division: user.division || 'ALL'
+        };
+        activeSessions.set(token, userSession);
 
         // Set Cookie: Max age 7 days, HttpOnly to protect against XSS
         res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
-        return res.json({ success: true, username: username });
+        return res.json({ 
+          success: true, 
+          username: user.username, 
+          role: userSession.role, 
+          division: userSession.division, 
+          token: token 
+        });
       }
     }
     
@@ -247,6 +271,109 @@ app.get('/api/stats/block/yearly', async (req, res) => {
     res.json(dbResult.rows);
   } catch (err) {
     console.error("Failed to query block yearly averages:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get yearly total & seasonal rainfall stats by District or Block
+app.get('/api/stats/rainfall/yearly', (req, res) => {
+  const { district, block } = req.query;
+  const rainfallPath = path.join(__dirname, 'public', 'data', 'rainfall_data.json');
+  
+  if (!fs.existsSync(rainfallPath)) {
+    return res.status(404).json({ error: "Rainfall dataset not found." });
+  }
+  
+  try {
+    const rainfallData = JSON.parse(fs.readFileSync(rainfallPath, 'utf8'));
+    let dataMap = null;
+    let locationName = '';
+    let scopeType = '';
+    
+    if (block) {
+      scopeType = 'Block';
+      locationName = block;
+      // Search in blocks
+      const normBlock = block.trim().toLowerCase();
+      for (const bKey of Object.keys(rainfallData.blocks || {})) {
+        if (bKey.toLowerCase() === normBlock || normBlock.includes(bKey.toLowerCase()) || bKey.toLowerCase().includes(normBlock)) {
+          dataMap = rainfallData.blocks[bKey];
+          locationName = bKey;
+          break;
+        }
+      }
+    }
+    
+    if (!dataMap && district) {
+      scopeType = 'District';
+      locationName = district;
+      // Search in districts
+      const normDist = district.trim().toLowerCase();
+      for (const dKey of Object.keys(rainfallData.districts || {})) {
+        if (dKey.toLowerCase() === normDist || normDist.includes(dKey.toLowerCase()) || dKey.toLowerCase().includes(normDist)) {
+          dataMap = rainfallData.districts[dKey];
+          locationName = dKey;
+          break;
+        }
+      }
+    }
+    
+    if (!dataMap) {
+      // Default to overall Cuttack district if unassigned
+      dataMap = rainfallData.districts['Cuttack'] || {};
+      locationName = district || block || 'Cuttack';
+      scopeType = scopeType || 'District';
+    }
+    
+    // Group seasonal rainfall by calendar year
+    const yearlyBreakdown = {};
+    const seasonsList = ['PreMon', 'MidMon', 'PostMon', 'Winter'];
+    
+    Object.keys(dataMap).forEach(key => {
+      const parts = key.split('_');
+      if (parts.length === 2) {
+        const year = parts[0];
+        const season = parts[1];
+        if (!yearlyBreakdown[year]) {
+          yearlyBreakdown[year] = { PreMon: 0, MidMon: 0, PostMon: 0, Winter: 0, annualTotal: 0 };
+        }
+        const val = parseFloat(dataMap[key]) || 0;
+        yearlyBreakdown[year][season] = val;
+      }
+    });
+    
+    // Compute annual totals & multi-year average
+    const yearlyList = [];
+    let grandTotal = 0;
+    let yearCount = 0;
+    
+    Object.keys(yearlyBreakdown).sort().forEach(yr => {
+      const b = yearlyBreakdown[yr];
+      const annualTotal = b.PreMon + b.MidMon + b.PostMon + b.Winter;
+      b.annualTotal = annualTotal;
+      grandTotal += annualTotal;
+      yearCount++;
+      yearlyList.push({
+        year: yr,
+        preMonsoon: b.PreMon,
+        monsoon: b.MidMon,
+        postMonsoon: b.PostMon,
+        winter: b.Winter,
+        annualTotalRainfallMm: annualTotal
+      });
+    });
+    
+    const averageAnnualRainfallMm = yearCount > 0 ? Math.round((grandTotal / yearCount) * 10) / 10 : 0;
+    
+    res.json({
+      location: locationName,
+      scope: scopeType,
+      averageAnnualRainfallMm: averageAnnualRainfallMm,
+      totalYearsRecorded: yearCount,
+      yearlyData: yearlyList
+    });
+  } catch (err) {
+    console.error("Error computing yearly rainfall stats:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -480,44 +607,38 @@ app.get('/api/export/district', async (req, res) => {
 
 // Proxy endpoint to query NWIC datastore API securely (bypasses CORS blocks)
 const https = require('https');
-app.post('/api/nwic/telemetry', (req, res) => {
-  const { resource_id, filters, limit, offset } = req.body;
-  const postData = JSON.stringify({
-    resource_id: resource_id || '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
-    filters: filters || {},
-    limit: limit || 1000,
-    offset: offset || 0
+app.all('/api/nwic/telemetry', (req, res) => {
+  const params = req.method === 'POST' ? req.body : req.query;
+  const resource_id = params.resource_id || '7de68858-4e78-4a09-8a3a-c63c4a027eeb';
+  const filters = params.filters ? (typeof params.filters === 'string' ? params.filters : JSON.stringify(params.filters)) : '{}';
+  const limit = params.limit || 1000;
+  const offset = params.offset || 0;
+
+  const queryParams = new URLSearchParams({
+    resource_id: resource_id,
+    filters: filters,
+    limit: limit.toString(),
+    offset: offset.toString()
   });
 
-  const options = {
-    hostname: 'nwdp.nwic.gov.in',
-    port: 443,
-    path: '/api/3/action/datastore_search',
-    method: 'POST',
+  const targetUrl = `https://nwdp.nwic.gov.in/api/3/action/datastore_search?${queryParams.toString()}`;
+
+  https.get(targetUrl, {
     headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(postData),
       'Accept': 'application/json',
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
-  };
-
-  const nwReq = https.request(options, (nwRes) => {
+  }, (nwRes) => {
     let body = '';
     nwRes.on('data', (chunk) => body += chunk);
     nwRes.on('end', () => {
       res.setHeader('Content-Type', 'application/json');
       res.status(nwRes.statusCode || 200).send(body);
     });
-  });
-
-  nwReq.on('error', (err) => {
+  }).on('error', (err) => {
     console.error("NWIC Proxy Error:", err);
     res.status(500).json({ error: "Failed to connect to NWIC server: " + err.message });
   });
-
-  nwReq.write(postData);
-  nwReq.end();
 });
 
 // Proxy endpoint to query Google News RSS securely
