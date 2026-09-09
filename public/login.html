@@ -100,6 +100,7 @@
       position: relative;
       display: flex;
       align-items: center;
+      cursor: text;
     }
 
     .input-icon {
@@ -108,6 +109,7 @@
       color: #64748b;
       font-size: 1.1rem;
       pointer-events: none;
+      z-index: 20;
     }
 
     .input-login {
@@ -119,6 +121,12 @@
       padding: 0 16px 0 42px !important;
       color: #ffffff !important;
       font-size: 0.95rem !important;
+      cursor: text !important;
+      pointer-events: auto !important;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      position: relative;
+      z-index: 10;
       transition: all 0.2s ease-in-out;
       box-sizing: border-box;
     }
@@ -188,7 +196,7 @@
         <label for="input-officer-id" class="form-label-login">Officer ID / Username</label>
         <div class="input-wrapper">
           <span class="input-icon">👤</span>
-          <input type="text" id="input-officer-id" class="input-login" placeholder="e.g. gwd_officer" required autocomplete="username">
+          <input type="text" id="input-officer-id" class="input-login" placeholder="e.g. gwd_officer" required autocomplete="username" autofocus>
         </div>
       </div>
 
@@ -208,6 +216,14 @@
   </div>
 
   <script>
+    // Click wrapper to focus input
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+      wrapper.addEventListener('click', () => {
+        const inp = wrapper.querySelector('input');
+        if (inp) inp.focus();
+      });
+    });
+
     // Prevent access if already logged in (Server session cookie checks are primary, sessionStorage is static fallback)
     (function() {
       if (sessionStorage.getItem('gwd_authenticated') === 'true') {
