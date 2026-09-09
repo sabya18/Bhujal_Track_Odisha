@@ -11,7 +11,7 @@ let visitsHistory = {};
 
 // Global Filters (Synced with header selectors)
 let selectedYear = '2026';
-let selectedSeason = 'Mid-Monsoon';
+let selectedSeason = 'Pre-Monsoon';
 let activeTab = 'dashboard';
 let theme = 'dark'; // default theme
 
