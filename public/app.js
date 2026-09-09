@@ -583,6 +583,16 @@ function updateDivisionBadge() {
   const userDiv = getUserDivision();
   const badgeText = document.getElementById('lbl-user-division-name');
   const badgeContainer = document.getElementById('val-user-division-badge');
+  const subTitle = document.getElementById('lbl-sidebar-subtitle');
+
+  if (subTitle) {
+    if (userDiv === 'ALL') {
+      subTitle.textContent = 'GWD Odisha';
+    } else {
+      subTitle.textContent = `GWD Odisha (${userDiv.replace(' DIVISION', '')})`;
+    }
+  }
+
   if (badgeText) {
     if (userDiv === 'ALL') {
       badgeText.textContent = 'Statewide Scope (ALL)';
