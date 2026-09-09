@@ -677,9 +677,29 @@ function renderDashboardMap(statsByDistrict) {
   miniMap = L.map('mini-leaflet-map', {
     zoomControl: false,
     attributionControl: false,
-    scrollWheelZoom: false,
+    scrollWheelZoom: true,
     dragging: true
   }).setView([20.4, 84.5], 6.5);
+
+  // Baselayers
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
+  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+
+  if (isDark) {
+    darkLayer.addTo(miniMap);
+  } else {
+    osmLayer.addTo(miniMap);
+  }
+
+  const baseMaps = {
+    "🌐 Streets": osmLayer,
+    "🛰️ Satellite": satelliteLayer,
+    "🌙 Dark": darkLayer,
+    "🏔️ Terrain": topoLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(miniMap);
   
   const mapStats = {};
   Object.entries(statsByDistrict || {}).forEach(([district, data]) => {
@@ -702,9 +722,9 @@ function renderDashboardMap(statsByDistrict) {
       
       return {
         color: border,
-        weight: 1,
+        weight: 1.5,
         fillColor: data ? data.color : (isDark ? '#1e293b' : '#e2e8f0'),
-        fillOpacity: data ? 0.75 : 0.25
+        fillOpacity: data ? 0.45 : 0.20
       };
     },
     onEachFeature: (feature, layer) => {
@@ -724,11 +744,18 @@ function renderDashboardMap(statsByDistrict) {
       }
       
       layer.bindTooltip(tooltipContent, { sticky: true });
+
+      layer.on('mouseover', function() {
+        this.setStyle({ fillOpacity: 0.75, weight: 2.5 });
+      });
+      layer.on('mouseout', function() {
+        miniBoundaryLayer.resetStyle(this);
+      });
       
       layer.on('click', () => {
         // Zoom dashboard list to district
         const detailsTitle = document.getElementById('lbl-block-details-title');
-        detailsTitle.textContent = `Block Details (${rawName})`;
+        if (detailsTitle) detailsTitle.textContent = `Block Details (${rawName})`;
         filterDashboardBlocks(rawName);
       });
     }
