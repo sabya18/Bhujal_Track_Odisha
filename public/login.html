@@ -269,19 +269,24 @@
         console.warn("Server auth endpoint unavailable. Falling back to local offline validator...");
       }
 
-      // 2. Client-side static fallback (uses simple base64/obfuscated comparisons for GitHub Pages)
-      // "Z3dkX29mZmljZXI=" is base64 for "gwd_officer"
-      // "Z3dkX3Bhc3N3b3JkXzIwMjY=" is base64 for "gwd_password_2026"
-      // "YWRtaW5fY3V0dGFjaw==" is base64 for "admin_cuttack"
-      // "Y3V0dGFja19wYXNzXzk5" is base64 for "cuttack_pass_99"
-      
-      const encUser = btoa(username);
-      const encPass = btoa(password);
-      
-      if (
-        (encUser === "Z3dkX29mZmljZXI=" && encPass === "Z3dkX3Bhc3N3b3JkXzIwMjY=") ||
-        (encUser === "YWRtaW5fY3V0dGFjaw==" && encPass === "Y3V0dGFja19wYXNzXzk5")
-      ) {
+      // 2. Client-side static fallback (offline validator for all GWD Divisions & Admin accounts)
+      const validUsers = {
+        "admin": "admin_password_2026",
+        "gwd_officer": "gwd_password_2026",
+        "admin_cuttack": "cuttack_pass_99",
+        "cuttack_div": "cuttack2026",
+        "balasore_div": "balasore2026",
+        "berhampur_div": "berhampur2026",
+        "sambalpur_div": "sambalpur2026",
+        "bolangir_div": "bolangir2026",
+        "koraput_div": "koraput2026",
+        "bhawanipatna_div": "bhawanipatna2026",
+        "angul_div": "angul2026",
+        "rs_div": "rsdiv2026",
+        "ad_hp_div": "adhp2026"
+      };
+
+      if (validUsers[username] && validUsers[username] === password) {
         sessionStorage.setItem('gwd_authenticated', 'true');
         sessionStorage.setItem('gwd_username', username);
         window.location.href = 'index.html';
