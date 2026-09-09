@@ -370,6 +370,34 @@ async function loadAllData() {
     // 4. Fetch WTTO preloaded data
     const wttoRes = await fetch('data/wtto_preloaded.json');
     wttoData = await wttoRes.json();
+
+    // Merge WTTO preloaded history & stations into wellsData for 100% data parity
+    if (wttoData && Array.isArray(wttoData)) {
+      const wttoMap = new Map();
+      wttoData.forEach(w => {
+        if (w && w.well_number) wttoMap.set(w.well_number, w);
+      });
+      
+      if (!wellsData || wellsData.length === 0) {
+        wellsData = wttoData;
+      } else {
+        wellsData.forEach(w => {
+          if (w && w.well_number && wttoMap.has(w.well_number)) {
+            const wttoItem = wttoMap.get(w.well_number);
+            if (!w.history && wttoItem.history) {
+              w.history = wttoItem.history;
+            }
+          }
+        });
+        const existingSet = new Set((wellsData || []).map(w => w.well_number));
+        wttoData.forEach(w => {
+          if (w && w.well_number && !existingSet.has(w.well_number)) {
+            wellsData.push(w);
+          }
+        });
+      }
+    }
+
     console.log("All data assets fetched and initialized successfully!");
   } catch (err) {
     console.error("Failed to load databases. Falling back to preloaded caches:", err);
