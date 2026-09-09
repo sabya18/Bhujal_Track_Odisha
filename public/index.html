@@ -193,35 +193,36 @@
         </div>
 
         <div class="dashboard-stats-grid">
-          <div class="stat-card">
+          <div class="stat-card stat-card-total">
             <div class="stat-icon info">📊</div>
             <div class="stat-info">
               <h3>Total Stations</h3>
-              <p class="stat-value" id="val-total-wells">-</p>
+              <p class="stat-value val-total" id="val-total-wells">-</p>
+              <span class="stat-badge badge-blue">Statewide Network</span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon success">🟢</div>
+          <div class="stat-card stat-card-active">
+            <div class="stat-icon success">💧</div>
             <div class="stat-info">
               <h3>Active Wells</h3>
-              <p class="stat-value" id="val-active-wells">-</p>
-              <span class="stat-subtext">Our primary area of interest</span>
+              <p class="stat-value val-active" id="val-active-wells">-</p>
+              <span class="stat-badge badge-emerald">Primary Target</span>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card stat-card-monitored">
             <div class="stat-icon warning">✅</div>
             <div class="stat-info">
               <h3>Monitored Wells</h3>
-              <p class="stat-value" id="val-monitored-wells">-</p>
-              <span class="stat-subtext" id="val-monitored-percent">-% of active wells</span>
+              <p class="stat-value val-monitored" id="val-monitored-wells">-</p>
+              <span class="stat-badge badge-amber" id="val-monitored-percent">-% Completed</span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon danger">⚠️</div>
+          <div class="stat-card stat-card-pending">
+            <div class="stat-icon danger">⚡</div>
             <div class="stat-info">
               <h3>Pending Wells</h3>
-              <p class="stat-value" id="val-pending-wells">-</p>
-              <span class="stat-subtext">Requires field visits</span>
+              <p class="stat-value val-pending" id="val-pending-wells">-</p>
+              <span class="stat-badge badge-rose">Field Action Needed</span>
             </div>
           </div>
         </div>
@@ -271,7 +272,7 @@
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                 
                 <!-- Section 1: Field Book -->
-                <div class="export-box">
+                <div class="export-box export-box-fieldbook">
                   <h3>📖 Field Book Export</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Export division-specific field books filled with measurements.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
@@ -293,7 +294,7 @@
                 </div>
 
                 <!-- Section 2: GRASP Export -->
-                <div class="export-box">
+                <div class="export-box export-box-grasp">
                   <h3>📊 GRASP Export (CSV)</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Export CSV formatted for GRASP data submission by district.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
@@ -307,21 +308,21 @@
                       <option value="Balasore">Balasore</option>
                       <option value="Bolangir">Bolangir</option>
                     </select>
-                    <button id="btn-export-grasp" class="btn btn-primary w-100">Export CSV</button>
+                    <button id="btn-export-grasp" class="btn btn-success w-100">Export CSV</button>
                   </div>
                 </div>
 
                 <!-- Section 3: Not Monitored Report -->
-                <div class="export-box">
+                <div class="export-box export-box-notmonitored">
                   <h3>🚫 Not Monitored Report</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Export all active stations that are missing measurements for this season.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column; justify-content: flex-end; height: 75px;">
-                    <button id="btn-export-notmonitored" class="btn btn-primary w-100">Download Report (.xlsx)</button>
+                    <button id="btn-export-notmonitored" class="btn btn-warning w-100">Download Report (.xlsx)</button>
                   </div>
                 </div>
 
                 <!-- Section 4: WTTO Custom Export -->
-                <div class="export-box">
+                <div class="export-box export-box-wtto">
                   <h3>📄 WTTO Custom Export</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Fill and download a custom WTTO template with monitoring data.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
@@ -336,12 +337,12 @@
                       <option value="blocks">Blocks Sheet Only</option>
                       <option value="urban">Urban Sheet Only</option>
                     </select>
-                    <button id="btn-export-wtto" class="btn btn-primary w-100">Export WTTO Excel</button>
+                    <button id="btn-export-wtto" class="btn btn-purple w-100">Export WTTO Excel</button>
                   </div>
                 </div>
 
                 <!-- Section 5: WTTO Template Manager -->
-                <div class="export-box">
+                <div class="export-box export-box-template">
                   <h3>⚙️ WTTO Template Manager</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Upload raw WTTO workbooks to serve as templates for custom export.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
