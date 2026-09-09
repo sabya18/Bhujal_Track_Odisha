@@ -847,6 +847,7 @@ function filterDashboardBlocks(districtName) {
 let isPresentationMode = false;
 let showWaterDepthMap = true;
 let showBlocksOverlay = false;
+let showStationMarkers = true;
 
 function initMap() {
   const mapElement = document.getElementById('leaflet-map-element');
@@ -864,6 +865,26 @@ function initMap() {
     zoomControl: true,
     attributionControl: false
   }).setView([20.4, 84.5], 7);
+
+  // Baselayers
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
+  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+
+  if (isDark) {
+    darkLayer.addTo(mainMap);
+  } else {
+    osmLayer.addTo(mainMap);
+  }
+
+  const baseMaps = {
+    "🌐 Streets": osmLayer,
+    "🛰️ Satellite": satelliteLayer,
+    "🌙 Dark": darkLayer,
+    "🏔️ Terrain": topoLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(mainMap);
   
   mapLabelsGroup = L.layerGroup().addTo(mainMap);
   
@@ -1040,6 +1061,10 @@ function plotMarkersOnMap() {
   if (!mainMarkersGroup) return;
   mainMarkersGroup.clearLayers();
   
+  if (!showStationMarkers) {
+    return; // Don't plot circle markers when checkbox is unchecked
+  }
+
   const districtFilter = document.getElementById('map-filter-district').value;
   const blockFilter = document.getElementById('map-filter-block').value;
   const statusFilter = document.getElementById('map-filter-status').value;
@@ -1102,10 +1127,19 @@ function plotMarkersOnMap() {
 
 function setupActionButtons() {
   // Map overlays toggles
+  const chkPins = document.getElementById('chk-toggle-station-pins');
   const chkWater = document.getElementById('chk-toggle-water-map');
   const chkBlocks = document.getElementById('chk-toggle-blocks');
   const btnPres = document.getElementById('btn-toggle-presentation');
   
+  if (chkPins) {
+    chkPins.checked = showStationMarkers;
+    chkPins.onchange = (e) => {
+      showStationMarkers = e.target.checked;
+      plotMarkersOnMap();
+    };
+  }
+
   chkWater.onchange = (e) => {
     showWaterDepthMap = e.target.checked;
     initMap();
