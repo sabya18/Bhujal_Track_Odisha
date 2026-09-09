@@ -575,16 +575,58 @@ function setupTabs() {
 }
 
 // --- Dashboard Logic ---
+function getUserDivision() {
+  return sessionStorage.getItem('gwd_user_division') || 'ALL';
+}
+
+function updateDivisionBadge() {
+  const userDiv = getUserDivision();
+  const badgeText = document.getElementById('lbl-user-division-name');
+  const badgeContainer = document.getElementById('val-user-division-badge');
+  if (badgeText) {
+    if (userDiv === 'ALL') {
+      badgeText.textContent = 'Statewide Scope (ALL)';
+      if (badgeContainer) {
+        const iconSpan = badgeContainer.querySelector('span');
+        if (iconSpan) iconSpan.textContent = '🌐';
+      }
+    } else {
+      badgeText.textContent = userDiv;
+      if (badgeContainer) {
+        const iconSpan = badgeContainer.querySelector('span');
+        if (iconSpan) iconSpan.textContent = '🏢';
+      }
+    }
+  }
+}
+
 const getDivisionForDistrict = (district) => {
-  const lower = (district || '').toLowerCase();
-  if (lower.includes('cuttack')) return 'Cuttack';
-  if (lower.includes('jajpur')) return 'Jajpur';
-  if (lower.includes('kendrapara')) return 'Kendrapara';
-  if (lower.includes('jagatsinghpur') || lower.includes('jspur')) return 'Jagatsinghpur';
-  return 'Other';
+  const d = (district || '').toLowerCase().replace(/[\s_\.\-]+/g, '');
+  if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('jagatsingh') || d.includes('jspur')) return 'CUTTACK DIVISION';
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj')) return 'BALASORE DIVISION';
+  if (d.includes('ganjam') || d.includes('gajapati')) return 'BERHAMPUR DIVISION';
+  if (d.includes('sambal') || d.includes('jharsug') || d.includes('sundar') || d.includes('sunder') || d.includes('deogarh') || d.includes('debagarh')) return 'SAMBALPUR DIVISION';
+  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur') || d.includes('boudh')) return 'BOLANGIR DIVISION';
+  if (d.includes('koraput') || d.includes('malkangiri') || d.includes('rayagada')) return 'KORAPUT DIVISION';
+  if (d.includes('kalahandi') || d.includes('nuapada') || d.includes('nabarang') || d.includes('nawarang')) return 'BHAWANIPATNA DIVISION';
+  if (d.includes('angul') || d.includes('dhenkanal')) return 'ANGUL DIVISION';
+  return 'CUTTACK DIVISION';
 };
 
+function getScopedWellsData() {
+  const userDiv = getUserDivision();
+  if (userDiv === 'ALL') return wellsData;
+  return wellsData.filter(well => {
+    const dist = getDistrictFromSheet(well.sheet);
+    const div = getDivisionForDistrict(dist);
+    return div === userDiv;
+  });
+}
+
 function renderDashboard() {
+  updateDivisionBadge();
+  const targetWells = getScopedWellsData();
+
   // Calculate Stats
   let total = 0;
   let active = 0;
@@ -593,7 +635,7 @@ function renderDashboard() {
   
   const statsByDistrict = {};
   
-  wellsData.forEach(well => {
+  targetWells.forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
     if (!statsByDistrict[dist]) {
       statsByDistrict[dist] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
@@ -892,7 +934,7 @@ function initMap() {
   
   // Calculate average water levels per district
   const districtAverages = {};
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
       const dist = getDistrictFromSheet(well.sheet);
       const key = normalizeGeoJSONDistrict(dist);
@@ -909,7 +951,7 @@ function initMap() {
 
   // Calculate average water levels per block
   const blockAverages = {};
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
       const blockKey = (well.block || '').toLowerCase().trim();
       if (!blockAverages[blockKey]) {
@@ -1072,7 +1114,7 @@ function plotMarkersOnMap() {
   const statusFilter = document.getElementById('map-filter-status').value;
   const query = document.getElementById('map-search-input').value.toLowerCase();
   
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
     const isAct = isActiveWell(well);
     const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
@@ -1277,7 +1319,7 @@ function populateFilterDropdowns() {
   const districts = new Set();
   const blocksByDistrict = {};
   
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
     districts.add(dist);
     if (!blocksByDistrict[dist]) {
@@ -1335,7 +1377,7 @@ function applyFilters() {
   const type = document.getElementById('table-filter-type').value;
   const status = document.getElementById('table-filter-status').value;
   
-  filteredWells = wellsData.filter(well => {
+  filteredWells = getScopedWellsData().filter(well => {
     const dist = getDistrictFromSheet(well.sheet);
     const isAct = isActiveWell(well);
     
@@ -1728,7 +1770,7 @@ function populateTrendsDropdown() {
   // Populate District dropdown
   if (distSelect) {
     const districtsSet = new Set();
-    wellsData.forEach(w => {
+    getScopedWellsData().forEach(w => {
       const d = getDistrictFromSheet(w.sheet);
       if (d && d !== 'Other') districtsSet.add(d);
     });
@@ -1743,7 +1785,7 @@ function populateTrendsDropdown() {
     if (!blockSelect) return;
     const curDist = distSelect ? distSelect.value : 'ALL';
     const blocksSet = new Set();
-    wellsData.forEach(w => {
+    getScopedWellsData().forEach(w => {
       const d = getDistrictFromSheet(w.sheet);
       if ((curDist === 'ALL' || d === curDist) && w.block) {
         blocksSet.add(w.block);
@@ -1762,7 +1804,7 @@ function populateTrendsDropdown() {
     const curBlock = blockSelect ? blockSelect.value : 'ALL';
     wellSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
 
-    wellsData.forEach(well => {
+    getScopedWellsData().forEach(well => {
       const d = getDistrictFromSheet(well.sheet);
       if (curDist !== 'ALL' && d !== curDist) return;
       if (curBlock !== 'ALL' && well.block !== curBlock) return;

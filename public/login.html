@@ -247,6 +247,22 @@
       submitBtn.textContent = 'Verifying Credentials...';
       errorBanner.style.display = 'none';
 
+      const divisionMap = {
+        "admin": "ALL",
+        "gwd_officer": "ALL",
+        "admin_cuttack": "CUTTACK DIVISION",
+        "cuttack_div": "CUTTACK DIVISION",
+        "balasore_div": "BALASORE DIVISION",
+        "berhampur_div": "BERHAMPUR DIVISION",
+        "sambalpur_div": "SAMBALPUR DIVISION",
+        "bolangir_div": "BOLANGIR DIVISION",
+        "koraput_div": "KORAPUT DIVISION",
+        "bhawanipatna_div": "BHAWANIPATNA DIVISION",
+        "angul_div": "ANGUL DIVISION",
+        "rs_div": "RS DIVISION",
+        "ad_hp_div": "AD HP DIVISION"
+      };
+
       // 1. Try server API login first (if backend is active)
       try {
         const res = await fetch('api/login', {
@@ -256,8 +272,11 @@
         });
         
         if (res.ok) {
+          const authData = await res.json();
+          const userDiv = authData.division || divisionMap[username] || 'ALL';
           sessionStorage.setItem('gwd_authenticated', 'true');
           sessionStorage.setItem('gwd_username', username);
+          sessionStorage.setItem('gwd_user_division', userDiv);
           window.location.href = 'index.html';
           return;
         } else if (res.status === 401) {
@@ -287,8 +306,10 @@
       };
 
       if (validUsers[username] && validUsers[username] === password) {
+        const userDiv = divisionMap[username] || 'ALL';
         sessionStorage.setItem('gwd_authenticated', 'true');
         sessionStorage.setItem('gwd_username', username);
+        sessionStorage.setItem('gwd_user_division', userDiv);
         window.location.href = 'index.html';
       } else {
         showError("Authentication failed. Invalid GWD Officer credentials.");
