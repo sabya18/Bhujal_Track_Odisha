@@ -47,16 +47,122 @@ const pgPool = new Pool(
 let isLoaded = false;
 let loadError = null;
 
-// Test database connection on startup
+// Test database connection & auto-initialize tables and default users on startup
 async function initDB() {
   try {
     await pgPool.query('SELECT 1');
     isLoaded = true;
     loadError = null;
     console.log("PostgreSQL database connected successfully.");
+
+    // 1. Create app_users table
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS app_users (
+        username VARCHAR(50) PRIMARY KEY,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(20) DEFAULT 'division',
+        division VARCHAR(100) DEFAULT 'ALL'
+      );
+    `);
+
+    // 2. Insert default admin & division users
+    const defaultUsers = [
+      ['admin', 'admin_password_2026', 'admin', 'ALL'],
+      ['gwd_officer', 'gwd_password_2026', 'admin', 'ALL'],
+      ['cuttack_div', 'cuttack2026', 'division', 'CUTTACK DIVISION'],
+      ['balasore_div', 'balasore2026', 'division', 'BALASORE DIVISION'],
+      ['berhampur_div', 'berhampur2026', 'division', 'BERHAMPUR DIVISION'],
+      ['sambalpur_div', 'sambalpur2026', 'division', 'SAMBALPUR DIVISION'],
+      ['bolangir_div', 'bolangir2026', 'division', 'BOLANGIR DIVISION'],
+      ['koraput_div', 'koraput2026', 'division', 'KORAPUT DIVISION'],
+      ['bhawanipatna_div', 'bhawanipatna2026', 'division', 'BHAWANIPATNA DIVISION'],
+      ['angul_div', 'angul2026', 'division', 'ANGUL DIVISION'],
+      ['rs_div', 'rsdiv2026', 'division', 'RS DIVISION'],
+      ['ad_hp_div', 'adhp2026', 'division', 'AD HP DIVISION'],
+    ];
+
+    for (const [u, p, r, d] of defaultUsers) {
+      await pgPool.query(`
+        INSERT INTO app_users (username, password, role, division)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (username) DO UPDATE
+        SET password = EXCLUDED.password, role = EXCLUDED.role, division = EXCLUDED.division;
+      `, [u, p, r, d]);
+    }
+
+    // 3. Create wells table
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS wells (
+        well_number VARCHAR(50) PRIMARY KEY,
+        sheet VARCHAR(100),
+        district VARCHAR(100),
+        block VARCHAR(150),
+        location TEXT,
+        well_type VARCHAR(20),
+        lat_raw VARCHAR(50),
+        lon_raw VARCHAR(50),
+        lat DOUBLE PRECISION,
+        lon DOUBLE PRECISION,
+        depth VARCHAR(50),
+        parapet_height DOUBLE PRECISION DEFAULT 0.0,
+        msl VARCHAR(50),
+        rl VARCHAR(50)
+      );
+    `);
+
+    // 4. Create visits table
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS visits (
+        id SERIAL PRIMARY KEY,
+        well_number VARCHAR(50) REFERENCES wells(well_number) ON DELETE CASCADE,
+        season_key VARCHAR(50) NOT NULL,
+        date VARCHAR(50),
+        dtgwl_bmp DOUBLE PRECISION,
+        dtgwl_mbgl DOUBLE PRECISION,
+        remarks TEXT,
+        UNIQUE(well_number, season_key)
+      );
+    `);
+
+    // 5. Seed baseline wells if table is empty
+    const countRes = await pgPool.query('SELECT count(*) FROM wells');
+    if (parseInt(countRes.rows[0].count, 10) === 0) {
+      const wellsJsonPath = path.join(__dirname, 'public', 'data', 'wells.json');
+      if (fs.existsSync(wellsJsonPath)) {
+        const wellsData = JSON.parse(fs.readFileSync(wellsJsonPath, 'utf8'));
+        console.log(`Auto-seeding ${wellsData.length} baseline wells into PostgreSQL...`);
+        for (const w of wellsData) {
+          const latVal = w.lat ?? w.latitude ?? null;
+          const lonVal = w.lon ?? w.longitude ?? null;
+          await pgPool.query(`
+            INSERT INTO wells (well_number, sheet, district, block, location, well_type, lat_raw, lon_raw, lat, lon, depth, parapet_height, msl, rl)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (well_number) DO NOTHING;
+          `, [
+            w.well_number,
+            w.sheet || '',
+            w.district || '',
+            w.block || '',
+            w.location || '',
+            w.well_type || 'DW',
+            w.lat_raw || String(latVal || ''),
+            w.lon_raw || String(lonVal || ''),
+            latVal ? parseFloat(latVal) : null,
+            lonVal ? parseFloat(lonVal) : null,
+            w.depth || '',
+            w.parapet_height ? parseFloat(w.parapet_height) : 0.0,
+            w.msl || '',
+            w.rl || ''
+          ]);
+        }
+        console.log("Baseline wells seeded successfully into PostgreSQL!");
+      }
+    }
+
+    console.log("Database tables & default users initialized successfully.");
   } catch (err) {
     loadError = err.message;
-    console.error("Failed to connect to PostgreSQL:", err);
+    console.error("Failed to connect or initialize PostgreSQL:", err);
   }
 }
 initDB();
