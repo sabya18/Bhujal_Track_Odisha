@@ -287,8 +287,16 @@ app.use('/api', (req, res, next) => {
   authMiddleware(req, res, next);
 });
 
-// Serve main public files for authenticated users
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve main public files for authenticated users with cache-invalidation headers
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
 
 
 const UPLOADS_DIR = path.join(__dirname, 'uploads');

@@ -11,9 +11,9 @@ let visitsHistory = {};
 
 // Global Filters (Synced with header selectors)
 let selectedYear = '2026';
-let selectedSeason = 'Mid-Monsoon';
+let selectedSeason = 'Pre-Monsoon';
 let activeTab = 'dashboard';
-let theme = 'dark'; // default theme
+let theme = localStorage.getItem('gw_theme') || 'dark'; // theme state
 
 // Map & Table state
 let mainMap = null;
@@ -81,50 +81,113 @@ const newsArticles = [
 function getDistrictFromSheet(sheet) {
   if (!sheet) return 'Other';
   const s = sheet.toLowerCase().replace(/[\s_\.\-]+/g, '');
-  if (s.includes('kendrapara')) return 'Kendrapara';
-  if (s.includes('cuttack')) return 'Cuttack';
-  if (s.includes('jajpur')) return 'Jajpur';
-  if (s.includes('jspur') || s.includes('jagatsingh')) return 'Jagatsinghpur';
-  if (s.includes('balasore') || s.includes('baleshwar')) return 'Balasore';
+  if (s.includes('angul')) return 'Angul';
+  if (s.includes('balasore') || s.includes('baleshwar') || s.includes('balesore')) return 'Balasore';
+  if (s.includes('bargarh')) return 'Bargarh';
   if (s.includes('bhadrak')) return 'Bhadrak';
-  if (s.includes('mayurbhanj')) return 'Mayurbhanj';
   if (s.includes('bolangir') || s.includes('balangir')) return 'Bolangir';
+  if (s.includes('boudh')) return 'Boudh';
+  if (s.includes('cuttack')) return 'Cuttack';
   if (s.includes('deogarh') || s.includes('debagarh')) return 'Deogarh';
   if (s.includes('dhenkanal')) return 'Dhenkanal';
-  if (s.includes('ganjam')) return 'Ganjam';
   if (s.includes('gajapati')) return 'Gajapati';
-  if (s.includes('jharsuguda')) return 'Jharsuguda';
+  if (s.includes('ganjam')) return 'Ganjam';
+  if (s.includes('jagatsingh') || s.includes('jspur')) return 'Jagatsinghpur';
+  if (s.includes('jajpur')) return 'Jajpur';
+  if (s.includes('jharsug')) return 'Jharsuguda';
   if (s.includes('kalahandi')) return 'Kalahandi';
   if (s.includes('kandhamal')) return 'Kandhamal';
+  if (s.includes('kendrapara')) return 'Kendrapara';
   if (s.includes('keonjhar') || s.includes('kendujhar')) return 'Keonjhar';
   if (s.includes('khurda') || s.includes('khordha')) return 'Khordha';
   if (s.includes('koraput')) return 'Koraput';
   if (s.includes('malkangiri')) return 'Malkangiri';
-  if (s.includes('nabarangpur') || s.includes('nawarangpur')) return 'Nabarangpur';
+  if (s.includes('mayurbhanj')) return 'Mayurbhanj';
+  if (s.includes('nabarang') || s.includes('nawarang')) return 'Nabarangpur';
   if (s.includes('nayagarh')) return 'Nayagarh';
   if (s.includes('nuapada')) return 'Nuapada';
   if (s.includes('puri')) return 'Puri';
   if (s.includes('rayagada')) return 'Rayagada';
-  if (s.includes('sambalpur')) return 'Sambalpur';
+  if (s.includes('sambal')) return 'Sambalpur';
   if (s.includes('subarnapur') || s.includes('sonepur')) return 'Subarnapur';
-  if (s.includes('sundargarh')) return 'Sundargarh';
+  if (s.includes('sundar') || s.includes('sunder')) return 'Sundargarh';
   return 'Other';
+}
+
+function getDistrictFromWell(well) {
+  if (!well) return 'Other';
+  if (well.district && typeof well.district === 'string' && well.district.trim()) {
+    const raw = well.district.trim();
+    const s = raw.toLowerCase().replace(/[\s_\.\-]+/g, '');
+    if (s.includes('angul')) return 'Angul';
+    if (s.includes('balasore') || s.includes('baleshwar') || s.includes('balesore')) return 'Balasore';
+    if (s.includes('bargarh')) return 'Bargarh';
+    if (s.includes('bhadrak')) return 'Bhadrak';
+    if (s.includes('bolangir') || s.includes('balangir')) return 'Bolangir';
+    if (s.includes('boudh') || s.includes('baudh')) return 'Boudh';
+    if (s.includes('cuttack')) return 'Cuttack';
+    if (s.includes('deogarh') || s.includes('debagarh')) return 'Deogarh';
+    if (s.includes('dhenkanal')) return 'Dhenkanal';
+    if (s.includes('gajapati')) return 'Gajapati';
+    if (s.includes('ganjam')) return 'Ganjam';
+    if (s.includes('jagatsingh') || s.includes('jspur')) return 'Jagatsinghpur';
+    if (s.includes('jajpur')) return 'Jajpur';
+    if (s.includes('jharsug')) return 'Jharsuguda';
+    if (s.includes('kalahandi')) return 'Kalahandi';
+    if (s.includes('kandhamal') || s.includes('phulbani')) return 'Kandhamal';
+    if (s.includes('kendrapara')) return 'Kendrapara';
+    if (s.includes('keonjhar') || s.includes('kendujhar')) return 'Keonjhar';
+    if (s.includes('khurda') || s.includes('khordha')) return 'Khordha';
+    if (s.includes('koraput')) return 'Koraput';
+    if (s.includes('malkangiri')) return 'Malkangiri';
+    if (s.includes('mayurbhanj')) return 'Mayurbhanj';
+    if (s.includes('nabarang') || s.includes('nawarang')) return 'Nabarangpur';
+    if (s.includes('nayagarh')) return 'Nayagarh';
+    if (s.includes('nuapada')) return 'Nuapada';
+    if (s.includes('puri')) return 'Puri';
+    if (s.includes('rayagada')) return 'Rayagada';
+    if (s.includes('sambal')) return 'Sambalpur';
+    if (s.includes('subarnapur') || s.includes('sonepur')) return 'Subarnapur';
+    if (s.includes('sundar') || s.includes('sunder')) return 'Sundargarh';
+    return raw;
+  }
+  return getDistrictFromSheet(well.sheet);
 }
 
 function normalizeGeoJSONDistrict(distName) {
   if (!distName) return '';
   const d = distName.toLowerCase().replace(/[\s_\.\-]+/g, '');
-  if (d.includes('kendrapara')) return d.includes('urban') ? 'kendrapara urban' : 'kendrapara';
-  if (d.includes('cuttack')) return d.includes('urban') ? 'cuttack urban' : 'cuttack';
-  if (d.includes('jajpur')) return d.includes('urban') ? 'jajpur urban' : 'jajpur';
-  if (d.includes('jagatsinghpur') || d.includes('jagatsinghapur') || d.includes('jspur') || d.includes('jagatsingpur')) return 'jagatsinghpur';
-  if (d.includes('bolangir') || d.includes('balangir')) return 'balangir';
-  if (d.includes('bhubaneswar') || d.includes('khurda') || d.includes('khordha')) return 'khordha';
-  if (d.includes('nawarangapur') || d.includes('nabarangapur') || d.includes('nabarangpur')) return 'nabarangpur';
-  if (d.includes('debagarh') || d.includes('deogarh')) return 'deogarh';
-  if (d.includes('baleshwar') || d.includes('balasore') || d.includes('balesore') || d.includes('baleswar')) return 'balasore';
-  if (d.includes('kendujhar') || d.includes('keonjhar')) return 'keonjhar';
-  return distName.toLowerCase().replace(/_blocks/g, '').replace(/_urban/g, '').trim();
+  if (d.includes('angul')) return 'angul';
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore')) return 'balasore';
+  if (d.includes('bargarh')) return 'bargarh';
+  if (d.includes('bhadrak')) return 'bhadrak';
+  if (d.includes('bolangir') || d.includes('balangir')) return 'bolangir';
+  if (d.includes('boudh')) return 'boudh';
+  if (d.includes('cuttack')) return 'cuttack';
+  if (d.includes('deogarh') || d.includes('debagarh')) return 'deogarh';
+  if (d.includes('dhenkanal')) return 'dhenkanal';
+  if (d.includes('gajapati')) return 'gajapati';
+  if (d.includes('ganjam')) return 'ganjam';
+  if (d.includes('jagatsingh') || d.includes('jspur')) return 'jagatsinghpur';
+  if (d.includes('jajpur')) return 'jajpur';
+  if (d.includes('jharsug')) return 'jharsuguda';
+  if (d.includes('kalahandi')) return 'kalahandi';
+  if (d.includes('kandhamal')) return 'kandhamal';
+  if (d.includes('kendrapara')) return 'kendrapara';
+  if (d.includes('keonjhar') || d.includes('kendujhar')) return 'keonjhar';
+  if (d.includes('khurda') || d.includes('khordha')) return 'khordha';
+  if (d.includes('koraput')) return 'koraput';
+  if (d.includes('malkangiri')) return 'malkangiri';
+  if (d.includes('mayurbhanj')) return 'mayurbhanj';
+  if (d.includes('nabarang') || d.includes('nawarang')) return 'nabarangpur';
+  if (d.includes('nayagarh')) return 'nayagarh';
+  if (d.includes('nuapada')) return 'nuapada';
+  if (d.includes('puri')) return 'puri';
+  if (d.includes('rayagada')) return 'rayagada';
+  if (d.includes('sambal')) return 'sambalpur';
+  if (d.includes('subarnapur') || d.includes('sonepur')) return 'subarnapur';
+  if (d.includes('sundar') || d.includes('sunder')) return 'sundargarh';
+  return d.replace(/_blocks/g, '').replace(/_urban/g, '').trim();
 }
 
 function normalizeBlockName(blockName) {
@@ -142,7 +205,9 @@ function normalizeBlockName(blockName) {
 function isActiveWell(well) {
   if (!well) return false;
   const status = (well.remarks || '').toLowerCase().trim();
-  return status !== 'closed';
+  if (status === 'active') return true;
+  if (status === 'inactive' || status === 'closed') return false;
+  return well.sl_no ? well.sl_no <= 1535 : true;
 }
 
 function checkDateInSeasonRange(dateStr, targetSeasonStr) {
@@ -370,6 +435,34 @@ async function loadAllData() {
     // 4. Fetch WTTO preloaded data
     const wttoRes = await fetch('data/wtto_preloaded.json');
     wttoData = await wttoRes.json();
+
+    // Merge WTTO preloaded history & stations into wellsData for 100% data parity
+    if (wttoData && Array.isArray(wttoData)) {
+      const wttoMap = new Map();
+      wttoData.forEach(w => {
+        if (w && w.well_number) wttoMap.set(w.well_number, w);
+      });
+      
+      if (!wellsData || wellsData.length === 0) {
+        wellsData = wttoData;
+      } else {
+        wellsData.forEach(w => {
+          if (w && w.well_number && wttoMap.has(w.well_number)) {
+            const wttoItem = wttoMap.get(w.well_number);
+            if (!w.history && wttoItem.history) {
+              w.history = wttoItem.history;
+            }
+          }
+        });
+        const existingSet = new Set((wellsData || []).map(w => w.well_number));
+        wttoData.forEach(w => {
+          if (w && w.well_number && !existingSet.has(w.well_number)) {
+            wellsData.push(w);
+          }
+        });
+      }
+    }
+
     console.log("All data assets fetched and initialized successfully!");
   } catch (err) {
     console.error("Failed to load databases. Falling back to preloaded caches:", err);
@@ -391,25 +484,39 @@ async function loadAllData() {
 // --- Theme Switcher ---
 function setupThemeToggle() {
   const toggleBtn = document.getElementById('btn-toggle-theme');
-  toggleBtn.addEventListener('click', () => {
-    if (theme === 'dark') {
-      document.body.className = 'light-theme';
-      theme = 'light';
-      toggleBtn.textContent = '☀️ Light Theme';
-    } else {
-      document.body.className = 'dark-theme';
-      theme = 'dark';
-      toggleBtn.textContent = '🌙 Dark Theme';
-    }
-    // Redraw maps and charts if active to adjust theme colors
-    if (activeTab === 'dashboard') {
-      renderDashboard();
-    } else if (activeTab === 'map-view') {
-      initMap();
-    } else if (activeTab === 'trends-view') {
-      updateTrendsTab();
-    }
-  });
+  
+  // Apply saved theme state on load
+  if (theme === 'light') {
+    document.body.className = 'light-theme';
+    if (toggleBtn) toggleBtn.textContent = '☀️ Light Theme';
+  } else {
+    document.body.className = 'dark-theme';
+    if (toggleBtn) toggleBtn.textContent = '🌙 Dark Theme';
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (theme === 'dark') {
+        document.body.className = 'light-theme';
+        theme = 'light';
+        localStorage.setItem('gw_theme', 'light');
+        toggleBtn.textContent = '☀️ Light Theme';
+      } else {
+        document.body.className = 'dark-theme';
+        theme = 'dark';
+        localStorage.setItem('gw_theme', 'dark');
+        toggleBtn.textContent = '🌙 Dark Theme';
+      }
+      // Redraw maps and charts if active to adjust theme colors
+      if (activeTab === 'dashboard') {
+        renderDashboard();
+      } else if (activeTab === 'map-view') {
+        initMap();
+      } else if (activeTab === 'trends-view') {
+        updateTrendsTab();
+      }
+    });
+  }
 }
 
 // --- Global Selectors ---
@@ -524,16 +631,75 @@ function setupTabs() {
 }
 
 // --- Dashboard Logic ---
+function getUserDivision() {
+  return sessionStorage.getItem('gwd_user_division') || 'ALL';
+}
+
+function updateDivisionBadge() {
+  const userDiv = getUserDivision();
+  const badgeText = document.getElementById('lbl-user-division-name');
+  const badgeContainer = document.getElementById('val-user-division-badge');
+  const subTitle = document.getElementById('lbl-sidebar-subtitle');
+
+  if (subTitle) {
+    if (userDiv === 'ALL') {
+      subTitle.textContent = 'GWD Odisha';
+    } else {
+      subTitle.textContent = `GWD Odisha (${userDiv.replace(' DIVISION', '')})`;
+    }
+  }
+
+  if (badgeText) {
+    if (userDiv === 'ALL') {
+      badgeText.textContent = 'Statewide Scope (ALL)';
+      if (badgeContainer) {
+        const iconSpan = badgeContainer.querySelector('span');
+        if (iconSpan) iconSpan.textContent = '🌐';
+      }
+    } else {
+      badgeText.textContent = userDiv;
+      if (badgeContainer) {
+        const iconSpan = badgeContainer.querySelector('span');
+        if (iconSpan) iconSpan.textContent = '🏢';
+      }
+    }
+  }
+}
+
 const getDivisionForDistrict = (district) => {
-  const lower = (district || '').toLowerCase();
-  if (lower.includes('cuttack')) return 'Cuttack';
-  if (lower.includes('jajpur')) return 'Jajpur';
-  if (lower.includes('kendrapara')) return 'Kendrapara';
-  if (lower.includes('jagatsinghpur') || lower.includes('jspur')) return 'Jagatsinghpur';
-  return 'Other';
+  if (!district) return null;
+  const d = district.toLowerCase().replace(/[\s_\.\-]+/g, '');
+  if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('jagatsingh') || d.includes('jspur')) return 'CUTTACK DIVISION';
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj') || d.includes('keonjhar') || d.includes('kendujhar')) return 'BARIPADA DIVISION';
+  if (d.includes('ganjam') || d.includes('gajapati')) return 'BERHAMPUR DIVISION';
+  if (d.includes('sambal') || d.includes('jharsug') || d.includes('sundar') || d.includes('sunder') || d.includes('deogarh') || d.includes('debagarh')) return 'SAMBALPUR DIVISION';
+  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur')) return 'BOLANGIR DIVISION';
+  if (d.includes('koraput') || d.includes('malkangiri')) return 'KORAPUT DIVISION';
+  if (d.includes('kalahandi') || d.includes('nuapada') || d.includes('nabarang') || d.includes('nawarang')) return 'BHAWANIPATNA DIVISION';
+  if (d.includes('angul') || d.includes('dhenkanal')) return 'ANGUL DIVISION';
+  if (d.includes('puri') || d.includes('nayagarh')) return 'RS DIVISION';
+  if (d.includes('khordha') || d.includes('khurda')) return 'AD HP DIVISION';
+  if (d.includes('phulbani') || d.includes('kandhamal') || d.includes('boudh') || d.includes('baudh')) return 'PHULBANI DIVISION';
+  if (d.includes('rayagada')) return 'RAYAGADA DIVISION';
+  return null;
 };
 
+function getScopedWellsData() {
+  const userDiv = getUserDivision();
+  if (userDiv === 'ALL') return wellsData;
+  return wellsData.filter(well => {
+    const dist = getDistrictFromWell(well);
+    const div = getDivisionForDistrict(dist);
+    if (userDiv === div) return true;
+    if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
+    return false;
+  });
+}
+
 function renderDashboard() {
+  updateDivisionBadge();
+  const targetWells = getScopedWellsData();
+
   // Calculate Stats
   let total = 0;
   let active = 0;
@@ -542,8 +708,8 @@ function renderDashboard() {
   
   const statsByDistrict = {};
   
-  wellsData.forEach(well => {
-    const dist = getDistrictFromSheet(well.sheet);
+  targetWells.forEach(well => {
+    const dist = getDistrictFromWell(well);
     if (!statsByDistrict[dist]) {
       statsByDistrict[dist] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
     }
@@ -551,23 +717,25 @@ function renderDashboard() {
     total++;
     statsByDistrict[dist].total++;
     
-    const isAct = isActiveWell(well);
-    if (isAct) {
+    // Active monitoring network wells based on status column (remarks == 'Active')
+    const isPrimaryActive = isActiveWell(well);
+    if (isPrimaryActive) {
       active++;
       statsByDistrict[dist].active++;
-      
-      const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
-      if (seasonal.dtgwl_mbgl !== null) {
-        monitored++;
-        statsByDistrict[dist].monitored++;
-        statsByDistrict[dist].sumMbgl += seasonal.dtgwl_mbgl;
-        statsByDistrict[dist].countMbgl++;
-      } else {
-        pending++;
-      }
+    }
+
+    const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+    if (seasonal.dtgwl_mbgl !== null) {
+      monitored++;
+      statsByDistrict[dist].monitored++;
+      statsByDistrict[dist].sumMbgl += seasonal.dtgwl_mbgl;
+      statsByDistrict[dist].countMbgl++;
     }
   });
   
+  // Pending visits are remaining primary active wells requiring completion
+  pending = Math.max(0, active - monitored);
+
   document.getElementById('val-total-wells').textContent = total;
   document.getElementById('val-active-wells').textContent = active;
   document.getElementById('val-monitored-wells').textContent = monitored;
@@ -626,9 +794,29 @@ function renderDashboardMap(statsByDistrict) {
   miniMap = L.map('mini-leaflet-map', {
     zoomControl: false,
     attributionControl: false,
-    scrollWheelZoom: false,
+    scrollWheelZoom: true,
     dragging: true
   }).setView([20.4, 84.5], 6.5);
+
+  // Baselayers
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
+  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+
+  if (isDark) {
+    darkLayer.addTo(miniMap);
+  } else {
+    osmLayer.addTo(miniMap);
+  }
+
+  const baseMaps = {
+    "🌐 Streets": osmLayer,
+    "🛰️ Satellite": satelliteLayer,
+    "🌙 Dark": darkLayer,
+    "🏔️ Terrain": topoLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(miniMap);
   
   const mapStats = {};
   Object.entries(statsByDistrict || {}).forEach(([district, data]) => {
@@ -651,9 +839,9 @@ function renderDashboardMap(statsByDistrict) {
       
       return {
         color: border,
-        weight: 1,
+        weight: 1.5,
         fillColor: data ? data.color : (isDark ? '#1e293b' : '#e2e8f0'),
-        fillOpacity: data ? 0.75 : 0.25
+        fillOpacity: data ? 0.45 : 0.20
       };
     },
     onEachFeature: (feature, layer) => {
@@ -673,11 +861,18 @@ function renderDashboardMap(statsByDistrict) {
       }
       
       layer.bindTooltip(tooltipContent, { sticky: true });
+
+      layer.on('mouseover', function() {
+        this.setStyle({ fillOpacity: 0.75, weight: 2.5 });
+      });
+      layer.on('mouseout', function() {
+        miniBoundaryLayer.resetStyle(this);
+      });
       
       layer.on('click', () => {
         // Zoom dashboard list to district
         const detailsTitle = document.getElementById('lbl-block-details-title');
-        detailsTitle.textContent = `Block Details (${rawName})`;
+        if (detailsTitle) detailsTitle.textContent = `Block Details (${rawName})`;
         filterDashboardBlocks(rawName);
       });
     }
@@ -708,7 +903,7 @@ function filterDashboardBlocks(districtName) {
   
   const blocksMap = {};
   wellsData.forEach(well => {
-    const dist = getDistrictFromSheet(well.sheet);
+    const dist = getDistrictFromWell(well);
     if (dist === districtName && well.block) {
       if (!blocksMap[well.block]) {
         blocksMap[well.block] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
@@ -769,6 +964,7 @@ function filterDashboardBlocks(districtName) {
 let isPresentationMode = false;
 let showWaterDepthMap = true;
 let showBlocksOverlay = false;
+let showStationMarkers = true;
 
 function initMap() {
   const mapElement = document.getElementById('leaflet-map-element');
@@ -786,14 +982,34 @@ function initMap() {
     zoomControl: true,
     attributionControl: false
   }).setView([20.4, 84.5], 7);
+
+  // Baselayers
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
+  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+
+  if (isDark) {
+    darkLayer.addTo(mainMap);
+  } else {
+    osmLayer.addTo(mainMap);
+  }
+
+  const baseMaps = {
+    "🌐 Streets": osmLayer,
+    "🛰️ Satellite": satelliteLayer,
+    "🌙 Dark": darkLayer,
+    "🏔️ Terrain": topoLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(mainMap);
   
   mapLabelsGroup = L.layerGroup().addTo(mainMap);
   
   // Calculate average water levels per district
   const districtAverages = {};
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
-      const dist = getDistrictFromSheet(well.sheet);
+      const dist = getDistrictFromWell(well);
       const key = normalizeGeoJSONDistrict(dist);
       if (!districtAverages[key]) {
         districtAverages[key] = { sum: 0, count: 0 };
@@ -808,7 +1024,7 @@ function initMap() {
 
   // Calculate average water levels per block
   const blockAverages = {};
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
       const blockKey = (well.block || '').toLowerCase().trim();
       if (!blockAverages[blockKey]) {
@@ -962,12 +1178,16 @@ function plotMarkersOnMap() {
   if (!mainMarkersGroup) return;
   mainMarkersGroup.clearLayers();
   
+  if (!showStationMarkers) {
+    return; // Don't plot circle markers when checkbox is unchecked
+  }
+
   const districtFilter = document.getElementById('map-filter-district').value;
   const blockFilter = document.getElementById('map-filter-block').value;
   const statusFilter = document.getElementById('map-filter-status').value;
   const query = document.getElementById('map-search-input').value.toLowerCase();
   
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
     const isAct = isActiveWell(well);
     const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
@@ -1024,10 +1244,19 @@ function plotMarkersOnMap() {
 
 function setupActionButtons() {
   // Map overlays toggles
+  const chkPins = document.getElementById('chk-toggle-station-pins');
   const chkWater = document.getElementById('chk-toggle-water-map');
   const chkBlocks = document.getElementById('chk-toggle-blocks');
   const btnPres = document.getElementById('btn-toggle-presentation');
   
+  if (chkPins) {
+    chkPins.checked = showStationMarkers;
+    chkPins.onchange = (e) => {
+      showStationMarkers = e.target.checked;
+      plotMarkersOnMap();
+    };
+  }
+
   chkWater.onchange = (e) => {
     showWaterDepthMap = e.target.checked;
     initMap();
@@ -1163,7 +1392,7 @@ function populateFilterDropdowns() {
   const districts = new Set();
   const blocksByDistrict = {};
   
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
     districts.add(dist);
     if (!blocksByDistrict[dist]) {
@@ -1221,7 +1450,7 @@ function applyFilters() {
   const type = document.getElementById('table-filter-type').value;
   const status = document.getElementById('table-filter-status').value;
   
-  filteredWells = wellsData.filter(well => {
+  filteredWells = getScopedWellsData().filter(well => {
     const dist = getDistrictFromSheet(well.sheet);
     const isAct = isActiveWell(well);
     
@@ -1599,26 +1828,107 @@ function snapPhoto() {
 }
 
 // --- Trends & Chart.js Integration ---
+let trendAnalysisLevel = 'station'; // 'station', 'block', or 'district'
+let selectedTrendDistrict = 'ALL';
+let selectedTrendBlock = 'ALL';
+
 function populateTrendsDropdown() {
-  const trendsSelect = document.getElementById('trends-well-select');
-  trendsSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
-  
-  wellsData.forEach(well => {
-    trendsSelect.innerHTML += `<option value="${well.well_number}">${well.well_number} - ${well.location || 'Unknown'}</option>`;
-  });
-  
-  trendsSelect.addEventListener('change', (e) => {
+  const levelSelect = document.getElementById('trends-level-select');
+  const distSelect = document.getElementById('trends-district-select');
+  const blockSelect = document.getElementById('trends-block-select');
+  const wellSelect = document.getElementById('trends-well-select');
+
+  if (!wellSelect) return;
+
+  // Populate District dropdown
+  if (distSelect) {
+    const districtsSet = new Set();
+    getScopedWellsData().forEach(w => {
+      const d = getDistrictFromSheet(w.sheet);
+      if (d && d !== 'Other') districtsSet.add(d);
+    });
+    distSelect.innerHTML = '<option value="ALL">All Districts</option>';
+    Array.from(districtsSet).sort().forEach(d => {
+      distSelect.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  // Update block dropdown
+  const updateBlockDropdown = () => {
+    if (!blockSelect) return;
+    const curDist = distSelect ? distSelect.value : 'ALL';
+    const blocksSet = new Set();
+    getScopedWellsData().forEach(w => {
+      const d = getDistrictFromSheet(w.sheet);
+      if ((curDist === 'ALL' || d === curDist) && w.block) {
+        blocksSet.add(w.block);
+      }
+    });
+    blockSelect.innerHTML = '<option value="ALL">All Blocks</option>';
+    Array.from(blocksSet).sort().forEach(b => {
+      blockSelect.innerHTML += `<option value="${b}">${b}</option>`;
+    });
+  };
+
+  // Update wells dropdown
+  const updateWellDropdown = () => {
+    if (!wellSelect) return;
+    const curDist = distSelect ? distSelect.value : 'ALL';
+    const curBlock = blockSelect ? blockSelect.value : 'ALL';
+    wellSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
+
+    getScopedWellsData().forEach(well => {
+      const d = getDistrictFromSheet(well.sheet);
+      if (curDist !== 'ALL' && d !== curDist) return;
+      if (curBlock !== 'ALL' && well.block !== curBlock) return;
+      wellSelect.innerHTML += `<option value="${well.well_number}">${well.well_number} - ${well.location || 'Unknown'}</option>`;
+    });
+  };
+
+  updateBlockDropdown();
+  updateWellDropdown();
+
+  if (levelSelect) {
+    levelSelect.onchange = (e) => {
+      trendAnalysisLevel = e.target.value;
+      const distGroup = document.getElementById('group-trends-district');
+      const blockGroup = document.getElementById('group-trends-block');
+      const stationGroup = document.getElementById('group-trends-station');
+      
+      if (distGroup) distGroup.style.display = 'block';
+      if (blockGroup) blockGroup.style.display = trendAnalysisLevel === 'district' ? 'none' : 'block';
+      if (stationGroup) stationGroup.style.display = trendAnalysisLevel === 'station' ? 'block' : 'none';
+
+      updateTrendsTab();
+    };
+  }
+
+  if (distSelect) {
+    distSelect.onchange = (e) => {
+      selectedTrendDistrict = e.target.value;
+      updateBlockDropdown();
+      updateWellDropdown();
+      updateTrendsTab();
+    };
+  }
+
+  if (blockSelect) {
+    blockSelect.onchange = (e) => {
+      selectedTrendBlock = e.target.value;
+      updateWellDropdown();
+      updateTrendsTab();
+    };
+  }
+
+  wellSelect.onchange = (e) => {
     const wellNo = e.target.value;
     if (wellNo) {
-      const well = wellsData.find(w => w.well_number === wellNo);
-      selectedWell = well;
-      updateTrendsTab();
+      selectedWell = wellsData.find(w => w.well_number === wellNo);
     } else {
       selectedWell = null;
-      document.getElementById('trends-well-card').style.display = 'none';
-      document.getElementById('trends-content-box').style.display = 'none';
     }
-  });
+    updateTrendsTab();
+  };
 }
 
 // Mann-Kendall statistics calculator in JS
@@ -1715,55 +2025,125 @@ function calculateMannKendallAndSensSlope(valuesList) {
 }
 
 function updateTrendsTab() {
-  if (!selectedWell) return;
+  const isDark = theme === 'dark'; // Fix: Define isDark inside updateTrendsTab!
+
+  const cardPanel = document.getElementById('trends-well-card');
+  const contentBox = document.getElementById('trends-content-box');
   
-  const dist = getDistrictFromSheet(selectedWell.sheet);
-  
-  // Show details panel
-  document.getElementById('trends-well-card').style.display = 'flex';
-  document.getElementById('trends-content-box').style.display = 'grid';
-  
-  document.getElementById('trends-well-id').textContent = selectedWell.well_number;
-  document.getElementById('trends-well-desc').textContent = selectedWell.location || 'Observation Well';
-  document.getElementById('trends-well-dist').textContent = dist;
-  document.getElementById('trends-well-block').textContent = selectedWell.block || 'ALL';
-  document.getElementById('trends-well-aquifer').textContent = selectedWell.well_type || 'DW';
-  
-  // Calculate trends lists
-  const historicalList = [];
+  let historicalList = [];
+  let titleStr = '';
+  let descStr = '';
+  let distStr = '';
+  let blockStr = '';
+  let aquiferStr = '';
+
   const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
   const seasons = ['PreMon', 'MidMon', 'PostMon', 'Winter'];
-  
-  years.forEach(yr => {
-    seasons.forEach(sea => {
-      const key = `${yr}_${sea}`;
-      
-      // Look up in user visit history
-      let val = null;
-      if (visitsHistory[selectedWell.well_number]?.[key]) {
-        val = visitsHistory[selectedWell.well_number][key].value;
+
+  if (trendAnalysisLevel === 'station') {
+    if (!selectedWell) {
+      // Default to first available well if none explicitly picked
+      if (wellsData && wellsData.length > 0) {
+        selectedWell = wellsData[0];
+      } else {
+        if (cardPanel) cardPanel.style.display = 'none';
+        if (contentBox) contentBox.style.display = 'none';
+        return;
       }
-      
-      // Fallback to preloaded history
-      if (val === null && selectedWell.history && selectedWell.history[key] !== undefined) {
-        val = parseFloat(selectedWell.history[key]);
-      }
-      
-      // Fallback to historical_trends block average
-      if (val === null && historicalTrends && historicalTrends.blocks && selectedWell.block) {
-        const blockNorm = normalizeBlockName(selectedWell.block);
-        const blockStats = historicalTrends.blocks[blockNorm];
-        if (blockStats && blockStats[key] !== undefined) {
-          val = parseFloat(blockStats[key]);
+    }
+    titleStr = selectedWell.well_number;
+    descStr = selectedWell.location || 'Observation Well';
+    distStr = getDistrictFromSheet(selectedWell.sheet);
+    blockStr = selectedWell.block || 'ALL';
+    aquiferStr = selectedWell.well_type || 'DW';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let val = null;
+        if (visitsHistory[selectedWell.well_number]?.[key]) {
+          val = visitsHistory[selectedWell.well_number][key].value;
         }
-      }
-      
-      if (val !== null && !isNaN(val)) {
-        historicalList.push({ season: key, value: val });
-      }
+        if (val === null && selectedWell.history && selectedWell.history[key] !== undefined) {
+          val = parseFloat(selectedWell.history[key]);
+        }
+        if (val !== null && !isNaN(val)) {
+          historicalList.push({ season: key, value: val });
+        }
+      });
     });
-  });
-  
+  } else if (trendAnalysisLevel === 'block') {
+    const curDist = selectedTrendDistrict;
+    const curBlock = selectedTrendBlock !== 'ALL' ? selectedTrendBlock : (wellsData[0] ? wellsData[0].block : 'Angul');
+    
+    titleStr = `${curBlock} Block`;
+    descStr = `Average Groundwater Level Trend for ${curBlock} Block`;
+    distStr = curDist;
+    blockStr = curBlock;
+    aquiferStr = 'Block Composite';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let sum = 0, count = 0;
+        wellsData.forEach(w => {
+          const d = getDistrictFromSheet(w.sheet);
+          if ((curDist === 'ALL' || d === curDist) && (curBlock === 'ALL' || w.block === curBlock)) {
+            let val = null;
+            if (visitsHistory[w.well_number]?.[key]) val = visitsHistory[w.well_number][key].value;
+            if (val === null && w.history && w.history[key] !== undefined) val = parseFloat(w.history[key]);
+            if (val !== null && !isNaN(val) && val > 0) {
+              sum += val;
+              count++;
+            }
+          }
+        });
+        if (count > 0) {
+          historicalList.push({ season: key, value: sum / count });
+        }
+      });
+    });
+  } else if (trendAnalysisLevel === 'district') {
+    const curDist = selectedTrendDistrict !== 'ALL' ? selectedTrendDistrict : 'Cuttack';
+    
+    titleStr = `${curDist} District`;
+    descStr = `Statewide Average Groundwater Level Trend for ${curDist} District`;
+    distStr = curDist;
+    blockStr = 'All District Blocks';
+    aquiferStr = 'District Composite';
+
+    years.forEach(yr => {
+      seasons.forEach(sea => {
+        const key = `${yr}_${sea}`;
+        let sum = 0, count = 0;
+        wellsData.forEach(w => {
+          const d = getDistrictFromSheet(w.sheet);
+          if (d === curDist) {
+            let val = null;
+            if (visitsHistory[w.well_number]?.[key]) val = visitsHistory[w.well_number][key].value;
+            if (val === null && w.history && w.history[key] !== undefined) val = parseFloat(w.history[key]);
+            if (val !== null && !isNaN(val) && val > 0) {
+              sum += val;
+              count++;
+            }
+          }
+        });
+        if (count > 0) {
+          historicalList.push({ season: key, value: sum / count });
+        }
+      });
+    });
+  }
+
+  if (cardPanel) cardPanel.style.display = 'flex';
+  if (contentBox) contentBox.style.display = 'grid';
+
+  document.getElementById('trends-well-id').textContent = titleStr;
+  document.getElementById('trends-well-desc').textContent = descStr;
+  document.getElementById('trends-well-dist').textContent = distStr;
+  document.getElementById('trends-well-block').textContent = blockStr;
+  document.getElementById('trends-well-aquifer').textContent = aquiferStr;
+
   // 1. Calculate Mann-Kendall statistics
   const mkValues = historicalList.map(h => h.value);
   const mkStats = calculateMannKendallAndSensSlope(mkValues);
@@ -1774,10 +2154,12 @@ function updateTrendsTab() {
   document.getElementById('mk-sens-slope').textContent = mkStats.sensSlope + ' m/year';
   
   const statusBox = document.getElementById('mk-trend-status');
-  statusBox.textContent = mkStats.trendText;
-  statusBox.style.backgroundColor = mkStats.trendColor;
-  statusBox.style.color = '#fff';
-  
+  if (statusBox) {
+    statusBox.textContent = mkStats.trendText;
+    statusBox.style.backgroundColor = mkStats.trendColor;
+    statusBox.style.color = '#fff';
+  }
+
   // 2. Generate Linear Projections
   const annualAverages = [];
   const yrSums = {};
@@ -1828,14 +2210,18 @@ function updateTrendsTab() {
     forecastHTML = '<p class="text-muted text-center p-3">Insufficient historical average data to run projections.</p>';
   }
   
-  document.getElementById('forecast-years-list').innerHTML = forecastHTML;
+  const forecastListElem = document.getElementById('forecast-years-list');
+  if (forecastListElem) forecastListElem.innerHTML = forecastHTML;
+
   const warningBox = document.getElementById('forecast-warning-box');
-  if (warningActive) {
-    warningBox.className = 'forecast-warning-box warning-active';
-    warningBox.textContent = '⚠️ CRITICAL WARNING: Groundwater table depth is projected to deplete beyond safety threshold of 8.5 meters BGL within the next 5 years. Immediate regulation of extraction is recommended.';
-  } else {
-    warningBox.className = 'forecast-warning-box';
-    warningBox.textContent = '✅ Stable Projections: Water table levels are forecasted to remain within stable and safe depths (<8.5m BGL).';
+  if (warningBox) {
+    if (warningActive) {
+      warningBox.className = 'forecast-warning-box warning-active';
+      warningBox.textContent = '⚠️ CRITICAL WARNING: Groundwater table depth is projected to deplete beyond safety threshold of 8.5 meters BGL within the next 5 years. Immediate regulation of extraction is recommended.';
+    } else {
+      warningBox.className = 'forecast-warning-box';
+      warningBox.textContent = '✅ Stable Projections: Water table levels are forecasted to remain within stable and safe depths (<8.5m BGL).';
+    }
   }
   
   // 3. Render Chart.js Level Trends
@@ -1879,10 +2265,11 @@ function updateTrendsTab() {
     chartRainfall.destroy();
   }
   
-  // Grab block rainfall data
+  // Grab block or district rainfall data
   let rainList = [];
-  if (rainfallData && rainfallData.blocks && selectedWell.block) {
-    const blockNorm = normalizeBlockName(selectedWell.block);
+  const targetBlock = (selectedWell && selectedWell.block) ? selectedWell.block : 'Cuttack';
+  if (rainfallData && rainfallData.blocks) {
+    const blockNorm = normalizeBlockName(targetBlock);
     const blockRain = rainfallData.blocks[blockNorm];
     if (blockRain) {
       Object.entries(blockRain).forEach(([yr, val]) => {
@@ -3082,6 +3469,9 @@ function initAdvancedExportFeatures() {
             if (depthCol !== null && well.depth !== null && well.depth !== undefined && well.depth !== '') {
               updateCell(ws, r, depthCol, well.depth);
             }
+          });
+        });
+
         const outBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
         const outFilename = `WTTO_${districtName}_${seasonName.replace(/\s+/g, '_')}.xlsx`;
         downloadExcelFromBase64(outBase64, outFilename);
@@ -3375,351 +3765,3 @@ function downloadExcelFromBase64(base64, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-// --- STANDARD FIELD BOOK FORMAT & IMPORT SYSTEM ---
-let parsedFieldBookRecords = [];
-
-function setupFieldBookImportSystem() {
-  const btnCsv = document.getElementById('btn-download-fieldbook-csv');
-  const btnXlsx = document.getElementById('btn-download-fieldbook-xlsx');
-  const dropZone = document.getElementById('fieldbook-drop-zone');
-  const fileInput = document.getElementById('fieldbook-file-input');
-  const previewCard = document.getElementById('fieldbook-preview-card');
-  const btnCommit = document.getElementById('btn-commit-fieldbook-import');
-
-  if (btnCsv) {
-    btnCsv.addEventListener('click', downloadSampleFieldBookCSV);
-  }
-  if (btnXlsx) {
-    btnXlsx.addEventListener('click', downloadSampleFieldBookXLSX);
-  }
-
-  if (dropZone && fileInput) {
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = '#38bdf8';
-      dropZone.style.background = 'rgba(56, 189, 248, 0.1)';
-    });
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.style.borderColor = '#334155';
-      dropZone.style.background = 'rgba(15, 23, 42, 0.4)';
-    });
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = '#334155';
-      dropZone.style.background = 'rgba(15, 23, 42, 0.4)';
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        handleFieldBookFileSelect(e.dataTransfer.files[0]);
-      }
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        handleFieldBookFileSelect(e.target.files[0]);
-      }
-    });
-  }
-
-  if (btnCommit) {
-    btnCommit.addEventListener('click', commitFieldBookImport);
-  }
-}
-
-function parseDMSCoordinate(val) {
-  if (!val) return null;
-  if (typeof val === 'number') return val;
-  const str = String(val).trim();
-  if (!str) return null;
-  if (!isNaN(parseFloat(str)) && !str.includes('_') && !str.includes('-')) {
-    return parseFloat(str);
-  }
-  // Parse format 20_33_51 or 20-30-37
-  const parts = str.split(/[_:-]/).map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
-  if (parts.length >= 3) {
-    const deg = parts[0];
-    const min = parts[1];
-    const sec = parts[2];
-    const dd = deg + (min / 60) + (sec / 3600);
-    return parseFloat(dd.toFixed(6));
-  } else if (parts.length === 2) {
-    return parseFloat((parts[0] + (parts[1] / 60)).toFixed(6));
-  } else if (parts.length === 1) {
-    return parts[0];
-  }
-  return null;
-}
-
-function downloadSampleFieldBookCSV() {
-  const csvHeaders = "District,BLOCK,Location of Observation wells,Well Type,Well Number,Lat(DMS),Long(DMS),Dt_SiteVisit [dd/mm/yy],Total Depth in mtr,Height of Parapet in mtr,DTGWL [bmp],DTGWL [mbgl],Remarks\n";
-  const sampleRows = [
-    "Cuttack,Athagarh,Gurudijhatia : Girl's High School,BW,07M01BW001,20_33_51,85_48_37,30/05/2026,30.5,0.48,8.58,8.10,Active",
-    "Cuttack,Banki,Baideswar : Bus Stand,DW,07M03DW005,20_21_10,85_23_11,28/05/2026,8.2,0.60,5.45,4.85,Active",
-    "Kendrapara,Aul,Gopinathpur Sasan : Sidheswar Mahadev Temple,DW,17BR01DW001,20_39_12,86_38_11,01/06/2026,4.4,0.65,2.62,1.97,Active",
-    "Jajpur,Badachana,Baisimauza: Inside High School Compound,DW,13BR01DW003,20_29_00,86_09_00,03/06/2026,5.8,0.50,6.30,5.80,Closed"
-  ].join("\n");
-
-  const blob = new Blob([csvHeaders + sampleRows], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = "Division_Groundwater_Field_Book_Template.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast("Downloaded Official Division Field Book CSV Template! 📥", "success");
-}
-
-function downloadSampleFieldBookXLSX() {
-  if (typeof XLSX === 'undefined') {
-    showToast("XLSX library not loaded.", "error");
-    return;
-  }
-
-  const sampleData = [
-    {
-      "District": "Cuttack",
-      "BLOCK": "Athagarh",
-      "Location of Observation wells": "Gurudijhatia : Girl's High School",
-      "Well Type": "BW",
-      "Well Number": "07M01BW001",
-      "Lat(DMS)": "20_33_51",
-      "Long(DMS)": "85_48_37",
-      "Dt_SiteVisit [dd/mm/yy]": "30/05/2026",
-      "Total Depth in mtr": 30.5,
-      "Height of Parapet in mtr": 0.48,
-      "DTGWL [bmp]": 8.58,
-      "DTGWL [mbgl]": 8.10,
-      "Remarks": "Active"
-    },
-    {
-      "District": "Kendrapara",
-      "BLOCK": "Aul",
-      "Location of Observation wells": "Gopinathpur Sasan : Sidheswar Mahadev Temple",
-      "Well Type": "DW",
-      "Well Number": "17BR01DW001",
-      "Lat(DMS)": "20_39_12",
-      "Long(DMS)": "86_38_11",
-      "Dt_SiteVisit [dd/mm/yy]": "01/06/2026",
-      "Total Depth in mtr": 4.4,
-      "Height of Parapet in mtr": 0.65,
-      "DTGWL [bmp]": 2.62,
-      "DTGWL [mbgl]": 1.97,
-      "Remarks": "Active"
-    }
-  ];
-
-  const ws = XLSX.utils.json_to_sheet(sampleData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Division Field Book");
-  XLSX.writeFile(wb, "Division_Groundwater_Field_Book_Template.xlsx");
-  showToast("Downloaded Official Division Field Book Excel Template! 📥", "success");
-}
-
-function handleFieldBookFileSelect(file) {
-  if (!file) return;
-  const fileName = file.name;
-  document.getElementById('fieldbook-file-name').textContent = fileName;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      let rawRows = [];
-      if (fileName.endsWith('.csv')) {
-        const text = e.target.result;
-        rawRows = parseCSVToJSON(text);
-      } else {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const firstSheet = wb.SheetNames[0];
-        rawRows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet]);
-      }
-
-      processAndPreviewFieldBookData(rawRows, fileName);
-    } catch (err) {
-      console.error("Field Book Parse Error:", err);
-      showToast(`Error reading file: ${err.message}`, "error");
-    }
-  };
-
-  if (fileName.endsWith('.csv')) {
-    reader.readAsText(file);
-  } else {
-    reader.readAsArrayBuffer(file);
-  }
-}
-
-function parseCSVToJSON(csvText) {
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
-  if (lines.length === 0) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
-  const results = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
-    if (values.length === headers.length) {
-      const obj = {};
-      headers.forEach((h, idx) => {
-        obj[h] = values[idx];
-      });
-      results.push(obj);
-    }
-  }
-  return results;
-}
-
-function processAndPreviewFieldBookData(rawRows, fileName) {
-  parsedFieldBookRecords = [];
-  let validCount = 0;
-  let invalidCount = 0;
-  const districtsSet = new Set();
-  const tbody = document.getElementById('fieldbook-preview-tbody');
-  tbody.innerHTML = '';
-
-  rawRows.forEach((row, idx) => {
-    const district = row['District'] || row['district'] || row['District Name'] || row['DISTRICT'] || '';
-    const block = row['BLOCK'] || row['Block'] || row['block'] || row['Block Name'] || row['Urban Area'] || '';
-    const stationName = row['Location of Observation wells'] || row['Location'] || row['Station_Name'] || row['Village'] || `Station_${idx+1}`;
-    const stationCode = row['Well Number'] || row['Well ID'] || row['New Well ID'] || row['Old Well ID'] || row['Station_Code'] || `W_${idx+1}`;
-    const wellType = row['Well Type'] || row['Well_Type'] || row['Type'] || 'DW';
-    const visitDate = row['Dt_SiteVisit [dd/mm/yy]'] || row['Dt_SiteVisit'] || row['Reading_Date'] || row['Date'] || new Date().toISOString().split('T')[0];
-    
-    const depthVal = parseFloat(row['Total Depth in mtr'] || row['Total Depth bgl in mtr'] || row['Total Depth'] || row['Well Depth'] || '');
-    const parapetVal = parseFloat(row['Height of Parapet in mtr'] || row['Parapet'] || '');
-    const dtgwlBmpVal = parseFloat(row['DTGWL [bmp]'] || row['DTGWL bmp'] || '');
-    const dtgwlMbglVal = parseFloat(row['DTGWL [mbgl]'] || row['DTGWL mbgl'] || row['Water_Level_m_bgl'] || row['DTGWL'] || '');
-    const remarks = row['Remarks'] || row['Present Well Status'] || row['Well Status'] || 'Active';
-
-    const latRaw = row['Lat(DMS)'] || row['Lat(DD)'] || row['Latitude'] || row['Lat'] || '';
-    const lngRaw = row['Long(DMS)'] || row['Long(DD)'] || row['Longitude'] || row['Long'] || '';
-    const lat = parseDMSCoordinate(latRaw);
-    const lng = parseDMSCoordinate(lngRaw);
-
-    const waterLevel = !isNaN(dtgwlMbglVal) ? dtgwlMbglVal : (!isNaN(dtgwlBmpVal) && !isNaN(parapetVal) ? dtgwlBmpVal - parapetVal : dtgwlBmpVal);
-    const isValid = district.trim().length > 0 && block.trim().length > 0 && (!isNaN(waterLevel) || remarks.toLowerCase() === 'closed');
-
-    if (district.trim()) districtsSet.add(district.trim());
-
-    if (isValid) {
-      validCount++;
-    } else {
-      invalidCount++;
-    }
-
-    const recordObj = {
-      district: district.trim(),
-      block: block.trim(),
-      well_id: String(stationCode).trim(),
-      location: String(stationName).trim(),
-      well_type: String(wellType).trim(),
-      dtgwl_mbgl: isNaN(waterLevel) ? null : parseFloat(waterLevel.toFixed(2)),
-      dtgwl_bmp: isNaN(dtgwlBmpVal) ? null : parseFloat(dtgwlBmpVal.toFixed(2)),
-      total_depth: isNaN(depthVal) ? null : depthVal,
-      parapet_height: isNaN(parapetVal) ? null : parapetVal,
-      date: String(visitDate).trim(),
-      latitude: lat,
-      longitude: lng,
-      remarks: String(remarks).trim(),
-      isValid: isValid
-    };
-    parsedFieldBookRecords.push(recordObj);
-
-    if (idx < 50) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <span style="padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; background: ${isValid ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${isValid ? '#34d399' : '#f87171'}; border: 1px solid ${isValid ? '#10b981' : '#ef4444'};">
-            ${isValid ? '✓ Valid' : '⚠ Missing Data'}
-          </span>
-        </td>
-        <td><strong>${district || '<span style="color:#ef4444">Missing</span>'}</strong></td>
-        <td>${block || '<span style="color:#ef4444">Missing</span>'}</td>
-        <td><code>${stationCode}</code></td>
-        <td>${stationName}</td>
-        <td><span class="badge" style="background:#1e293b; color:#38bdf8; font-size:0.75rem;">${wellType}</span></td>
-        <td style="color: #38bdf8; font-weight: 700;">${isNaN(waterLevel) ? 'N/A' : waterLevel.toFixed(2) + ' m'}</td>
-        <td>${isNaN(dtgwlBmpVal) ? '-' : dtgwlBmpVal.toFixed(2) + ' m'}</td>
-        <td>${isNaN(depthVal) ? '-' : depthVal + ' m'}</td>
-        <td>${isNaN(parapetVal) ? '-' : parapetVal + ' m'}</td>
-        <td>${visitDate}</td>
-        <td><span style="color:#94a3b8;">${remarks}</span></td>
-      `;
-      tbody.appendChild(tr);
-    }
-  });
-
-  document.getElementById('fb-stat-total').textContent = rawRows.length;
-  document.getElementById('fb-stat-valid').textContent = validCount;
-  document.getElementById('fb-stat-invalid').textContent = invalidCount;
-  document.getElementById('fb-stat-districts').textContent = districtsSet.size;
-
-  document.getElementById('fieldbook-preview-card').style.display = 'block';
-  showToast(`Parsed ${rawRows.length} rows (${validCount} valid) across ${districtsSet.size} districts.`, "success");
-}
-
-function commitFieldBookImport() {
-  const validRecords = parsedFieldBookRecords.filter(r => r.isValid);
-  if (validRecords.length === 0) {
-    showToast("No valid records to import.", "error");
-    return;
-  }
-
-  let addedCount = 0;
-  let updatedCount = 0;
-
-  validRecords.forEach(rec => {
-    const existingIndex = wellsData.findIndex(w => 
-      (w.well_id && w.well_id.toLowerCase() === rec.well_id.toLowerCase()) ||
-      (w.district && w.district.toLowerCase() === rec.district.toLowerCase() &&
-       w.block && w.block.toLowerCase() === rec.block.toLowerCase() &&
-       w.location && w.location.toLowerCase() === rec.location.toLowerCase())
-    );
-
-    if (existingIndex >= 0) {
-      wellsData[existingIndex].dtgwl_mbgl = rec.dtgwl_mbgl;
-      wellsData[existingIndex].date = rec.date;
-      if (rec.dtgwl_bmp) wellsData[existingIndex].dtgwl_bmp = rec.dtgwl_bmp;
-      if (rec.total_depth) wellsData[existingIndex].depth = rec.total_depth;
-      if (rec.parapet_height) wellsData[existingIndex].parapet = rec.parapet_height;
-      if (rec.latitude) wellsData[existingIndex].latitude = rec.latitude;
-      if (rec.longitude) wellsData[existingIndex].longitude = rec.longitude;
-      if (rec.well_type) wellsData[existingIndex].well_type = rec.well_type;
-      if (rec.remarks) wellsData[existingIndex].remarks = rec.remarks;
-      updatedCount++;
-    } else {
-      wellsData.push({
-        district: rec.district,
-        block: rec.block,
-        well_id: rec.well_id,
-        location: rec.location,
-        dtgwl_mbgl: rec.dtgwl_mbgl,
-        dtgwl_bmp: rec.dtgwl_bmp,
-        depth: rec.total_depth,
-        parapet: rec.parapet_height,
-        date: rec.date,
-        latitude: rec.latitude || 20.4625,
-        longitude: rec.longitude || 85.8828,
-        well_type: rec.well_type || 'DW',
-        remarks: rec.remarks || 'Active'
-      });
-      addedCount++;
-    }
-  });
-
-  try {
-    localStorage.setItem('gw_wells_data', JSON.stringify(wellsData));
-  } catch (err) {
-    console.warn("Could not save wells to localStorage:", err);
-  }
-
-  if (typeof updateDashboard === 'function') updateDashboard();
-  if (typeof renderDashboardMap === 'function') renderDashboardMap();
-  if (typeof updateDirectoryTable === 'function') updateDirectoryTable();
-
-  showToast(`Successfully imported Division Field Book! 🟢 Added ${addedCount} new stations, updated ${updatedCount} existing records.`, "success");
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  setupFieldBookImportSystem();
-});
