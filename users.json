@@ -4,6 +4,7 @@
   "admin_cuttack": "cuttack_pass_99",
   "cuttack_div": "cuttack2026",
   "balasore_div": "balasore2026",
+  "baripada_div": "balasore2026",
   "berhampur_div": "berhampur2026",
   "sambalpur_div": "sambalpur2026",
   "bolangir_div": "bolangir2026",
@@ -11,5 +12,7 @@
   "bhawanipatna_div": "bhawanipatna2026",
   "angul_div": "angul2026",
   "rs_div": "rsdiv2026",
-  "ad_hp_div": "adhp2026"
+  "ad_hp_div": "adhp2026",
+  "phulbani_div": "phulbani2026",
+  "rayagada_div": "rayagada_2026"
 }
