@@ -166,6 +166,7 @@ async function initDB() {
           w.rl || '',
           baselineRemarks
         ]);
+        await pgPool.query(`UPDATE wells SET sl_no = $1, remarks = $2 WHERE well_number = $3;`, [slNoVal, baselineRemarks, w.well_number]);
       }
       console.log("Baseline wells & status remarks synced successfully into PostgreSQL!");
     }
