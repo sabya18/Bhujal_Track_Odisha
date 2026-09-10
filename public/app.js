@@ -114,6 +114,46 @@ function getDistrictFromSheet(sheet) {
   return 'Other';
 }
 
+function getDistrictFromWell(well) {
+  if (!well) return 'Other';
+  if (well.district && typeof well.district === 'string' && well.district.trim()) {
+    const raw = well.district.trim();
+    const s = raw.toLowerCase().replace(/[\s_\.\-]+/g, '');
+    if (s.includes('angul')) return 'Angul';
+    if (s.includes('balasore') || s.includes('baleshwar') || s.includes('balesore')) return 'Balasore';
+    if (s.includes('bargarh')) return 'Bargarh';
+    if (s.includes('bhadrak')) return 'Bhadrak';
+    if (s.includes('bolangir') || s.includes('balangir')) return 'Bolangir';
+    if (s.includes('boudh') || s.includes('baudh')) return 'Boudh';
+    if (s.includes('cuttack')) return 'Cuttack';
+    if (s.includes('deogarh') || s.includes('debagarh')) return 'Deogarh';
+    if (s.includes('dhenkanal')) return 'Dhenkanal';
+    if (s.includes('gajapati')) return 'Gajapati';
+    if (s.includes('ganjam')) return 'Ganjam';
+    if (s.includes('jagatsingh') || s.includes('jspur')) return 'Jagatsinghpur';
+    if (s.includes('jajpur')) return 'Jajpur';
+    if (s.includes('jharsug')) return 'Jharsuguda';
+    if (s.includes('kalahandi')) return 'Kalahandi';
+    if (s.includes('kandhamal') || s.includes('phulbani')) return 'Kandhamal';
+    if (s.includes('kendrapara')) return 'Kendrapara';
+    if (s.includes('keonjhar') || s.includes('kendujhar')) return 'Keonjhar';
+    if (s.includes('khurda') || s.includes('khordha')) return 'Khordha';
+    if (s.includes('koraput')) return 'Koraput';
+    if (s.includes('malkangiri')) return 'Malkangiri';
+    if (s.includes('mayurbhanj')) return 'Mayurbhanj';
+    if (s.includes('nabarang') || s.includes('nawarang')) return 'Nabarangpur';
+    if (s.includes('nayagarh')) return 'Nayagarh';
+    if (s.includes('nuapada')) return 'Nuapada';
+    if (s.includes('puri')) return 'Puri';
+    if (s.includes('rayagada')) return 'Rayagada';
+    if (s.includes('sambal')) return 'Sambalpur';
+    if (s.includes('subarnapur') || s.includes('sonepur')) return 'Subarnapur';
+    if (s.includes('sundar') || s.includes('sunder')) return 'Sundargarh';
+    return raw;
+  }
+  return getDistrictFromSheet(well.sheet);
+}
+
 function normalizeGeoJSONDistrict(distName) {
   if (!distName) return '';
   const d = distName.toLowerCase().replace(/[\s_\.\-]+/g, '');
@@ -627,7 +667,8 @@ function updateDivisionBadge() {
 }
 
 const getDivisionForDistrict = (district) => {
-  const d = (district || '').toLowerCase().replace(/[\s_\.\-]+/g, '');
+  if (!district) return null;
+  const d = district.toLowerCase().replace(/[\s_\.\-]+/g, '');
   if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('jagatsingh') || d.includes('jspur')) return 'CUTTACK DIVISION';
   if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj') || d.includes('keonjhar') || d.includes('kendujhar')) return 'BARIPADA DIVISION';
   if (d.includes('ganjam') || d.includes('gajapati')) return 'BERHAMPUR DIVISION';
@@ -640,14 +681,14 @@ const getDivisionForDistrict = (district) => {
   if (d.includes('khordha') || d.includes('khurda')) return 'AD HP DIVISION';
   if (d.includes('phulbani') || d.includes('kandhamal') || d.includes('boudh') || d.includes('baudh')) return 'PHULBANI DIVISION';
   if (d.includes('rayagada')) return 'RAYAGADA DIVISION';
-  return 'CUTTACK DIVISION';
+  return null;
 };
 
 function getScopedWellsData() {
   const userDiv = getUserDivision();
   if (userDiv === 'ALL') return wellsData;
   return wellsData.filter(well => {
-    const dist = getDistrictFromSheet(well.sheet);
+    const dist = getDistrictFromWell(well);
     const div = getDivisionForDistrict(dist);
     if (userDiv === div) return true;
     if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
@@ -668,7 +709,7 @@ function renderDashboard() {
   const statsByDistrict = {};
   
   targetWells.forEach(well => {
-    const dist = getDistrictFromSheet(well.sheet);
+    const dist = getDistrictFromWell(well);
     if (!statsByDistrict[dist]) {
       statsByDistrict[dist] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
     }
@@ -862,7 +903,7 @@ function filterDashboardBlocks(districtName) {
   
   const blocksMap = {};
   wellsData.forEach(well => {
-    const dist = getDistrictFromSheet(well.sheet);
+    const dist = getDistrictFromWell(well);
     if (dist === districtName && well.block) {
       if (!blocksMap[well.block]) {
         blocksMap[well.block] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
@@ -968,7 +1009,7 @@ function initMap() {
   const districtAverages = {};
   getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
-      const dist = getDistrictFromSheet(well.sheet);
+      const dist = getDistrictFromWell(well);
       const key = normalizeGeoJSONDistrict(dist);
       if (!districtAverages[key]) {
         districtAverages[key] = { sum: 0, count: 0 };
