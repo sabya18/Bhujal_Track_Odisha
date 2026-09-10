@@ -70,7 +70,8 @@ async function initDB() {
       ['admin', 'admin_password_2026', 'admin', 'ALL'],
       ['gwd_officer', 'gwd_password_2026', 'admin', 'ALL'],
       ['cuttack_div', 'cuttack2026', 'division', 'CUTTACK DIVISION'],
-      ['balasore_div', 'balasore2026', 'division', 'BALASORE DIVISION'],
+      ['balasore_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
+      ['baripada_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
       ['berhampur_div', 'berhampur2026', 'division', 'BERHAMPUR DIVISION'],
       ['sambalpur_div', 'sambalpur2026', 'division', 'SAMBALPUR DIVISION'],
       ['bolangir_div', 'bolangir2026', 'division', 'BOLANGIR DIVISION'],
@@ -79,6 +80,8 @@ async function initDB() {
       ['angul_div', 'angul2026', 'division', 'ANGUL DIVISION'],
       ['rs_div', 'rsdiv2026', 'division', 'RS DIVISION'],
       ['ad_hp_div', 'adhp2026', 'division', 'AD HP DIVISION'],
+      ['phulbani_div', 'phulbani2026', 'division', 'PHULBANI DIVISION'],
+      ['rayagada_div', 'rayagada_2026', 'division', 'RAYAGADA DIVISION'],
     ];
 
     for (const [u, p, r, d] of defaultUsers) {

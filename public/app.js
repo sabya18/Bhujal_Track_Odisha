@@ -627,13 +627,17 @@ function updateDivisionBadge() {
 const getDivisionForDistrict = (district) => {
   const d = (district || '').toLowerCase().replace(/[\s_\.\-]+/g, '');
   if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('jagatsingh') || d.includes('jspur')) return 'CUTTACK DIVISION';
-  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj')) return 'BALASORE DIVISION';
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj') || d.includes('keonjhar') || d.includes('kendujhar')) return 'BARIPADA DIVISION';
   if (d.includes('ganjam') || d.includes('gajapati')) return 'BERHAMPUR DIVISION';
   if (d.includes('sambal') || d.includes('jharsug') || d.includes('sundar') || d.includes('sunder') || d.includes('deogarh') || d.includes('debagarh')) return 'SAMBALPUR DIVISION';
-  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur') || d.includes('boudh')) return 'BOLANGIR DIVISION';
-  if (d.includes('koraput') || d.includes('malkangiri') || d.includes('rayagada')) return 'KORAPUT DIVISION';
+  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur')) return 'BOLANGIR DIVISION';
+  if (d.includes('koraput') || d.includes('malkangiri')) return 'KORAPUT DIVISION';
   if (d.includes('kalahandi') || d.includes('nuapada') || d.includes('nabarang') || d.includes('nawarang')) return 'BHAWANIPATNA DIVISION';
   if (d.includes('angul') || d.includes('dhenkanal')) return 'ANGUL DIVISION';
+  if (d.includes('puri') || d.includes('nayagarh')) return 'RS DIVISION';
+  if (d.includes('khordha') || d.includes('khurda')) return 'AD HP DIVISION';
+  if (d.includes('phulbani') || d.includes('kandhamal') || d.includes('boudh') || d.includes('baudh')) return 'PHULBANI DIVISION';
+  if (d.includes('rayagada')) return 'RAYAGADA DIVISION';
   return 'CUTTACK DIVISION';
 };
 
@@ -643,7 +647,9 @@ function getScopedWellsData() {
   return wellsData.filter(well => {
     const dist = getDistrictFromSheet(well.sheet);
     const div = getDivisionForDistrict(dist);
-    return div === userDiv;
+    if (userDiv === div) return true;
+    if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
+    return false;
   });
 }
 
