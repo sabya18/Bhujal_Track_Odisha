@@ -47,6 +47,22 @@ const pgPool = new Pool(
 let isLoaded = false;
 let loadError = null;
 
+// Baseline status lookup dictionary from wells.json
+const baselineStatusMap = {};
+try {
+  const bPath = path.join(__dirname, 'public', 'data', 'wells.json');
+  if (fs.existsSync(bPath)) {
+    const bData = JSON.parse(fs.readFileSync(bPath, 'utf8'));
+    bData.forEach(w => {
+      if (w.well_number) {
+        baselineStatusMap[w.well_number] = w.remarks || 'Active';
+      }
+    });
+  }
+} catch (e) {
+  console.warn("Could not load baselineStatusMap:", e.message);
+}
+
 // Test database connection & auto-initialize tables and default users on startup
 async function initDB() {
   try {
@@ -548,7 +564,7 @@ app.get('/api/wells', async (req, res) => {
         parapet_height: row.parapet_height || 0.0,
         dtgwl_bmp: row.dtgwl_bmp,
         dtgwl_mbgl: row.dtgwl_mbgl,
-        remarks: row.well_remarks || 'Active',
+        remarks: (row.well_remarks && row.well_remarks.trim() !== '') ? row.well_remarks : (baselineStatusMap[row.well_number] || 'Active'),
         visit_remarks: row.visit_remarks || '',
         msl: row.msl,
         rl: row.rl,

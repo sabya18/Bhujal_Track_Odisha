@@ -211,6 +211,7 @@ def main():
     cursor.execute("""
         CREATE TABLE wells (
             well_number VARCHAR(50) PRIMARY KEY,
+            sl_no INTEGER,
             sheet VARCHAR(100),
             district VARCHAR(100),
             block VARCHAR(150),
@@ -223,7 +224,8 @@ def main():
             depth VARCHAR(50),
             parapet_height DOUBLE PRECISION DEFAULT 0.0,
             msl DOUBLE PRECISION,
-            rl DOUBLE PRECISION
+            rl DOUBLE PRECISION,
+            remarks VARCHAR(100) DEFAULT 'Active'
         );
     """)
     
@@ -378,6 +380,25 @@ def main():
                 except Exception as e:
                     print(f"Error inserting visit for {w_num_str}: {e}")
                     
+    # Sync exact baseline sl_no, district, and remarks from wells.json
+    wells_json_path = os.path.join(os.path.dirname(__file__), 'public', 'data', 'wells.json')
+    if os.path.exists(wells_json_path):
+        import json
+        with open(wells_json_path, 'r', encoding='utf-8') as f:
+            baseline_wells = json.load(f)
+        print(f"Syncing baseline status and sl_no from wells.json for {len(baseline_wells)} stations...")
+        for bw in baseline_wells:
+            w_no = bw.get('well_number')
+            if not w_no: continue
+            sl_val = int(bw.get('sl_no')) if bw.get('sl_no') is not None else None
+            rem_val = bw.get('remarks') or 'Active'
+            dist_val = bw.get('district') or ''
+            cursor.execute("""
+                UPDATE wells 
+                SET sl_no = %s, remarks = %s, district = %s
+                WHERE well_number = %s;
+            """, (sl_val, rem_val, dist_val, w_no))
+            
     cursor.close()
     conn.close()
     print(f"\nMigration complete! Synced {wells_inserted} stations and {visits_inserted} visits to PostgreSQL database.")
