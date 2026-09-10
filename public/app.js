@@ -165,7 +165,9 @@ function normalizeBlockName(blockName) {
 function isActiveWell(well) {
   if (!well) return false;
   const status = (well.remarks || '').toLowerCase().trim();
-  return status !== 'closed';
+  if (status === 'active') return true;
+  if (status === 'inactive' || status === 'closed') return false;
+  return well.sl_no ? well.sl_no <= 1535 : true;
 }
 
 function checkDateInSeasonRange(dateStr, targetSeasonStr) {
@@ -674,8 +676,8 @@ function renderDashboard() {
     total++;
     statsByDistrict[dist].total++;
     
-    // Primary active monitoring network wells have sl_no <= 1535
-    const isPrimaryActive = (well.sl_no ? well.sl_no <= 1535 : true) && isActiveWell(well);
+    // Active monitoring network wells based on status column (remarks == 'Active')
+    const isPrimaryActive = isActiveWell(well);
     if (isPrimaryActive) {
       active++;
       statsByDistrict[dist].active++;
