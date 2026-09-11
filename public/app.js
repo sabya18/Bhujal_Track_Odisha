@@ -3934,7 +3934,18 @@ function executeWTTOExcelDownload() {
           });
         }
       });
-      const sortedSeasons = Array.from(seasonsSet).sort();
+
+      const seasonOrder = ['Winter', 'PreMon', 'MidMon', 'PostMon'];
+      const sortedSeasons = Array.from(seasonsSet).sort((a, b) => {
+        const partsA = a.split('_');
+        const partsB = b.split('_');
+        const yearA = parseInt(partsA[0], 10) || 0;
+        const yearB = parseInt(partsB[0], 10) || 0;
+        if (yearA !== yearB) return yearA - yearB;
+        const typeAIdx = seasonOrder.indexOf(partsA[1]);
+        const typeBIdx = seasonOrder.indexOf(partsB[1]);
+        return (typeAIdx !== -1 ? typeAIdx : 99) - (typeBIdx !== -1 ? typeBIdx : 99);
+      });
 
       // Group wells by district
       const wellsByDistrict = {};
