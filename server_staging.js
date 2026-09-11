@@ -256,6 +256,24 @@ app.get('/manifest.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
 
+const defaultUsersMap = {
+  'admin': { password: 'admin_password_2026', role: 'admin', division: 'ALL' },
+  'gwd_officer': { password: 'gwd_password_2026', role: 'admin', division: 'ALL' },
+  'cuttack_div': { password: 'cuttack2026', role: 'division', division: 'CUTTACK DIVISION' },
+  'balasore_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
+  'baripada_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
+  'berhampur_div': { password: 'berhampur2026', role: 'division', division: 'BERHAMPUR DIVISION' },
+  'sambalpur_div': { password: 'sambalpur2026', role: 'division', division: 'SAMBALPUR DIVISION' },
+  'bolangir_div': { password: 'bolangir2026', role: 'division', division: 'BOLANGIR DIVISION' },
+  'koraput_div': { password: 'koraput2026', role: 'division', division: 'KORAPUT DIVISION' },
+  'bhawanipatna_div': { password: 'bhawanipatna2026', role: 'division', division: 'BHAWANIPATNA DIVISION' },
+  'angul_div': { password: 'angul2026', role: 'division', division: 'ANGUL DIVISION' },
+  'rs_div': { password: 'rsdiv2026', role: 'division', division: 'RS DIVISION' },
+  'ad_hp_div': { password: 'adhp2026', role: 'division', division: 'AD HP DIVISION' },
+  'phulbani_div': { password: 'phulbani2026', role: 'division', division: 'PHULBANI DIVISION' },
+  'rayagada_div': { password: 'rayagada_2026', role: 'division', division: 'RAYAGADA DIVISION' },
+};
+
 // Auth check API
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -263,10 +281,13 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ message: "Missing username or password" });
   }
 
+  const trimmedUser = username.trim().toLowerCase();
+  const defaultUser = defaultUsersMap[trimmedUser];
+
   try {
     const dbResult = await pgPool.query(
       'SELECT username, password, role, division FROM app_users WHERE LOWER(username) = LOWER($1)',
-      [username.trim()]
+      [trimmedUser]
     );
     
     if (dbResult.rows.length > 0) {
@@ -280,7 +301,6 @@ app.post('/api/login', async (req, res) => {
         };
         activeSessions.set(token, userSession);
 
-        // Set Cookie: Max age 7 days, HttpOnly to protect against XSS
         res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
         return res.json({ 
           success: true, 
@@ -291,12 +311,31 @@ app.post('/api/login', async (req, res) => {
         });
       }
     }
-    
-    res.status(401).json({ message: "Invalid username or password" });
   } catch (err) {
-    console.error("Database login authentication error:", err);
-    res.status(500).json({ message: "Database login verification failed." });
+    console.warn("Database query failed, evaluating default login fallback:", err.message);
   }
+
+  // Fallback to default user authentication
+  if (defaultUser && defaultUser.password === password) {
+    const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const userSession = {
+      username: trimmedUser,
+      role: defaultUser.role,
+      division: defaultUser.division
+    };
+    activeSessions.set(token, userSession);
+
+    res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
+    return res.json({ 
+      success: true, 
+      username: trimmedUser, 
+      role: userSession.role, 
+      division: userSession.division, 
+      token: token 
+    });
+  }
+
+  res.status(401).json({ message: "Invalid username or password" });
 });
 
 app.post('/api/logout', (req, res) => {
