@@ -3276,7 +3276,8 @@ function initAdvancedExportFeatures() {
       const customB64 = localStorage.getItem(`gw_custom_excel_template_${districtName}`) || localStorage.getItem(`gw_custom_excel_template_${division}`);
       
       if (!customB64) {
-        showToast(`Please upload the WTTO Excel template for ${districtName} or ${division} first.`, "warning");
+        // Fallback: Automatically generate and download full WTTO Excel file directly
+        executeWTTOExcelDownload();
         return;
       }
 
@@ -3881,10 +3882,8 @@ function executeWTTOExcelDownload() {
   const selExportWttoSeason = document.getElementById('sel-export-wtto-season');
   const btnDoWttoDownload = document.getElementById('btn-do-wtto-download');
 
-  if (!selExportWttoDistrict || !selExportWttoSeason) return;
-
-  const selectedScope = selExportWttoDistrict.value;
-  const seasonKey = selExportWttoSeason.value;
+  const selectedScope = selExportWttoDistrict ? selExportWttoDistrict.value : 'ALL_DISTRICTS';
+  const seasonKey = selExportWttoSeason ? selExportWttoSeason.value : `${selectedYear}_PreMon`;
   const userDiv = getUserDivision();
 
   let targetWells = [];
@@ -3897,8 +3896,13 @@ function executeWTTOExcelDownload() {
     targetWells = getScopedWellsData();
     scopeLabel = userDiv.replace(/[\s_]+/g, '_');
   } else {
-    targetWells = (wellsData || []).filter(w => getDistrictFromWell(w) === selectedScope);
+    targetWells = (wellsData || []).filter(w => getDistrictFromWell(w).toLowerCase() === selectedScope.toLowerCase());
     scopeLabel = selectedScope.replace(/[\s_]+/g, '_');
+  }
+
+  if (!targetWells || targetWells.length === 0) {
+    targetWells = getScopedWellsData();
+    scopeLabel = userDiv === 'ALL' ? 'ALL_ODISHA_DISTRICTS' : userDiv.replace(/[\s_]+/g, '_');
   }
 
   if (!targetWells || targetWells.length === 0) {
@@ -3906,8 +3910,10 @@ function executeWTTOExcelDownload() {
     return;
   }
 
-  btnDoWttoDownload.disabled = true;
-  btnDoWttoDownload.innerHTML = '<span>⏳</span> Generating WTTO Excel...';
+  if (btnDoWttoDownload) {
+    btnDoWttoDownload.disabled = true;
+    btnDoWttoDownload.innerHTML = '<span>⏳</span> Generating WTTO Excel...';
+  }
 
   setTimeout(() => {
     try {
@@ -3929,7 +3935,24 @@ function executeWTTOExcelDownload() {
         const distWells = wellsByDistrict[distName];
         
         const sheetData = distWells.map((w, index) => {
-          const hist = (w.history && w.history[seasonKey]) ? w.history[seasonKey] : {};
+          const hist = (w.history && w.history[seasonKey]) ? w.history[seasonKey] : null;
+          let dtgwlMbgl = '';
+          let dtgwlBmp = '';
+          let dateVal = '';
+
+          if (typeof hist === 'number') {
+            dtgwlMbgl = hist;
+            dtgwlBmp = hist;
+          } else if (hist && typeof hist === 'object') {
+            dtgwlMbgl = hist.dtgwl_mbgl ?? hist.dtgwl_bmp ?? '';
+            dtgwlBmp = hist.dtgwl_bmp ?? hist.dtgwl_mbgl ?? '';
+            dateVal = hist.date || '';
+          } else {
+            dtgwlMbgl = w.dtgwl_mbgl ?? '';
+            dtgwlBmp = w.dtgwl_bmp ?? w.dtgwl_mbgl ?? '';
+            dateVal = w.date || '';
+          }
+
           return {
             'Sl No': w.sl_no || (index + 1),
             'Well Number / Code': w.well_number || '',
@@ -3941,10 +3964,10 @@ function executeWTTOExcelDownload() {
             'Longitude': w.lon || w.lon_raw || '',
             'Total Depth (m)': w.depth || '',
             'Parapet Height (m)': w.parapet_height || '',
-            'Water Level Date': hist.date || w.date || '',
-            'Water Level (m bmp)': hist.dtgwl_bmp ?? '',
-            'Water Level (m bgl)': hist.dtgwl_mbgl ?? '',
-            'Remarks / Status': w.remarks || hist.remarks || 'Active'
+            'Water Level Date': dateVal,
+            'Water Level (m bmp)': dtgwlBmp,
+            'Water Level (m bgl)': dtgwlMbgl,
+            'Remarks / Status': w.remarks || (hist && hist.remarks) || 'Active'
           };
         });
 
@@ -3984,8 +4007,10 @@ function executeWTTOExcelDownload() {
       console.error('WTTO Export failed:', err);
       showToast('WTTO export failed: ' + err.message, 'error');
     } finally {
-      btnDoWttoDownload.disabled = false;
-      btnDoWttoDownload.innerHTML = '<span>📥</span> Download WTTO Excel File';
+      if (btnDoWttoDownload) {
+        btnDoWttoDownload.disabled = false;
+        btnDoWttoDownload.innerHTML = '<span>📥</span> Download WTTO Excel File';
+      }
     }
   }, 100);
 }
