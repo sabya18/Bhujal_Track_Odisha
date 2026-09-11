@@ -689,7 +689,7 @@ function getScopedWellsData() {
   if (userDiv === 'ALL') return wellsData;
   return wellsData.filter(well => {
     const dist = getDistrictFromWell(well);
-    const div = getDivisionForDistrict(dist);
+    const div = getDivisionForDistrictLocal(dist);
     if (userDiv === div) return true;
     if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
     return false;
@@ -3766,6 +3766,18 @@ function downloadExcelFromBase64(base64, filename) {
   URL.revokeObjectURL(url);
 }
 
+// Helper: Extract district name from well object
+function getDistrictFromWell(well) {
+  if (!well) return '';
+  if (well.district && typeof well.district === 'string' && well.district.trim() !== '') {
+    return well.district.trim();
+  }
+  if (well.sheet && typeof getDistrictFromSheetLocal === 'function') {
+    return getDistrictFromSheetLocal(well.sheet);
+  }
+  return 'Cuttack';
+}
+
 // --- WTTO Role-Based Excel Download Handler ---
 function initWTTOExportModal() {
   const btnExportSidebar = document.getElementById('btn-export-sidebar');
@@ -3803,7 +3815,7 @@ function initWTTOExportModal() {
       lblWttoScopeName.textContent = `🏢 Division Scope: ${userDiv}`;
       
       const allowedDistricts = allDistricts.filter(dist => {
-        const div = getDivisionForDistrict(dist);
+        const div = getDivisionForDistrictLocal(dist);
         if (div === userDiv) return true;
         if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
         return false;
