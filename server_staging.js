@@ -818,6 +818,6 @@ app.get('/api/news', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Groundwater server listening at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Groundwater server listening on 0.0.0.0:${PORT}`);
 });
