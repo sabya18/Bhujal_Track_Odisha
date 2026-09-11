@@ -3912,7 +3912,7 @@ function executeWTTOExcelDownload() {
 
   if (btnDoWttoDownload) {
     btnDoWttoDownload.disabled = true;
-    btnDoWttoDownload.innerHTML = '<span>⏳</span> Generating WTTO Excel...';
+    btnDoWttoDownload.innerHTML = '<span>⏳</span> Generating WTTO Standard Excel...';
   }
 
   setTimeout(() => {
@@ -3922,6 +3922,19 @@ function executeWTTOExcelDownload() {
       }
 
       const wb = XLSX.utils.book_new();
+
+      // Collect all unique historical seasons up to 2026_PreMon
+      const seasonsSet = new Set();
+      targetWells.forEach(w => {
+        if (w.history && typeof w.history === 'object') {
+          Object.keys(w.history).forEach(k => {
+            if (!k.includes('2026_Mid') && !k.includes('2026_Post')) {
+              seasonsSet.add(k);
+            }
+          });
+        }
+      });
+      const sortedSeasons = Array.from(seasonsSet).sort();
 
       // Group wells by district
       const wellsByDistrict = {};
@@ -3935,71 +3948,65 @@ function executeWTTOExcelDownload() {
         const distWells = wellsByDistrict[distName];
         
         const sheetData = distWells.map((w, index) => {
-          const hist = (w.history && w.history[seasonKey]) ? w.history[seasonKey] : null;
-          let dtgwlMbgl = '';
-          let dtgwlBmp = '';
-          let dateVal = '';
-
-          if (typeof hist === 'number') {
-            dtgwlMbgl = hist;
-            dtgwlBmp = hist;
-          } else if (hist && typeof hist === 'object') {
-            dtgwlMbgl = hist.dtgwl_mbgl ?? hist.dtgwl_bmp ?? '';
-            dtgwlBmp = hist.dtgwl_bmp ?? hist.dtgwl_mbgl ?? '';
-            dateVal = hist.date || '';
-          } else {
-            dtgwlMbgl = w.dtgwl_mbgl ?? '';
-            dtgwlBmp = w.dtgwl_bmp ?? w.dtgwl_mbgl ?? '';
-            dateVal = w.date || '';
-          }
-
-          return {
-            'Sl No': w.sl_no || (index + 1),
-            'Well Number / Code': w.well_number || '',
+          const rowObj = {
+            'Sn': w.sl_no || (index + 1),
             'District': w.district || distName,
-            'Block': w.block || '',
-            'Location / Village': w.location || '',
+            'BLOCK': w.block || '',
+            'Villag/ULB': w.village || '',
+            'Location of Observation wells': w.location || '',
             'Well Type': w.well_type || 'DW',
-            'Latitude': w.lat || w.lat_raw || '',
-            'Longitude': w.lon || w.lon_raw || '',
-            'Total Depth (m)': w.depth || '',
-            'Parapet Height (m)': w.parapet_height || '',
-            'Water Level Date': dateVal,
-            'Water Level (m bmp)': dtgwlBmp,
-            'Water Level (m bgl)': dtgwlMbgl,
-            'Remarks / Status': w.remarks || (hist && hist.remarks) || 'Active'
+            'Well ID': w.well_number || '',
+            'Present Well Status': w.remarks || 'Active',
+            'Lat-DD': w.lat || w.lat_raw || '',
+            'Long-DD': w.lon || w.lon_raw || '',
+            'Installn_Dt': w.installn_dt || '',
+            'Start Monitoring': w.start_mon || '',
+            'End Monitoring': w.end_mon || ''
           };
+
+          // Append historical water level columns matching standard WTTO format
+          sortedSeasons.forEach(sKey => {
+            let val = '';
+            if (w.history && w.history[sKey] !== undefined) {
+              const hVal = w.history[sKey];
+              if (typeof hVal === 'number') val = hVal;
+              else if (hVal && typeof hVal === 'object') val = hVal.dtgwl_mbgl ?? hVal.dtgwl_bmp ?? '';
+              else val = hVal;
+            }
+            rowObj[sKey] = val;
+          });
+
+          return rowObj;
         });
 
         const ws = XLSX.utils.json_to_sheet(sheetData);
 
-        // Auto-set column widths
+        // Standard column width styling
         const colWidths = [
-          { wch: 8 },  // Sl No
-          { wch: 22 }, // Well Number
-          { wch: 16 }, // District
-          { wch: 18 }, // Block
-          { wch: 24 }, // Location
-          { wch: 10 }, // Type
-          { wch: 12 }, // Lat
-          { wch: 12 }, // Lon
-          { wch: 14 }, // Depth
-          { wch: 16 }, // Parapet
-          { wch: 16 }, // Date
-          { wch: 18 }, // m bmp
-          { wch: 18 }, // m bgl
-          { wch: 16 }  // Remarks
+          { wch: 6 },  // Sn
+          { wch: 14 }, // District
+          { wch: 16 }, // BLOCK
+          { wch: 18 }, // Villag/ULB
+          { wch: 28 }, // Location
+          { wch: 10 }, // Well Type
+          { wch: 18 }, // Well ID
+          { wch: 14 }, // Present Well Status
+          { wch: 12 }, // Lat-DD
+          { wch: 12 }, // Long-DD
+          { wch: 12 }, // Installn_Dt
+          { wch: 14 }, // Start Mon
+          { wch: 14 }  // End Mon
         ];
+        sortedSeasons.forEach(() => colWidths.push({ wch: 12 }));
         ws['!cols'] = colWidths;
 
-        // Truncate sheet name to 31 chars max (Excel sheet name limit)
         const safeSheetName = distName.substring(0, 31);
         XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
       });
 
-      const outFilename = `WTTO_${scopeLabel}_${seasonKey}.xlsx`;
+      const outFilename = `WTTO_${scopeLabel}_STANDARD_FORMAT_2026.xlsx`;
       XLSX.writeFile(wb, outFilename);
-      showToast(`✅ WTTO Excel workbook (${outFilename}) downloaded successfully!`, 'success');
+      showToast(`✅ Standard WTTO Excel workbook (${outFilename}) downloaded successfully!`, 'success');
       
       const modal = document.getElementById('modal-wtto-export');
       if (modal) modal.style.display = 'none';
