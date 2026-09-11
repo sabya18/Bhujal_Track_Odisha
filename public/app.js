@@ -3765,3 +3765,223 @@ function downloadExcelFromBase64(base64, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// --- WTTO Role-Based Excel Download Handler ---
+function initWTTOExportModal() {
+  const btnExportSidebar = document.getElementById('btn-export-sidebar');
+  const modalWttoExport = document.getElementById('modal-wtto-export');
+  const btnCloseWttoModal = document.getElementById('btn-close-wtto-modal');
+  const selExportWttoDistrict = document.getElementById('sel-export-wtto-district');
+  const selExportWttoSeason = document.getElementById('sel-export-wtto-season');
+  const lblWttoScopeName = document.getElementById('lbl-wtto-scope-name');
+  const lblWttoStationCount = document.getElementById('lbl-wtto-station-count');
+  const btnDoWttoDownload = document.getElementById('btn-do-wtto-download');
+
+  if (!modalWttoExport) return;
+
+  function populateWTTOOptions() {
+    const userDiv = getUserDivision();
+    selExportWttoDistrict.innerHTML = '';
+
+    // Get list of unique districts from wellsData
+    const allDistricts = Array.from(new Set((wellsData || []).map(w => getDistrictFromWell(w)).filter(Boolean))).sort();
+
+    if (userDiv === 'ALL') {
+      lblWttoScopeName.textContent = '🌐 Statewide Admin Scope (All 30 Odisha Districts)';
+      const optAll = document.createElement('option');
+      optAll.value = 'ALL_DISTRICTS';
+      optAll.textContent = 'All 30 Odisha Districts (Full WTTO Workbook)';
+      selExportWttoDistrict.appendChild(optAll);
+
+      allDistricts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = `District: ${d}`;
+        selExportWttoDistrict.appendChild(opt);
+      });
+    } else {
+      lblWttoScopeName.textContent = `🏢 Division Scope: ${userDiv}`;
+      
+      const allowedDistricts = allDistricts.filter(dist => {
+        const div = getDivisionForDistrict(dist);
+        if (div === userDiv) return true;
+        if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
+        return false;
+      });
+
+      const optDivAll = document.createElement('option');
+      optDivAll.value = 'ALL_DIVISION_DISTRICTS';
+      optDivAll.textContent = `All Districts in ${userDiv.replace(' DIVISION', '')} (${allowedDistricts.length} Districts)`;
+      selExportWttoDistrict.appendChild(optDivAll);
+
+      allowedDistricts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = `District: ${d}`;
+        selExportWttoDistrict.appendChild(opt);
+      });
+    }
+
+    updateWTTOStationCount();
+  }
+
+  function updateWTTOStationCount() {
+    const selectedScope = selExportWttoDistrict.value;
+    let count = 0;
+
+    if (selectedScope === 'ALL_DISTRICTS') {
+      count = (wellsData || []).length;
+    } else if (selectedScope === 'ALL_DIVISION_DISTRICTS') {
+      count = getScopedWellsData().length;
+    } else {
+      count = (wellsData || []).filter(w => getDistrictFromWell(w) === selectedScope).length;
+    }
+
+    lblWttoStationCount.textContent = `${count} Baseline Stations`;
+  }
+
+  if (btnExportSidebar) {
+    btnExportSidebar.onclick = () => {
+      populateWTTOOptions();
+      modalWttoExport.style.display = 'flex';
+    };
+  }
+
+  if (btnCloseWttoModal) {
+    btnCloseWttoModal.onclick = () => {
+      modalWttoExport.style.display = 'none';
+    };
+  }
+
+  if (selExportWttoDistrict) {
+    selExportWttoDistrict.onchange = updateWTTOStationCount;
+  }
+
+  if (btnDoWttoDownload) {
+    btnDoWttoDownload.onclick = () => {
+      executeWTTOExcelDownload();
+    };
+  }
+}
+
+function executeWTTOExcelDownload() {
+  const selExportWttoDistrict = document.getElementById('sel-export-wtto-district');
+  const selExportWttoSeason = document.getElementById('sel-export-wtto-season');
+  const btnDoWttoDownload = document.getElementById('btn-do-wtto-download');
+
+  if (!selExportWttoDistrict || !selExportWttoSeason) return;
+
+  const selectedScope = selExportWttoDistrict.value;
+  const seasonKey = selExportWttoSeason.value;
+  const userDiv = getUserDivision();
+
+  let targetWells = [];
+  let scopeLabel = '';
+
+  if (selectedScope === 'ALL_DISTRICTS') {
+    targetWells = wellsData || [];
+    scopeLabel = 'ALL_ODISHA_DISTRICTS';
+  } else if (selectedScope === 'ALL_DIVISION_DISTRICTS') {
+    targetWells = getScopedWellsData();
+    scopeLabel = userDiv.replace(/[\s_]+/g, '_');
+  } else {
+    targetWells = (wellsData || []).filter(w => getDistrictFromWell(w) === selectedScope);
+    scopeLabel = selectedScope.replace(/[\s_]+/g, '_');
+  }
+
+  if (!targetWells || targetWells.length === 0) {
+    showToast('No station data found for the selected scope.', 'error');
+    return;
+  }
+
+  btnDoWttoDownload.disabled = true;
+  btnDoWttoDownload.innerHTML = '<span>⏳</span> Generating WTTO Excel...';
+
+  setTimeout(() => {
+    try {
+      if (typeof XLSX === 'undefined') {
+        throw new Error("SheetJS exporter library (xlsx.full.min.js) is not loaded.");
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      // Group wells by district
+      const wellsByDistrict = {};
+      targetWells.forEach(w => {
+        const dist = getDistrictFromWell(w) || 'OTHERS';
+        if (!wellsByDistrict[dist]) wellsByDistrict[dist] = [];
+        wellsByDistrict[dist].push(w);
+      });
+
+      Object.keys(wellsByDistrict).sort().forEach(distName => {
+        const distWells = wellsByDistrict[distName];
+        
+        const sheetData = distWells.map((w, index) => {
+          const hist = (w.history && w.history[seasonKey]) ? w.history[seasonKey] : {};
+          return {
+            'Sl No': w.sl_no || (index + 1),
+            'Well Number / Code': w.well_number || '',
+            'District': w.district || distName,
+            'Block': w.block || '',
+            'Location / Village': w.location || '',
+            'Well Type': w.well_type || 'DW',
+            'Latitude': w.lat || w.lat_raw || '',
+            'Longitude': w.lon || w.lon_raw || '',
+            'Total Depth (m)': w.depth || '',
+            'Parapet Height (m)': w.parapet_height || '',
+            'Water Level Date': hist.date || w.date || '',
+            'Water Level (m bmp)': hist.dtgwl_bmp ?? '',
+            'Water Level (m bgl)': hist.dtgwl_mbgl ?? '',
+            'Remarks / Status': w.remarks || hist.remarks || 'Active'
+          };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+
+        // Auto-set column widths
+        const colWidths = [
+          { wch: 8 },  // Sl No
+          { wch: 22 }, // Well Number
+          { wch: 16 }, // District
+          { wch: 18 }, // Block
+          { wch: 24 }, // Location
+          { wch: 10 }, // Type
+          { wch: 12 }, // Lat
+          { wch: 12 }, // Lon
+          { wch: 14 }, // Depth
+          { wch: 16 }, // Parapet
+          { wch: 16 }, // Date
+          { wch: 18 }, // m bmp
+          { wch: 18 }, // m bgl
+          { wch: 16 }  // Remarks
+        ];
+        ws['!cols'] = colWidths;
+
+        // Truncate sheet name to 31 chars max (Excel sheet name limit)
+        const safeSheetName = distName.substring(0, 31);
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+      });
+
+      const outFilename = `WTTO_${scopeLabel}_${seasonKey}.xlsx`;
+      XLSX.writeFile(wb, outFilename);
+      showToast(`✅ WTTO Excel workbook (${outFilename}) downloaded successfully!`, 'success');
+      
+      const modal = document.getElementById('modal-wtto-export');
+      if (modal) modal.style.display = 'none';
+    } catch (err) {
+      console.error('WTTO Export failed:', err);
+      showToast('WTTO export failed: ' + err.message, 'error');
+    } finally {
+      btnDoWttoDownload.disabled = false;
+      btnDoWttoDownload.innerHTML = '<span>📥</span> Download WTTO Excel File';
+    }
+  }, 100);
+}
+
+// Auto-initialize WTTO export event handlers once DOM is interactive
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initWTTOExportModal);
+} else {
+  initWTTOExportModal();
+}
+

@@ -935,6 +935,55 @@
         </div>
       </div>
     </div>
+  <!-- WTTO File Download Modal -->
+  <div class="modal-backdrop" id="modal-wtto-export" style="display: none;">
+    <div class="modal-box" style="max-width: 580px; width: 92%;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid var(--border-color); padding: 16px 20px;">
+        <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>📄</span> WTTO Excel File Download
+        </h2>
+        <button class="btn-close-modal" id="btn-close-wtto-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Access Scope Badge -->
+        <div id="wtto-modal-scope-badge" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🌐</span> <strong id="lbl-wtto-scope-name">Statewide Admin Scope (All 30 Districts)</strong>
+        </div>
+
+        <!-- District Selection Dropdown -->
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #e2e8f0;">Select District Scope:</label>
+          <select id="sel-export-wtto-district" class="form-control" style="background: #0f172a; color: #fff; border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+            <!-- Options dynamically populated by JS based on user role/division -->
+          </select>
+        </div>
+
+        <!-- Season Selection Dropdown -->
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #e2e8f0;">Select Monitoring Season:</label>
+          <select id="sel-export-wtto-season" class="form-control" style="background: #0f172a; color: #fff; border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+            <option value="2026_PreMon" selected>2026 Pre-Monsoon (Premon 2026)</option>
+            <option value="2025_PostMon">2025 Post-Monsoon</option>
+            <option value="2025_MidMon">2025 Mid-Monsoon</option>
+            <option value="2025_PreMon">2025 Pre-Monsoon</option>
+            <option value="2025_Winter">2025 Winter</option>
+          </select>
+        </div>
+
+        <!-- Station Count & Scope Summary Card -->
+        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; font-size: 0.82rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+          <span>Target Stations:</span>
+          <strong id="lbl-wtto-station-count" style="color: #10b981; font-size: 0.95rem; font-family: monospace;">- Stations</strong>
+        </div>
+
+        <!-- Action Button -->
+        <button id="btn-do-wtto-download" class="btn btn-primary w-100" style="padding: 12px; font-size: 0.95rem; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; background: #0284c7; border: none; border-radius: 6px; cursor: pointer;">
+          <span>📥</span> Download WTTO Excel File
+        </button>
+
+      </div>
+    </div>
   </div>
 
   <canvas id="canvas-capture" style="display: none;"></canvas>
