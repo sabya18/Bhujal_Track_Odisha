@@ -6,7 +6,7 @@ const fs = require('fs');
 const { execFile } = require('child_process');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.STAGING_PORT || process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -27,22 +27,32 @@ function getCookie(req, name) {
   return null;
 }
 
-// --- PostgreSQL Database Config ---
+// --- PostgreSQL Staging Database Config ---
 const { Pool } = require('pg');
 const pgPool = new Pool(
-  process.env.DATABASE_URL ? {
-    connectionString: process.env.DATABASE_URL,
+  (process.env.STAGING_DATABASE_URL || process.env.DATABASE_URL) ? {
+    connectionString: process.env.STAGING_DATABASE_URL || process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   } : {
     host: 'localhost',
     user: 'postgres',
     password: '1234',
-    database: 'bhujal_monitor',
+    database: 'bhujal_monitor_staging',
     port: 5432,
     max: 40,
     idleTimeoutMillis: 30000
   }
 );
+
+// Force all connections in staging pool to use isolated 'staging' schema
+pgPool.on('connect', async (client) => {
+  try {
+    await client.query('CREATE SCHEMA IF NOT EXISTS staging;');
+    await client.query('SET search_path TO staging, public;');
+  } catch (e) {
+    console.warn("Staging schema set error:", e.message);
+  }
+});
 
 let isLoaded = false;
 let loadError = null;
@@ -67,9 +77,11 @@ try {
 async function initDB() {
   try {
     await pgPool.query('SELECT 1');
+    await pgPool.query('CREATE SCHEMA IF NOT EXISTS staging;');
+    await pgPool.query('SET search_path TO staging;');
     isLoaded = true;
     loadError = null;
-    console.log("PostgreSQL database connected successfully.");
+    console.log("[STAGING ENVIRONMENT] Connected to PostgreSQL. Isolated 'staging' schema initialized.");
 
     // 1. Create app_users table
     await pgPool.query(`
