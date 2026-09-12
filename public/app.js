@@ -1296,36 +1296,33 @@ function initMap() {
         
         layer.bindTooltip(`Block: ${rawBlock}<br/>Water level: ${avg ? avg + ' m BGL' : 'No Data'}`, { sticky: true });
         
-        // Add block labels
-        try {
-          const bounds = layer.getBounds();
-          if (bounds && typeof bounds.getCenter === 'function') {
-            const center = bounds.getCenter();
-            if (center && center.lat && center.lng) {
-              L.marker(center, {
-                icon: L.divIcon({
-                  className: 'map-centroid-label block-centroid-label',
-                  html: `<div class="centroid-text block-text">${rawBlock}</div>`,
-                  iconSize: [80, 16],
-                  iconAnchor: [40, 8]
-                })
-              }).addTo(mapLabelsGroup);
+        // Add block labels ONLY when zoomed into a district (zoom >= 9) or if a specific district is filtered
+        const currentZoomVal = mainMap ? mainMap.getZoom() : 7;
+        const currentDistFilter = document.getElementById('map-filter-district') ? document.getElementById('map-filter-district').value : 'ALL';
+        if (currentZoomVal >= 9 || currentDistFilter !== 'ALL') {
+          try {
+            const bounds = layer.getBounds();
+            if (bounds && typeof bounds.getCenter === 'function') {
+              const center = bounds.getCenter();
+              if (center && center.lat && center.lng) {
+                L.marker(center, {
+                  icon: L.divIcon({
+                    className: 'map-centroid-label block-centroid-label',
+                    html: `<div class="centroid-text block-text">${rawBlock}</div>`,
+                    iconSize: [80, 16],
+                    iconAnchor: [40, 8]
+                  })
+                }).addTo(mapLabelsGroup);
+              }
             }
+          } catch (err) {
+            console.warn("Failed to plot block label:", err);
           }
-        } catch (err) {
-          console.warn("Failed to plot block label:", err);
         }
         
         layer.on('click', () => {
           mainMap.fitBounds(layer.getBounds());
-          const blockFilter = document.getElementById('map-filter-block');
-          if (blockFilter) {
-            const matchedOption = Array.from(blockFilter.options).find(o => o.value.toLowerCase().trim() === blockKey);
-            if (matchedOption) {
-              blockFilter.value = matchedOption.value;
-              blockFilter.dispatchEvent(new Event('change'));
-            }
-          }
+          openBlockAnalyticsModal(rawBlock, blockKey, feature.properties);
         });
       }
     }).addTo(mainMap);
@@ -1423,6 +1420,183 @@ function plotMarkersOnMap() {
   });
 
   updateMapLegend();
+}
+
+function openBlockAnalyticsModal(rawBlock, blockKey, props) {
+  const modal = document.getElementById('modal-block-analytics');
+  if (!modal) return;
+
+  const districtFilter = document.getElementById('map-filter-district');
+  const selectedDist = districtFilter ? districtFilter.value : 'ALL';
+
+  // Find district name for this block from matching wells or GeoJSON properties
+  let matchedDistName = selectedDist !== 'ALL' ? selectedDist : '-';
+  const blockWells = getScopedWellsData().filter(w => (w.block || '').toLowerCase().trim() === blockKey);
+  
+  if (matchedDistName === '-' && blockWells.length > 0) {
+    matchedDistName = getDistrictFromWell(blockWells[0]);
+  }
+  if (matchedDistName === '-' && props && (props.Dist_Name || props.dtname)) {
+    matchedDistName = props.Dist_Name || props.dtname;
+  }
+
+  // Calculate statistics
+  let totalWells = blockWells.length;
+  let monitoredCount = 0;
+  let pendingCount = 0;
+  let activeCount = 0;
+  let sumGwl = 0;
+
+  blockWells.forEach(well => {
+    const isAct = isActiveWell(well);
+    if (isAct) activeCount++;
+    const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+    if (seasonal.dtgwl_mbgl !== null) {
+      monitoredCount++;
+      sumGwl += seasonal.dtgwl_mbgl;
+    } else if (isAct) {
+      pendingCount++;
+    }
+  });
+
+  const avgGwl = monitoredCount > 0 ? (sumGwl / monitoredCount).toFixed(2) : null;
+
+  // Update Modal Fields
+  const titleEl = document.getElementById('lbl-block-modal-title');
+  const distEl = document.getElementById('lbl-block-modal-district');
+  if (titleEl) titleEl.textContent = `${rawBlock} Block Analytics`;
+  if (distEl) distEl.textContent = matchedDistName;
+
+  // Health Status Badge
+  const healthBadge = document.getElementById('lbl-block-modal-health');
+  if (healthBadge) {
+    if (avgGwl === null) {
+      healthBadge.textContent = '⚪ No Data Recorded';
+      healthBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+      healthBadge.style.color = '#94a3b8';
+      healthBadge.style.borderColor = '#94a3b8';
+    } else {
+      const val = parseFloat(avgGwl);
+      if (val < 2.0) {
+        healthBadge.textContent = `🟢 Shallow / High Level (${avgGwl} m BGL)`;
+        healthBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+        healthBadge.style.color = '#38bdf8';
+        healthBadge.style.borderColor = '#38bdf8';
+      } else if (val <= 4.0) {
+        healthBadge.textContent = `🟢 Safe / Normal (${avgGwl} m BGL)`;
+        healthBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        healthBadge.style.color = '#10b981';
+        healthBadge.style.borderColor = '#10b981';
+      } else if (val <= 8.0) {
+        healthBadge.textContent = `🟡 Moderate Depth (${avgGwl} m BGL)`;
+        healthBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+        healthBadge.style.color = '#f59e0b';
+        healthBadge.style.borderColor = '#f59e0b';
+      } else {
+        healthBadge.textContent = `🔴 Depleted / Deep (${avgGwl} m BGL)`;
+        healthBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+        healthBadge.style.color = '#ef4444';
+        healthBadge.style.borderColor = '#ef4444';
+      }
+    }
+  }
+
+  // Summary Stat Cards
+  const avgEl = document.getElementById('lbl-block-stat-avg');
+  const totalEl = document.getElementById('lbl-block-stat-total');
+  const monEl = document.getElementById('lbl-block-stat-monitored');
+  const pendEl = document.getElementById('lbl-block-stat-pending');
+
+  if (avgEl) avgEl.textContent = avgGwl ? `${avgGwl} m BGL` : '-';
+  if (totalEl) totalEl.textContent = totalWells;
+  if (monEl) monEl.textContent = monitoredCount;
+  if (pendEl) pendEl.textContent = pendingCount;
+
+  // Build Stations Inventory Table
+  const tbody = document.getElementById('tbody-block-wells-list');
+  if (tbody) {
+    tbody.innerHTML = '';
+    if (blockWells.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; color:#94a3b8;">No groundwater monitoring stations registered under this block.</td></tr>`;
+    } else {
+      blockWells.forEach(well => {
+        const isAct = isActiveWell(well);
+        const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+        const isMon = seasonal.dtgwl_mbgl !== null;
+
+        let statusBadge = '<span style="color:#94a3b8; font-weight:600;">Closed</span>';
+        let depthText = '<span style="color:#94a3b8;">-</span>';
+        if (isAct) {
+          if (isMon) {
+            statusBadge = '<span style="color:#10b981; font-weight:600;">🟢 Monitored</span>';
+            depthText = `<strong style="color:#38bdf8;">${seasonal.dtgwl_mbgl} m BGL</strong>`;
+          } else {
+            statusBadge = '<span style="color:#ef4444; font-weight:600;">🔴 Pending</span>';
+            depthText = '<span style="color:#ef4444;">Pending Visit</span>';
+          }
+        }
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color)';
+        tr.innerHTML = `
+          <td style="padding:8px 12px; font-weight:600; color:#38bdf8;">${well.well_number || '-'}</td>
+          <td style="padding:8px 12px;">${well.location || '-'}</td>
+          <td style="padding:8px 12px;">${depthText}</td>
+          <td style="padding:8px 12px;">${statusBadge}</td>
+          <td style="padding:8px 12px; text-align:right;">
+            <button class="btn btn-sm-well-view" data-well-id="${well.well_number}" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+              🔍 View Well
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Attach click listeners to well view buttons inside modal
+      tbody.querySelectorAll('.btn-sm-well-view').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const wellNo = e.currentTarget.getAttribute('data-well-id');
+          const targetWell = blockWells.find(w => w.well_number === wellNo);
+          if (targetWell) {
+            modal.style.display = 'none';
+            openVisitEditModal(targetWell);
+          }
+        });
+      });
+    }
+  }
+
+  // Action button: Filter Dashboard to this Block
+  const filterBtn = document.getElementById('btn-block-modal-filter-dash');
+  if (filterBtn) {
+    filterBtn.onclick = () => {
+      const distFilter = document.getElementById('map-filter-district');
+      const blockFilter = document.getElementById('map-filter-block');
+      if (distFilter && matchedDistName !== '-' && matchedDistName !== 'ALL') {
+        distFilter.value = matchedDistName;
+        distFilter.dispatchEvent(new Event('change'));
+      }
+      if (blockFilter) {
+        const matchedOption = Array.from(blockFilter.options).find(o => o.value.toLowerCase().trim() === blockKey);
+        if (matchedOption) {
+          blockFilter.value = matchedOption.value;
+          blockFilter.dispatchEvent(new Event('change'));
+        }
+      }
+      modal.style.display = 'none';
+    };
+  }
+
+  // Modal Close Handlers
+  const closeBtn = document.getElementById('btn-close-block-modal');
+  if (closeBtn) {
+    closeBtn.onclick = () => { modal.style.display = 'none'; };
+  }
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+  };
+
+  modal.style.display = 'flex';
 }
 
 function setupActionButtons() {

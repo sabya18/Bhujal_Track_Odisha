@@ -1052,6 +1052,77 @@
     </div>
   </div>
 
+  <!-- Block Groundwater Analytics Modal -->
+  <div class="modal-backdrop" id="modal-block-analytics" style="display: none;">
+    <div class="modal-box" style="max-width: 720px; width: 92%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid var(--border-color); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🏢</span> <span id="lbl-block-modal-title">Block Groundwater Analytics</span>
+        </h2>
+        <button class="btn-close-modal" id="btn-close-block-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;">
+        
+        <!-- District & Health Badge Summary -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(30, 41, 59, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="font-size: 0.9rem; color: #e2e8f0;">
+            📍 District: <strong id="lbl-block-modal-district" style="color: #38bdf8;">-</strong>
+          </div>
+          <div id="lbl-block-modal-health" style="padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+            🟢 Safe (- m BGL)
+          </div>
+        </div>
+
+        <!-- 4 Stats Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+          <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Avg Water Depth</div>
+            <div id="lbl-block-stat-avg" style="font-size: 1.1rem; font-weight: 700; color: #38bdf8;">- m BGL</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Total Wells</div>
+            <div id="lbl-block-stat-total" style="font-size: 1.1rem; font-weight: 700; color: #f8fafc;">0</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Monitored Wells</div>
+            <div id="lbl-block-stat-monitored" style="font-size: 1.1rem; font-weight: 700; color: #10b981;">0</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Pending Visit</div>
+            <div id="lbl-block-stat-pending" style="font-size: 1.1rem; font-weight: 700; color: #ef4444;">0</div>
+          </div>
+        </div>
+
+        <!-- Block Stations List Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <h4 style="margin: 0; font-size: 0.95rem; color: #f8fafc; font-weight: 600;">💧 Monitoring Stations in Block</h4>
+          <button id="btn-block-modal-filter-dash" class="btn" style="background: #0284c7; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+            🎯 Filter Dashboard to Block
+          </button>
+        </div>
+
+        <!-- Stations List Table -->
+        <div style="background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; max-height: 240px; overflow-y: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; color: #e2e8f0; text-align: left;">
+            <thead style="background: #1e293b; position: sticky; top: 0; z-index: 1;">
+              <tr>
+                <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Well Number</th>
+                <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Location / Village</th>
+                <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Water Depth</th>
+                <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Status</th>
+                <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-block-wells-list">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <canvas id="canvas-capture" style="display: none;"></canvas>
 
   <!-- Mobile Bottom Navigation Bar (Visible only on mobile devices) -->
@@ -1069,6 +1140,6 @@
   <script src="wells_initial.js"></script>
   <script src="xlsx.full.min.js"></script>
   <!-- Main application script -->
-  <script src="app.js?v=85"></script>
+  <script src="app.js?v=86"></script>
 </body>
 </html>
