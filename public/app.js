@@ -157,36 +157,36 @@ function getDistrictFromWell(well) {
 function normalizeGeoJSONDistrict(distName) {
   if (!distName) return '';
   const d = distName.toLowerCase().replace(/[\s_\.\-]+/g, '');
-  if (d.includes('angul')) return 'angul';
-  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore')) return 'balasore';
-  if (d.includes('bargarh')) return 'bargarh';
-  if (d.includes('bhadrak')) return 'bhadrak';
-  if (d.includes('bolangir') || d.includes('balangir')) return 'bolangir';
-  if (d.includes('boudh')) return 'boudh';
-  if (d.includes('cuttack')) return 'cuttack';
-  if (d.includes('deogarh') || d.includes('debagarh')) return 'deogarh';
+  if (d.includes('angul') || d.includes('angl')) return 'angul';
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('baleswar') || d.includes('bls')) return 'balasore';
+  if (d.includes('bargarh') || d.includes('brgh')) return 'bargarh';
+  if (d.includes('bhadrak') || d.includes('bdrk')) return 'bhadrak';
+  if (d.includes('bolangir') || d.includes('balangir') || d.includes('blgr')) return 'bolangir';
+  if (d.includes('boudh') || d.includes('baudh') || d.includes('bdh')) return 'boudh';
+  if (d.includes('cuttack') || d.includes('ctc')) return 'cuttack';
+  if (d.includes('deogarh') || d.includes('debagarh') || d.includes('dgr')) return 'deogarh';
   if (d.includes('dhenkanal')) return 'dhenkanal';
-  if (d.includes('gajapati')) return 'gajapati';
-  if (d.includes('ganjam')) return 'ganjam';
-  if (d.includes('jagatsingh') || d.includes('jspur')) return 'jagatsinghpur';
-  if (d.includes('jajpur')) return 'jajpur';
-  if (d.includes('jharsug')) return 'jharsuguda';
-  if (d.includes('kalahandi')) return 'kalahandi';
-  if (d.includes('kandhamal')) return 'kandhamal';
-  if (d.includes('kendrapara')) return 'kendrapara';
-  if (d.includes('keonjhar') || d.includes('kendujhar')) return 'keonjhar';
-  if (d.includes('khurda') || d.includes('khordha')) return 'khordha';
-  if (d.includes('koraput')) return 'koraput';
-  if (d.includes('malkangiri')) return 'malkangiri';
-  if (d.includes('mayurbhanj')) return 'mayurbhanj';
-  if (d.includes('nabarang') || d.includes('nawarang')) return 'nabarangpur';
-  if (d.includes('nayagarh')) return 'nayagarh';
-  if (d.includes('nuapada')) return 'nuapada';
+  if (d.includes('gajapati') || d.includes('gjpt')) return 'gajapati';
+  if (d.includes('ganjam') || d.includes('gnjm')) return 'ganjam';
+  if (d.includes('jagatsingh') || d.includes('jspur') || d.includes('jtsgp')) return 'jagatsinghpur';
+  if (d.includes('jajpur') || d.includes('jjp')) return 'jajpur';
+  if (d.includes('jharsug') || d.includes('jsgd')) return 'jharsuguda';
+  if (d.includes('kalahandi') || d.includes('klhd')) return 'kalahandi';
+  if (d.includes('kandhamal') || d.includes('phulbani') || d.includes('kndh')) return 'kandhamal';
+  if (d.includes('kendrapara') || d.includes('kdp')) return 'kendrapara';
+  if (d.includes('keonjhar') || d.includes('kendujhar') || d.includes('kjr')) return 'keonjhar';
+  if (d.includes('khurda') || d.includes('khordha') || d.includes('hordha') || d.includes('bhubaneswar') || d.includes('bbsr')) return 'khordha';
+  if (d.includes('koraput') || d.includes('krpt')) return 'koraput';
+  if (d.includes('malkangiri') || d.includes('mkgri')) return 'malkangiri';
+  if (d.includes('mayurbhanj') || d.includes('mybh')) return 'mayurbhanj';
+  if (d.includes('nabarang') || d.includes('nawarang') || d.includes('nbrg')) return 'nabarangpur';
+  if (d.includes('nayagarh') || d.includes('nygh')) return 'nayagarh';
+  if (d.includes('nuapada') || d.includes('npda')) return 'nuapada';
   if (d.includes('puri')) return 'puri';
-  if (d.includes('rayagada')) return 'rayagada';
-  if (d.includes('sambal')) return 'sambalpur';
-  if (d.includes('subarnapur') || d.includes('sonepur')) return 'subarnapur';
-  if (d.includes('sundar') || d.includes('sunder')) return 'sundargarh';
+  if (d.includes('rayagada') || d.includes('rygd')) return 'rayagada';
+  if (d.includes('sambal') || d.includes('sbpr')) return 'sambalpur';
+  if (d.includes('subarnapur') || d.includes('sonepur') || d.includes('subrn')) return 'subarnapur';
+  if (d.includes('sundar') || d.includes('sunder') || d.includes('sndg')) return 'sundargarh';
   return d.replace(/_blocks/g, '').replace(/_urban/g, '').trim();
 }
 
@@ -928,6 +928,7 @@ function renderDashboardMap(statsByDistrict) {
 }
 
 function filterDashboardBlocks(districtName) {
+  const normTarget = normalizeGeoJSONDistrict(districtName);
   const detailsTitle = document.getElementById('lbl-block-details-title');
   if (detailsTitle) detailsTitle.textContent = `Block Details (${districtName})`;
 
@@ -936,9 +937,9 @@ function filterDashboardBlocks(districtName) {
   breakdownList.innerHTML = '';
   
   const blocksMap = {};
-  wellsData.forEach(well => {
+  getScopedWellsData().forEach(well => {
     const dist = getDistrictFromWell(well);
-    if (dist === districtName && well.block) {
+    if (normalizeGeoJSONDistrict(dist) === normTarget && well.block) {
       if (!blocksMap[well.block]) {
         blocksMap[well.block] = { total: 0, active: 0, monitored: 0, sumMbgl: 0, countMbgl: 0 };
       }
@@ -1014,6 +1015,48 @@ let showWaterDepthMap = true;
 let showBlocksOverlay = false;
 let showStationMarkers = true;
 
+function updateMapLegend() {
+  const legendDiv = document.querySelector('#leaflet-map-element .map-legend-control');
+  if (!legendDiv) return;
+  const isDark = theme === 'dark';
+
+  if (!showStationMarkers && !showWaterDepthMap) {
+    legendDiv.style.display = 'none';
+    return;
+  }
+  
+  legendDiv.style.display = 'block';
+  legendDiv.style.backgroundColor = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  legendDiv.style.border = '1px solid ' + (isDark ? '#334155' : '#cbd5e1');
+  legendDiv.style.color = isDark ? '#f8fafc' : '#0f172a';
+
+  let html = '';
+  if (showWaterDepthMap) {
+    html += `
+      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">WATER TABLE DEPTH</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#0284c7; border-radius:2px; margin-right:6px; display:inline-block;"></span>&lt; 2.0 m (Shallow)</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#10b981; border-radius:2px; margin-right:6px; display:inline-block;"></span>2.0 - 4.0 m</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:2px; margin-right:6px; display:inline-block;"></span>4.0 - 6.0 m</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f97316; border-radius:2px; margin-right:6px; display:inline-block;"></span>6.0 - 8.0 m</div>
+      <div style="display:flex; align-items:center; margin-bottom:5px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
+    `;
+  }
+
+  if (showStationMarkers) {
+    if (showWaterDepthMap) {
+      html += `<div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>`;
+    }
+    html += `
+      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
+      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
+      <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
+    `;
+  }
+
+  legendDiv.innerHTML = html;
+}
+window.updateMapLegend = updateMapLegend;
+
 function initMap() {
   const mapElement = document.getElementById('leaflet-map-element');
   if (!mapElement || !odishaDistrictsGeoJSON) return;
@@ -1072,47 +1115,6 @@ function initMap() {
     return div;
   };
   legendControl.addTo(mainMap);
-
-function updateMapLegend() {
-  const legendDiv = document.querySelector('#leaflet-map-element .map-legend-control');
-  if (!legendDiv) return;
-  const isDark = theme === 'dark';
-
-  if (!showStationMarkers && !showWaterDepthMap) {
-    legendDiv.style.display = 'none';
-    return;
-  }
-  
-  legendDiv.style.display = 'block';
-  legendDiv.style.backgroundColor = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-  legendDiv.style.border = '1px solid ' + (isDark ? '#334155' : '#cbd5e1');
-  legendDiv.style.color = isDark ? '#f8fafc' : '#0f172a';
-
-  let html = '';
-  if (showWaterDepthMap) {
-    html += `
-      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">WATER TABLE DEPTH</div>
-      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#0284c7; border-radius:2px; margin-right:6px; display:inline-block;"></span>&lt; 2.0 m (Shallow)</div>
-      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#10b981; border-radius:2px; margin-right:6px; display:inline-block;"></span>2.0 - 4.0 m</div>
-      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:2px; margin-right:6px; display:inline-block;"></span>4.0 - 6.0 m</div>
-      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f97316; border-radius:2px; margin-right:6px; display:inline-block;"></span>6.0 - 8.0 m</div>
-      <div style="display:flex; align-items:center; margin-bottom:5px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
-    `;
-  }
-
-  if (showStationMarkers) {
-    if (showWaterDepthMap) {
-      html += `<div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>`;
-    }
-    html += `
-      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
-      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
-      <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
-    `;
-  }
-
-  legendDiv.innerHTML = html;
-}
   
   // Calculate average water levels per district
   const districtAverages = {};
