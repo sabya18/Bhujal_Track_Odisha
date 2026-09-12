@@ -1,0 +1,2186 @@
+{
+  "ANUGUL": {
+    "district": "ANGUL",
+    "block": "ANUGUL",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ATHMALLIK": {
+    "district": "ANGUL",
+    "block": "ATHMALLIK",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BANARPAL": {
+    "district": "ANGUL",
+    "block": "BANARPAL",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "CHHENDIPADA": {
+    "district": "ANGUL",
+    "block": "CHHENDIPADA",
+    "aquifer": "Sandstone",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KANIHA": {
+    "district": "ANGUL",
+    "block": "KANIHA",
+    "aquifer": "Sandstone",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KISHORENAGAR": {
+    "district": "ANGUL",
+    "block": "KISHORENAGAR",
+    "aquifer": "Sandstone",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PALALAHADA": {
+    "district": "ANGUL",
+    "block": "PALALAHADA",
+    "aquifer": "Intrusive",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "TALCHER": {
+    "district": "ANGUL",
+    "block": "TALCHER",
+    "aquifer": "Sandstone",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BAHANAGA": {
+    "district": "BALASORE",
+    "block": "BAHANAGA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 24
+  },
+  "BALASORE": {
+    "district": "BALASORE",
+    "block": "BALASORE",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 24
+  },
+  "BALIAPAL": {
+    "district": "BALASORE",
+    "block": "BALIAPAL",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 24
+  },
+  "BASTA": {
+    "district": "BALASORE",
+    "block": "BASTA",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 20
+  },
+  "BHOGRAI": {
+    "district": "BALASORE",
+    "block": "BHOGRAI",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 20
+  },
+  "JALESWAR": {
+    "district": "BALASORE",
+    "block": "JALESWAR",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 16
+  },
+  "KHAIRA": {
+    "district": "BALASORE",
+    "block": "KHAIRA",
+    "aquifer": "Alluvium",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 16
+  },
+  "NILGIRI": {
+    "district": "BALASORE",
+    "block": "NILGIRI",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "OUPADA": {
+    "district": "BALASORE",
+    "block": "OUPADA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 16
+  },
+  "REMUNA": {
+    "district": "BALASORE",
+    "block": "REMUNA",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 20
+  },
+  "SIMULIA": {
+    "district": "BALASORE",
+    "block": "SIMULIA",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 24
+  },
+  "SORO": {
+    "district": "BALASORE",
+    "block": "SORO",
+    "aquifer": "Alluvium",
+    "specificYield": 6,
+    "rainfallInfiltrationFactor": 24
+  },
+  "AMBABHONA": {
+    "district": "BARGARH",
+    "block": "AMBABHONA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ATTABIRA": {
+    "district": "BARGARH",
+    "block": "ATTABIRA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BARAPALI": {
+    "district": "BARGARH",
+    "block": "BARAPALI",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BARGARH": {
+    "district": "BARGARH",
+    "block": "BARGARH",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BHATLI": {
+    "district": "BARGARH",
+    "block": "BHATLI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BHEDEN": {
+    "district": "BARGARH",
+    "block": "BHEDEN",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BIJEPUR": {
+    "district": "BARGARH",
+    "block": "BIJEPUR",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GAISILET": {
+    "district": "BARGARH",
+    "block": "GAISILET",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JHARBANDHA": {
+    "district": "BARGARH",
+    "block": "JHARBANDHA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PADAMPUR": {
+    "district": "BARGARH",
+    "block": "PADAMPUR",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PAIKAMAL": {
+    "district": "BARGARH",
+    "block": "PAIKAMAL",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SOHELA": {
+    "district": "BARGARH",
+    "block": "SOHELA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BASUDEVPUR": {
+    "district": "BHADRAK",
+    "block": "BASUDEVPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BHADRAK": {
+    "district": "BHADRAK",
+    "block": "BHADRAK",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BHANDARIPOKHARI": {
+    "district": "BHADRAK",
+    "block": "BHANDARIPOKHARI",
+    "aquifer": "Alluvium",
+    "specificYield": 9,
+    "rainfallInfiltrationFactor": 15
+  },
+  "BONTH": {
+    "district": "BHADRAK",
+    "block": "BONTH",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "CHANDBALI": {
+    "district": "BHADRAK",
+    "block": "CHANDBALI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "DHAMNAGAR": {
+    "district": "BHADRAK",
+    "block": "DHAMNAGAR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "TIHIDI": {
+    "district": "BHADRAK",
+    "block": "TIHIDI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "AGALPUR": {
+    "district": "BOLANGIR",
+    "block": "AGALPUR",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BALANGIR": {
+    "district": "BOLANGIR",
+    "block": "BALANGIR",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BANGOMUNDA": {
+    "district": "BOLANGIR",
+    "block": "BANGOMUNDA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BELPARA": {
+    "district": "BOLANGIR",
+    "block": "BELPARA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DEOGAON": {
+    "district": "BOLANGIR",
+    "block": "DEOGAON",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GUDVELLA": {
+    "district": "BOLANGIR",
+    "block": "GUDVELLA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KHAPRAKHOL": {
+    "district": "BOLANGIR",
+    "block": "KHAPRAKHOL",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "LOISINGA": {
+    "district": "BOLANGIR",
+    "block": "LOISINGA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "MURIBAHAL": {
+    "district": "BOLANGIR",
+    "block": "MURIBAHAL",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PATNAGARH": {
+    "district": "BOLANGIR",
+    "block": "PATNAGARH",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PUINTALA": {
+    "district": "BOLANGIR",
+    "block": "PUINTALA",
+    "aquifer": "Intrusive",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SAINTALA": {
+    "district": "BOLANGIR",
+    "block": "SAINTALA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "TITLAGARH": {
+    "district": "BOLANGIR",
+    "block": "TITLAGARH",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "TUREKELA": {
+    "district": "BOLANGIR",
+    "block": "TUREKELA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BOUDH": {
+    "district": "BOUDH",
+    "block": "BOUDH",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "HARBHANGA": {
+    "district": "BOUDH",
+    "block": "HARBHANGA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KANTAMAL": {
+    "district": "BOUDH",
+    "block": "KANTAMAL",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "ATHAGAD": {
+    "district": "CUTTACK",
+    "block": "ATHAGAD",
+    "aquifer": "Khondalite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 5
+  },
+  "BADAMBA": {
+    "district": "CUTTACK",
+    "block": "BADAMBA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BANKI": {
+    "district": "CUTTACK",
+    "block": "BANKI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 7
+  },
+  "BANKIDAMPARA": {
+    "district": "CUTTACK",
+    "block": "BANKI-DAMPARA",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 7
+  },
+  "BARANG": {
+    "district": "CUTTACK",
+    "block": "BARANG",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 20
+  },
+  "CUTTACKSADAR": {
+    "district": "CUTTACK",
+    "block": "CUTTACK SADAR",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 24
+  },
+  "KANTAPADA": {
+    "district": "CUTTACK",
+    "block": "KANTAPADA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 20
+  },
+  "MAHANGA": {
+    "district": "CUTTACK",
+    "block": "MAHANGA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 20
+  },
+  "NARASINGHPUR": {
+    "district": "CUTTACK",
+    "block": "NARASINGHPUR",
+    "aquifer": "Khondalite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "NIALI": {
+    "district": "CUTTACK",
+    "block": "NIALI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 24
+  },
+  "NISCHINTAKOILI": {
+    "district": "CUTTACK",
+    "block": "NISCHINTAKOILI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 24
+  },
+  "SALEPUR": {
+    "district": "CUTTACK",
+    "block": "SALEPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 24
+  },
+  "TANGICHOUDWAR": {
+    "district": "CUTTACK",
+    "block": "TANGI-CHOUDWAR",
+    "aquifer": "Alluvium",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 7
+  },
+  "TIGIRIA": {
+    "district": "CUTTACK",
+    "block": "TIGIRIA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BARKOTE": {
+    "district": "DEOGARH",
+    "block": "BARKOTE",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "REAMAL": {
+    "district": "DEOGARH",
+    "block": "REAMAL",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "TILEIBANI": {
+    "district": "DEOGARH",
+    "block": "TILEIBANI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BHUBAN": {
+    "district": "DHENKANAL",
+    "block": "BHUBAN",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DHENKANAL": {
+    "district": "DHENKANAL",
+    "block": "DHENKANAL",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GOUNDIA": {
+    "district": "DHENKANAL",
+    "block": "GOUNDIA",
+    "aquifer": "Laterite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "HINDOL": {
+    "district": "DHENKANAL",
+    "block": "HINDOL",
+    "aquifer": "Charnokite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KAMAKSHYANAGAR": {
+    "district": "DHENKANAL",
+    "block": "KAMAKSHYANAGAR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KANKADAHAD": {
+    "district": "DHENKANAL",
+    "block": "KANKADAHAD",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ODAPADA": {
+    "district": "DHENKANAL",
+    "block": "ODAPADA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PARAJANG": {
+    "district": "DHENKANAL",
+    "block": "PARAJANG",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GOSANI": {
+    "district": "GAJAPATI",
+    "block": "GOSANI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GUMA": {
+    "district": "GAJAPATI",
+    "block": "GUMA",
+    "aquifer": "Charnokite",
+    "specificYield": 5,
+    "rainfallInfiltrationFactor": 12
+  },
+  "KASHINAGARA": {
+    "district": "GAJAPATI",
+    "block": "KASHINAGARA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "MOHANA": {
+    "district": "GAJAPATI",
+    "block": "MOHANA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "NUAGADA": {
+    "district": "GAJAPATI",
+    "block": "NUAGADA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RUDAYGIRI": {
+    "district": "GAJAPATI",
+    "block": "R. UDAYGIRI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "RAYAGADA": {
+    "district": "RAYAGADA",
+    "block": "RAYAGADA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ASKA": {
+    "district": "GANJAM",
+    "block": "ASKA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BELGUNTHA": {
+    "district": "GANJAM",
+    "block": "BELGUNTHA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BHANJANAGAR": {
+    "district": "GANJAM",
+    "block": "BHANJANAGAR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BUGUDA": {
+    "district": "GANJAM",
+    "block": "BUGUDA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "CHHATRAPUR": {
+    "district": "GANJAM",
+    "block": "CHHATRAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "CHIKITI": {
+    "district": "GANJAM",
+    "block": "CHIKITI",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "DHARAKOTE": {
+    "district": "GANJAM",
+    "block": "DHARAKOTE",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 9
+  },
+  "DIGAPAHANDI": {
+    "district": "GANJAM",
+    "block": "DIGAPAHANDI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "GANJAM": {
+    "district": "GANJAM",
+    "block": "GANJAM",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "HINJILICUT": {
+    "district": "GANJAM",
+    "block": "HINJILICUT",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "JAGANATHPRASAD": {
+    "district": "GANJAM",
+    "block": "JAGANATHPRASAD",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "KABISURYANAGAR": {
+    "district": "GANJAM",
+    "block": "KABISURYANAGAR",
+    "aquifer": "Charnokite",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 9
+  },
+  "KHALIKOTE": {
+    "district": "GANJAM",
+    "block": "KHALIKOTE",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KODALA": {
+    "district": "GANJAM",
+    "block": "KODALA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KUKUDAKHANDI": {
+    "district": "GANJAM",
+    "block": "KUKUDAKHANDI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "PALASARA": {
+    "district": "GANJAM",
+    "block": "PALASARA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "PATRAPUR": {
+    "district": "GANJAM",
+    "block": "PATRAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 9
+  },
+  "PURUSOTTAMPUR": {
+    "district": "GANJAM",
+    "block": "PURUSOTTAMPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RANGEILUNDA": {
+    "district": "GANJAM",
+    "block": "RANGEILUNDA",
+    "aquifer": "Charnokite",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SANAKHEMUNDI": {
+    "district": "GANJAM",
+    "block": "SANAKHEMUNDI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 9
+  },
+  "SERGARH": {
+    "district": "GANJAM",
+    "block": "SERGARH",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 9
+  },
+  "SORADA": {
+    "district": "GANJAM",
+    "block": "SORADA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BALIKUDA": {
+    "district": "JAGATSINGHPUR",
+    "block": "BALIKUDA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BIRIDI": {
+    "district": "JAGATSINGHPUR",
+    "block": "BIRIDI",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "ERSAMA": {
+    "district": "JAGATSINGHPUR",
+    "block": "ERSAMA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "JAGATSINGHPUR": {
+    "district": "JAGATSINGHPUR",
+    "block": "JAGATSINGHPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "KUJANGA": {
+    "district": "JAGATSINGHPUR",
+    "block": "KUJANGA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "NAUGAON": {
+    "district": "JAGATSINGHPUR",
+    "block": "NAUGAON",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "RAGHUNATHPUR": {
+    "district": "JAGATSINGHPUR",
+    "block": "RAGHUNATHPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 15
+  },
+  "TIRTOL": {
+    "district": "JAGATSINGHPUR",
+    "block": "TIRTOL",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BADACHANA": {
+    "district": "JAJPUR",
+    "block": "BADACHANA",
+    "aquifer": "Laterite",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BARI": {
+    "district": "JAJPUR",
+    "block": "BARI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BINJHARPUR": {
+    "district": "JAJPUR",
+    "block": "BINJHARPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 18
+  },
+  "DANAGADI": {
+    "district": "JAJPUR",
+    "block": "DANAGADI",
+    "aquifer": "Laterite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DASARATHPUR": {
+    "district": "JAJPUR",
+    "block": "DASARATHPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 9,
+    "rainfallInfiltrationFactor": 16
+  },
+  "DHARMASALA": {
+    "district": "JAJPUR",
+    "block": "DHARMASALA",
+    "aquifer": "Alluvium",
+    "specificYield": 4,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JAJPUR": {
+    "district": "JAJPUR",
+    "block": "JAJPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 18
+  },
+  "KOREI": {
+    "district": "JAJPUR",
+    "block": "KOREI",
+    "aquifer": "Alluvium",
+    "specificYield": 5,
+    "rainfallInfiltrationFactor": 18
+  },
+  "RASULPUR": {
+    "district": "JAJPUR",
+    "block": "RASULPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 18
+  },
+  "SUKINDA": {
+    "district": "JAJPUR",
+    "block": "SUKINDA",
+    "aquifer": "Quartzite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JHARSUGUDA": {
+    "district": "JHARSUGUDA",
+    "block": "JHARSUGUDA",
+    "aquifer": "Sandstone",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KIRMIRA": {
+    "district": "JHARSUGUDA",
+    "block": "KIRMIRA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KULABIRA": {
+    "district": "JHARSUGUDA",
+    "block": "KULABIRA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "LAIKERA": {
+    "district": "JHARSUGUDA",
+    "block": "LAIKERA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "LAKHANPUR": {
+    "district": "JHARSUGUDA",
+    "block": "LAKHANPUR",
+    "aquifer": "Sandstone",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BHAWANIPATNA": {
+    "district": "KALAHANDI",
+    "block": "BHAWANIPATNA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "DHARMAGARH": {
+    "district": "KALAHANDI",
+    "block": "DHARMAGARH",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GOLAMUNDA": {
+    "district": "KALAHANDI",
+    "block": "GOLAMUNDA",
+    "aquifer": "Gneiss",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JAIPATNA": {
+    "district": "KALAHANDI",
+    "block": "JAIPATNA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JUNAGARH": {
+    "district": "KALAHANDI",
+    "block": "JUNAGARH",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KALAMPUR": {
+    "district": "KALAHANDI",
+    "block": "KALAMPUR",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KARLAMUNDA": {
+    "district": "KALAHANDI",
+    "block": "KARLAMUNDA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KESINGA": {
+    "district": "KALAHANDI",
+    "block": "KESINGA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KOKSARA": {
+    "district": "KALAHANDI",
+    "block": "KOKSARA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "LANJIGARH": {
+    "district": "KALAHANDI",
+    "block": "LANJIGARH",
+    "aquifer": "Khondalite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "MRAMPUR": {
+    "district": "KALAHANDI",
+    "block": "M. RAMPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "NARLA": {
+    "district": "KALAHANDI",
+    "block": "NARLA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "THRAMPUR": {
+    "district": "KALAHANDI",
+    "block": "TH. RAMPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "BALIGUDA": {
+    "district": "KANDHAMAL",
+    "block": "BALIGUDA",
+    "aquifer": "Khondalite",
+    "specificYield": 1,
+    "rainfallInfiltrationFactor": 6
+  },
+  "CHAKAPADA": {
+    "district": "KANDHAMAL",
+    "block": "CHAKAPADA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "DARINGIBADI": {
+    "district": "KANDHAMAL",
+    "block": "DARINGIBADI",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "GUDAYAGIRI": {
+    "district": "KANDHAMAL",
+    "block": "G. UDAYAGIRI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "KNUAGAON": {
+    "district": "KANDHAMAL",
+    "block": "K. NUAGAON",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "KHAJURIPADA": {
+    "district": "KANDHAMAL",
+    "block": "KHAJURIPADA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "KOTAGARH": {
+    "district": "KANDHAMAL",
+    "block": "KOTAGARH",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "PHIRINGIA": {
+    "district": "KANDHAMAL",
+    "block": "PHIRINGIA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "PHULBANI": {
+    "district": "KANDHAMAL",
+    "block": "PHULBANI",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "RAIKIA": {
+    "district": "KANDHAMAL",
+    "block": "RAIKIA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "TIKABALI": {
+    "district": "KANDHAMAL",
+    "block": "TIKABALI",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "TUMUDIBANDHA": {
+    "district": "KANDHAMAL",
+    "block": "TUMUDIBANDHA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "AUL": {
+    "district": "KENDRAPARA",
+    "block": "AUL",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 18
+  },
+  "DERABISH": {
+    "district": "KENDRAPARA",
+    "block": "DERABISH",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "GARADPUR": {
+    "district": "KENDRAPARA",
+    "block": "GARADPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "KENDRAPARA": {
+    "district": "KENDRAPARA",
+    "block": "KENDRAPARA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "MAHAKALPADA": {
+    "district": "KENDRAPARA",
+    "block": "MAHAKALPADA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "MARSHAGHAI": {
+    "district": "KENDRAPARA",
+    "block": "MARSHAGHAI",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "PATTAMUNDAI": {
+    "district": "KENDRAPARA",
+    "block": "PATTAMUNDAI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 15
+  },
+  "RAJKANIKA": {
+    "district": "KENDRAPARA",
+    "block": "RAJKANIKA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "RAJNAGAR": {
+    "district": "KENDRAPARA",
+    "block": "RAJNAGAR",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 15
+  },
+  "ANANDAPUR": {
+    "district": "KEONJHAR",
+    "block": "ANANDAPUR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BANSPAL": {
+    "district": "KEONJHAR",
+    "block": "BANSPAL",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "CHAMPUA": {
+    "district": "KEONJHAR",
+    "block": "CHAMPUA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GHASHIPURA": {
+    "district": "KEONJHAR",
+    "block": "GHASHIPURA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GHATAGAON": {
+    "district": "KEONJHAR",
+    "block": "GHATAGAON",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "HARICHANDANPUR": {
+    "district": "KEONJHAR",
+    "block": "HARICHANDANPUR",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "HATADIHI": {
+    "district": "KEONJHAR",
+    "block": "HATADIHI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 12
+  },
+  "JHUMPURA": {
+    "district": "KEONJHAR",
+    "block": "JHUMPURA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JODA": {
+    "district": "KEONJHAR",
+    "block": "JODA",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 7
+  },
+  "KEONJHAR": {
+    "district": "KEONJHAR",
+    "block": "KEONJHAR",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "PATNA": {
+    "district": "KEONJHAR",
+    "block": "PATNA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SAHARAPADA": {
+    "district": "KEONJHAR",
+    "block": "SAHARAPADA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "TELKOI": {
+    "district": "KEONJHAR",
+    "block": "TELKOI",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BALIANTA": {
+    "district": "KHURDA",
+    "block": "BALIANTA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BALIPATNA": {
+    "district": "KHURDA",
+    "block": "BALIPATNA",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BANAPUR": {
+    "district": "KHURDA",
+    "block": "BANAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BEGUNIA": {
+    "district": "KHURDA",
+    "block": "BEGUNIA",
+    "aquifer": "Khondalite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BHUBANESWAR": {
+    "district": "KHURDA",
+    "block": "BHUBANESWAR",
+    "aquifer": "Sandstone",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BOLOGARH": {
+    "district": "KHURDA",
+    "block": "BOLOGARH",
+    "aquifer": "Charnokite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "CHILIKA": {
+    "district": "KHURDA",
+    "block": "CHILIKA",
+    "aquifer": "Intrusive",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JATNI": {
+    "district": "KHURDA",
+    "block": "JATNI",
+    "aquifer": "Sandstone",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KHURDA": {
+    "district": "KHURDA",
+    "block": "KHURDA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "TANGI": {
+    "district": "KHURDA",
+    "block": "TANGI",
+    "aquifer": "Laterite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BAIPARIGUDA": {
+    "district": "KORAPUT",
+    "block": "BAIPARIGUDA",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "BANDHUGAON": {
+    "district": "KORAPUT",
+    "block": "BANDHUGAON",
+    "aquifer": "Khondalite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BORIGUMA": {
+    "district": "KORAPUT",
+    "block": "BORIGUMA",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DASMANTAPUR": {
+    "district": "KORAPUT",
+    "block": "DASMANTAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "JEYPORE": {
+    "district": "KORAPUT",
+    "block": "JEYPORE",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KORAPUT": {
+    "district": "KORAPUT",
+    "block": "KORAPUT",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "KOTPAD": {
+    "district": "KORAPUT",
+    "block": "KOTPAD",
+    "aquifer": "Sandstone",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KUNDRA": {
+    "district": "KORAPUT",
+    "block": "KUNDRA",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "LAMTAPUT": {
+    "district": "KORAPUT",
+    "block": "LAMTAPUT",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "LAXMIPUR": {
+    "district": "KORAPUT",
+    "block": "LAXMIPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "NANDAPUR": {
+    "district": "KORAPUT",
+    "block": "NANDAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "NARAYANAPATNA": {
+    "district": "KORAPUT",
+    "block": "NARAYANAPATNA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "POTANGI": {
+    "district": "KORAPUT",
+    "block": "POTANGI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SIMILIGUDA": {
+    "district": "KORAPUT",
+    "block": "SIMILIGUDA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KALIMELA": {
+    "district": "MALKANGIRI",
+    "block": "KALIMELA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KHAIRAPUT": {
+    "district": "MALKANGIRI",
+    "block": "KHAIRAPUT",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 6
+  },
+  "KORKUNDA": {
+    "district": "MALKANGIRI",
+    "block": "KORKUNDA",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KUDUMULUGUMA": {
+    "district": "MALKANGIRI",
+    "block": "KUDUMULUGUMA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "MALKANGIRI": {
+    "district": "MALKANGIRI",
+    "block": "MALKANGIRI",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "MATHILI": {
+    "district": "MALKANGIRI",
+    "block": "MATHILI",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 6
+  },
+  "PODIA": {
+    "district": "MALKANGIRI",
+    "block": "PODIA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BADASAHI": {
+    "district": "MAYURBHANJ",
+    "block": "BADASAHI",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BAHALDA": {
+    "district": "MAYURBHANJ",
+    "block": "BAHALDA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BANGIRIPOSI": {
+    "district": "MAYURBHANJ",
+    "block": "BANGIRIPOSI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BARIPADA": {
+    "district": "MAYURBHANJ",
+    "block": "BARIPADA",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BETNOTI": {
+    "district": "MAYURBHANJ",
+    "block": "BETNOTI",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "BIJATALA": {
+    "district": "MAYURBHANJ",
+    "block": "BIJATALA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BISOI": {
+    "district": "MAYURBHANJ",
+    "block": "BISOI",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GOPABANDHUNAGAR": {
+    "district": "MAYURBHANJ",
+    "block": "GOPABANDHU NAGAR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JAMDA": {
+    "district": "MAYURBHANJ",
+    "block": "JAMDA",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "JASHIPUR": {
+    "district": "MAYURBHANJ",
+    "block": "JASHIPUR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KAPTIPADA": {
+    "district": "MAYURBHANJ",
+    "block": "KAPTIPADA",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KARANJIA": {
+    "district": "MAYURBHANJ",
+    "block": "KARANJIA",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KHUNTA": {
+    "district": "MAYURBHANJ",
+    "block": "KHUNTA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KULIANA": {
+    "district": "MAYURBHANJ",
+    "block": "KULIANA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "KUSUMI": {
+    "district": "MAYURBHANJ",
+    "block": "KUSUMI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "MORODA": {
+    "district": "MAYURBHANJ",
+    "block": "MORODA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RAIRANGPUR": {
+    "district": "MAYURBHANJ",
+    "block": "RAIRANGPUR",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RARUAN": {
+    "district": "MAYURBHANJ",
+    "block": "RARUAN",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RASGOVINDPUR": {
+    "district": "MAYURBHANJ",
+    "block": "RASGOVINDPUR",
+    "aquifer": "Laterite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 12
+  },
+  "SAMAKHUNTA": {
+    "district": "MAYURBHANJ",
+    "block": "SAMAKHUNTA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SARASKANA": {
+    "district": "MAYURBHANJ",
+    "block": "SARASKANA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SUKRULI": {
+    "district": "MAYURBHANJ",
+    "block": "SUKRULI",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SULIAPADA": {
+    "district": "MAYURBHANJ",
+    "block": "SULIAPADA",
+    "aquifer": "Laterite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "THAKURMUNDA": {
+    "district": "MAYURBHANJ",
+    "block": "THAKURMUNDA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "TIRING": {
+    "district": "MAYURBHANJ",
+    "block": "TIRING",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "UDALA": {
+    "district": "MAYURBHANJ",
+    "block": "UDALA",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "CHANDAHANDI": {
+    "district": "NABARANGAPUR",
+    "block": "CHANDAHANDI",
+    "aquifer": "Sandstone",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DABUGAON": {
+    "district": "NABARANGAPUR",
+    "block": "DABUGAON",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JHARIGAON": {
+    "district": "NABARANGAPUR",
+    "block": "JHARIGAON",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KASAGUMUDA": {
+    "district": "NABARANGAPUR",
+    "block": "KASAGUMUDA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "NABARANGAPUR": {
+    "district": "NABARANGAPUR",
+    "block": "NABARANGAPUR",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "NANDAHANDI": {
+    "district": "NABARANGAPUR",
+    "block": "NANDAHANDI",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PAPADHANDI": {
+    "district": "NABARANGAPUR",
+    "block": "PAPADHANDI",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "RAIGHAR": {
+    "district": "NABARANGAPUR",
+    "block": "RAIGHAR",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "TENTULIKHUNTI": {
+    "district": "NABARANGAPUR",
+    "block": "TENTULIKHUNTI",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "UMERKOTE": {
+    "district": "NABARANGAPUR",
+    "block": "UMERKOTE",
+    "aquifer": "Gneiss",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BHAPUR": {
+    "district": "NAYAGARH",
+    "block": "BHAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "DASPALLA": {
+    "district": "NAYAGARH",
+    "block": "DASPALLA",
+    "aquifer": "Charnokite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GANIA": {
+    "district": "NAYAGARH",
+    "block": "GANIA",
+    "aquifer": "Khondalite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KHANDAPADA": {
+    "district": "NAYAGARH",
+    "block": "KHANDAPADA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "NAYAGARH": {
+    "district": "NAYAGARH",
+    "block": "NAYAGARH",
+    "aquifer": "Charnokite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "NUAGAON": {
+    "district": "SUNDARGARH",
+    "block": "NUAGAON",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "ODOGAON": {
+    "district": "NAYAGARH",
+    "block": "ODOGAON",
+    "aquifer": "Charnokite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "RANAPUR": {
+    "district": "NAYAGARH",
+    "block": "RANAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BODEN": {
+    "district": "NUAPADA",
+    "block": "BODEN",
+    "aquifer": "Sandstone",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KHARIAR": {
+    "district": "NUAPADA",
+    "block": "KHARIAR",
+    "aquifer": "Khondalite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KOMNA": {
+    "district": "NUAPADA",
+    "block": "KOMNA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "NUAPADA": {
+    "district": "NUAPADA",
+    "block": "NUAPADA",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SINAPALI": {
+    "district": "NUAPADA",
+    "block": "SINAPALI",
+    "aquifer": "Gneiss",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ASTARANG": {
+    "district": "PURI",
+    "block": "ASTARANG",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BRAHMAGIRI": {
+    "district": "PURI",
+    "block": "BRAHMAGIRI",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "DELANG": {
+    "district": "PURI",
+    "block": "DELANG",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 16
+  },
+  "GOP": {
+    "district": "PURI",
+    "block": "GOP",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "KAKATPUR": {
+    "district": "PURI",
+    "block": "KAKATPUR",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "KANAS": {
+    "district": "PURI",
+    "block": "KANAS",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "KRUSHNAPRASAD": {
+    "district": "PURI",
+    "block": "KRUSHNAPRASAD",
+    "aquifer": "Alluvium",
+    "specificYield": 8,
+    "rainfallInfiltrationFactor": 12
+  },
+  "NIMAPARA": {
+    "district": "PURI",
+    "block": "NIMAPARA",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "PIPILI": {
+    "district": "PURI",
+    "block": "PIPILI",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "PURI": {
+    "district": "PURI",
+    "block": "PURI",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "SATYABADI": {
+    "district": "PURI",
+    "block": "SATYABADI",
+    "aquifer": "Alluvium",
+    "specificYield": 10,
+    "rainfallInfiltrationFactor": 16
+  },
+  "BISAMCUTTACK": {
+    "district": "RAYAGADA",
+    "block": "BISAMCUTTACK",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "CHANDRAPUR": {
+    "district": "RAYAGADA",
+    "block": "CHANDRAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GUDARI": {
+    "district": "RAYAGADA",
+    "block": "GUDARI",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "GUNUPUR": {
+    "district": "RAYAGADA",
+    "block": "GUNUPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KALAYANSINGHPUR": {
+    "district": "RAYAGADA",
+    "block": "KALAYANSINGHPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KASHIPUR": {
+    "district": "RAYAGADA",
+    "block": "KASHIPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KOLNARA": {
+    "district": "RAYAGADA",
+    "block": "KOLNARA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "MUNIGUDA": {
+    "district": "RAYAGADA",
+    "block": "MUNIGUDA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "PADMAPUR": {
+    "district": "RAYAGADA",
+    "block": "PADMAPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "RAMANAGUDA": {
+    "district": "RAYAGADA",
+    "block": "RAMANAGUDA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BAMRA": {
+    "district": "SAMBALPUR",
+    "block": "BAMRA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DHANKAUDA": {
+    "district": "SAMBALPUR",
+    "block": "DHANKAUDA",
+    "aquifer": "Sandstone",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JAMANKIRA": {
+    "district": "SAMBALPUR",
+    "block": "JAMANKIRA",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "JUJUMURA": {
+    "district": "SAMBALPUR",
+    "block": "JUJUMURA",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KUCHINDA": {
+    "district": "SAMBALPUR",
+    "block": "KUCHINDA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "MANESWAR": {
+    "district": "SAMBALPUR",
+    "block": "MANESWAR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "NAKTIDEOL": {
+    "district": "SAMBALPUR",
+    "block": "NAKTIDEOL",
+    "aquifer": "Charnokite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "RAIRAKHOL": {
+    "district": "SAMBALPUR",
+    "block": "RAIRAKHOL",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "RENGALI": {
+    "district": "SAMBALPUR",
+    "block": "RENGALI",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BINKA": {
+    "district": "SUBARNAPUR",
+    "block": "BINKA",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BIRAMAHARAJPUR": {
+    "district": "SUBARNAPUR",
+    "block": "BIRAMAHARAJPUR",
+    "aquifer": "Charnokite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "DUNGRIPALI": {
+    "district": "SUBARNAPUR",
+    "block": "DUNGRIPALI",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SONEPUR": {
+    "district": "SUBARNAPUR",
+    "block": "SONEPUR",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "TARVA": {
+    "district": "SUBARNAPUR",
+    "block": "TARVA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "ULLUNDA": {
+    "district": "SUBARNAPUR",
+    "block": "ULLUNDA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "BALISHANKARA": {
+    "district": "SUNDARGARH",
+    "block": "BALISHANKARA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BARAGAON": {
+    "district": "SUNDARGARH",
+    "block": "BARAGAON",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BISRA": {
+    "district": "SUNDARGARH",
+    "block": "BISRA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "BONEIGARH": {
+    "district": "SUNDARGARH",
+    "block": "BONEIGARH",
+    "aquifer": "Granite",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "GURUNDIA": {
+    "district": "SUNDARGARH",
+    "block": "GURUNDIA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "HEMGIRI": {
+    "district": "SUNDARGARH",
+    "block": "HEMGIRI",
+    "aquifer": "Sandstone",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "KOIRA": {
+    "district": "SUNDARGARH",
+    "block": "KOIRA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KUANRMUNDA": {
+    "district": "SUNDARGARH",
+    "block": "KUANRMUNDA",
+    "aquifer": "Schist",
+    "specificYield": 2.5,
+    "rainfallInfiltrationFactor": 10
+  },
+  "KUTRA": {
+    "district": "SUNDARGARH",
+    "block": "KUTRA",
+    "aquifer": "Schist",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "LAHUNIPADA": {
+    "district": "SUNDARGARH",
+    "block": "LAHUNIPADA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "LATHIKATA": {
+    "district": "SUNDARGARH",
+    "block": "LATHIKATA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 10
+  },
+  "LEFRIPADA": {
+    "district": "SUNDARGARH",
+    "block": "LEFRIPADA",
+    "aquifer": "Banded Gneissic Complex",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "RAJGANGPUR": {
+    "district": "SUNDARGARH",
+    "block": "RAJGANGPUR",
+    "aquifer": "Schist",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 10
+  },
+  "SUBDEGA": {
+    "district": "SUNDARGARH",
+    "block": "SUBDEGA",
+    "aquifer": "Granite",
+    "specificYield": 3,
+    "rainfallInfiltrationFactor": 8
+  },
+  "SUNDARGARH": {
+    "district": "SUNDARGARH",
+    "block": "SUNDARGARH",
+    "aquifer": "Schist",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  },
+  "TANGARPALLI": {
+    "district": "SUNDARGARH",
+    "block": "TANGARPALLI",
+    "aquifer": "Granite",
+    "specificYield": 2,
+    "rainfallInfiltrationFactor": 8
+  }
+}
