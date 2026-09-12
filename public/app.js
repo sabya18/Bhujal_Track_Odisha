@@ -1108,6 +1108,8 @@ function initMap() {
     attributionControl: false
   }).setView([20.4, 84.5], 7);
 
+  mainMap.on('zoomend', plotMarkersOnMap);
+
   // Baselayers
   const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
   const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
@@ -1342,6 +1344,10 @@ function plotMarkersOnMap() {
     return; // Don't plot circle markers when checkbox is unchecked
   }
 
+  const currentZoom = mainMap ? mainMap.getZoom() : 7;
+  const baseRadius = currentZoom <= 7 ? 4.0 : (currentZoom === 8 ? 5.5 : 7.5);
+  const strokeWeight = currentZoom <= 7 ? 1.2 : 1.8;
+
   const districtFilter = document.getElementById('map-filter-district').value;
   const blockFilter = document.getElementById('map-filter-block').value;
   const statusFilter = document.getElementById('map-filter-status').value;
@@ -1383,10 +1389,10 @@ function plotMarkersOnMap() {
       }
       
       const marker = L.circleMarker([well.latitude, well.longitude], {
-        radius: 6.5,
+        radius: baseRadius,
         fillColor: color,
         color: '#ffffff',
-        weight: 1.8,
+        weight: strokeWeight,
         fillOpacity: 0.92
       });
       
@@ -1400,11 +1406,11 @@ function plotMarkersOnMap() {
       `, { sticky: true });
       
       marker.on('mouseover', function() {
-        this.setStyle({ radius: 9, weight: 2.8, fillOpacity: 1.0 });
+        this.setStyle({ radius: baseRadius + 2.5, weight: strokeWeight + 1.0, fillOpacity: 1.0 });
         if (typeof this.bringToFront === 'function') this.bringToFront();
       });
       marker.on('mouseout', function() {
-        this.setStyle({ radius: 6.5, weight: 1.8, fillOpacity: 0.92 });
+        this.setStyle({ radius: baseRadius, weight: strokeWeight, fillOpacity: 0.92 });
       });
 
       marker.on('click', () => {
