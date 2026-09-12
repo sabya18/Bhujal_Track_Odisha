@@ -976,7 +976,7 @@ function initMap() {
   
   const isDark = theme === 'dark';
   const background = isDark ? '#0b0f19' : '#f8fafc';
-  const border = isDark ? '#475569' : '#cbd5e1';
+  const border = isDark ? '#f8fafc' : '#0f172a';
   
   mainMap = L.map('leaflet-map-element', {
     zoomControl: true,
@@ -1004,6 +1004,38 @@ function initMap() {
   L.control.layers(baseMaps, null, { position: 'topright' }).addTo(mainMap);
   
   mapLabelsGroup = L.layerGroup().addTo(mainMap);
+
+  // Lower-Right Station Map Legend Control
+  const legendControl = L.control({ position: 'bottomright' });
+  legendControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend-control');
+    div.style.backgroundColor = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+    div.style.padding = '10px 12px';
+    div.style.border = '1px solid ' + (isDark ? '#334155' : '#cbd5e1');
+    div.style.borderRadius = '10px';
+    div.style.color = isDark ? '#f8fafc' : '#0f172a';
+    div.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    div.style.fontSize = '11px';
+    div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+    div.style.marginRight = '12px';
+    div.style.marginBottom = '12px';
+
+    div.innerHTML = `
+      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION STATUS</div>
+      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#10b981; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Monitored Station</div>
+      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#0284c7; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Unmonitored Station</div>
+      <div style="display:flex; align-items:center; margin-bottom:6px;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Closed / Inactive</div>
+      <div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>
+      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">WATER TABLE DEPTH</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#0284c7; border-radius:2px; margin-right:6px; display:inline-block;"></span>&lt; 2.0 m (Shallow)</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#10b981; border-radius:2px; margin-right:6px; display:inline-block;"></span>2.0 - 4.0 m</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:2px; margin-right:6px; display:inline-block;"></span>4.0 - 6.0 m</div>
+      <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f97316; border-radius:2px; margin-right:6px; display:inline-block;"></span>6.0 - 8.0 m</div>
+      <div style="display:flex; align-items:center;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
+    `;
+    return div;
+  };
+  legendControl.addTo(mainMap);
   
   // Calculate average water levels per district
   const districtAverages = {};
@@ -1041,6 +1073,19 @@ function initMap() {
   // Determine if block overlay is visible
   const blocksOverlayActive = showBlocksOverlay && odishaBlocksGeoJSON;
   
+  // Render persistent State Perimeter Boundary Outline
+  if (odishaDistrictsGeoJSON) {
+    L.geoJSON(odishaDistrictsGeoJSON, {
+      style: {
+        color: isDark ? '#f8fafc' : '#000000',
+        weight: 3.8,
+        opacity: 0.9,
+        fill: false,
+        interactive: false
+      }
+    }).addTo(mainMap);
+  }
+
   // 1. Draw district choropleth water level map
   if (showWaterDepthMap) {
     L.geoJSON(odishaDistrictsGeoJSON, {
@@ -1052,9 +1097,10 @@ function initMap() {
         
         return {
           color: border,
-          weight: 1.5,
+          weight: 2.4,
+          opacity: 1.0,
           fillColor: avg !== null ? getDepthColor(avg) : (isDark ? '#1e293b' : '#cbd5e1'),
-          fillOpacity: blocksOverlayActive ? 0.2 : (avg !== null ? 0.75 : 0.15) // dim districts if blocks are on top
+          fillOpacity: blocksOverlayActive ? 0.25 : (avg !== null ? 0.85 : 0.2) // dim districts if blocks are on top
         };
       },
       onEachFeature: (feature, layer) => {
@@ -1102,7 +1148,8 @@ function initMap() {
     L.geoJSON(odishaDistrictsGeoJSON, {
       style: {
         color: border,
-        weight: 1.2,
+        weight: 2.4,
+        opacity: 0.95,
         fillColor: 'transparent',
         fillOpacity: 0
       }
