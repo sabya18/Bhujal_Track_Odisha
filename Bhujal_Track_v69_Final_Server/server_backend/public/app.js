@@ -190,16 +190,123 @@ function normalizeGeoJSONDistrict(distName) {
   return d.replace(/_blocks/g, '').replace(/_urban/g, '').trim();
 }
 
+const BLOCK_ALIASES = {
+  'ambabhona': 'ambabhana',
+  'athagad': 'athgarh',
+  'athmallik': 'athamallik',
+  'balangir': 'bolangir',
+  'baleswar': 'balasore',
+  'baneigarh': 'boneigarh',
+  'bangiriposhi': 'bangriposi',
+  'bangiriposi': 'bangriposi',
+  'bankidampara': 'banki',
+  'banspal': 'bansapal',
+  'bant': 'banth',
+  'baragaon': 'bargaon',
+  'barang': 'baranga',
+  'barkot': 'barkote',
+  'barpali': 'barapali',
+  'barsahi': 'badasahi',
+  'basudebpur': 'basudevpur',
+  'beguniapada': 'kodalabeguniapada',
+  'bellaguntha': 'belaguntha',
+  'belpara': 'belpada',
+  'betanati': 'betnoti',
+  'bijatola': 'bijatala',
+  'boipariguda': 'baipariguda',
+  'bolagad': 'bolagarh',
+  'borigumma': 'boriguma',
+  'bramhagiri': 'brahmagiri',
+  'chakapad': 'chakapada',
+  'chhatrapur': 'chatrapur',
+  'cuttacksadar': 'cuttack',
+  'dabugan': 'dabugaon',
+  'daringbadi': 'daringibadi',
+  'dasamantapur': 'dusmantapur',
+  'derabisi': 'derabish',
+  'derbish': 'derabish',
+  'dhamanagar': 'dhamnagar',
+  'dharamgarh': 'dharmagarh',
+  'ersama': 'erasama',
+  'gandia': 'goundia',
+  'garadpur': 'garadapur',
+  'ghatgaon': 'ghatagaon',
+  'gopabandhunagar': 'gbnagar',
+  'hemgiri': 'hemagiri',
+  'jagannathprasad': 'jaganathprasad',
+  'jagatsinghapurp': 'jagatsinghpur',
+  'jajapur': 'jajpur',
+  'jashipur': 'joshipur',
+  'jayapatna': 'jaipatna',
+  'jharigan': 'jharigaon',
+  'jujomura': 'jujumura',
+  'kalyanasingpur': 'kalyansinghpur',
+  'kankadahad': 'kankadahada',
+  'kashipur': 'kasipur',
+  'kasinagar': 'kashinagar',
+  'kendujhar': 'keonjhar',
+  'khairput': 'khairaput',
+  'khallikote': 'khalikote',
+  'khordha': 'khurda',
+  'koida': 'koira',
+  'kokasara': 'koksara',
+  'korkunda': 'korukonda',
+  'kosagumuda': 'kasagumuda',
+  'kotagarh': 'kotagadh',
+  'kuanrmunda': 'kuarmunda',
+  'kudumulguma': 'chitrkonda',
+  'kujang': 'kujanga',
+  'lahunipara': 'lahunipada',
+  'lakshmipur': 'laxmipur',
+  'lephripara': 'lephripada',
+  'loisinga': 'loisingha',
+  'madanpurrampur': 'mrampur',
+  'marsaghai': 'marshaghai',
+  'marsaghal': 'marshaghai',
+  'marsaghau': 'marshaghai',
+  'muruda': 'morada',
+  'naktideul': 'naktideol',
+  'narasinghpur': 'narsinghpur',
+  'odapada': 'odopada',
+  'paikmal': 'paikamal',
+  'palalahada': 'pallahara',
+  'paparahandi': 'papadahandi',
+  'parajang': 'parjanga',
+  'paralakhemundi': 'gosani',
+  'patana': 'patna',
+  'puri': 'purisadar',
+  'rudaygiri': 'rudayagiri',
+  'raighar': 'raigar',
+  'rairangpur': 'rairangapur',
+  'rajagangapur': 'rajgangapur',
+  'rajborasambar': 'padampur',
+  'rajkanika': 'rajakanika',
+  'ramanguda': 'ramanaguda',
+  'rasagovindpur': 'rasgovindpur',
+  'reamal': 'riamal',
+  'saraskana': 'sarasakana',
+  'seragad': 'sheragada',
+  'shamakhunta': 'samakhunta',
+  'sohella': 'sohela',
+  'sundargarh': 'sundergarh',
+  'tangarapali': 'tangarapalli',
+  'tentulikhuntigudvella': 'gudvella',
+  'thuamulrampur': 'thrampur',
+  'titilagarh': 'titlagarh',
+  'turekela': 'tureikella',
+  'umarkote': 'umerkote'
+};
+
+function normalizeGeoJSONBlock(raw) {
+  if (!raw) return '';
+  const s = raw.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  return BLOCK_ALIASES[s] || s;
+}
+window.normalizeGeoJSONBlock = normalizeGeoJSONBlock;
+
 function normalizeBlockName(blockName) {
   if (!blockName) return '';
-  const trimmed = blockName.trim();
-  const lower = trimmed.toLowerCase();
-  if (lower === 'aul') return 'Aul';
-  if (lower === 'derbish' || lower === 'derabish') return 'Derabish';
-  if (lower === 'kendrapara') return 'Kendrapara';
-  if (lower === 'marsaghai' || lower === 'marsaghal' || lower === 'marsaghau' || lower === 'marshaghai') return 'Marsaghai';
-  if (lower === 'garadapur' || lower === 'garadpur' || lower === 'gardapur') return 'Garadpur';
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return normalizeGeoJSONBlock(blockName);
 }
 
 function isActiveWell(well) {
@@ -1173,14 +1280,16 @@ function initMap() {
   const blockAverages = {};
   getScopedWellsData().forEach(well => {
     if (isActiveWell(well)) {
-      const blockKey = (well.block || '').toLowerCase().trim();
-      if (!blockAverages[blockKey]) {
-        blockAverages[blockKey] = { sum: 0, count: 0 };
-      }
-      const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
-      if (seasonal.dtgwl_mbgl !== null) {
-        blockAverages[blockKey].sum += seasonal.dtgwl_mbgl;
-        blockAverages[blockKey].count++;
+      const blockKey = normalizeGeoJSONBlock(well.block);
+      if (blockKey) {
+        if (!blockAverages[blockKey]) {
+          blockAverages[blockKey] = { sum: 0, count: 0 };
+        }
+        const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+        if (seasonal.dtgwl_mbgl !== null) {
+          blockAverages[blockKey].sum += seasonal.dtgwl_mbgl;
+          blockAverages[blockKey].count++;
+        }
       }
     }
   });
@@ -1275,8 +1384,8 @@ function initMap() {
   if (blocksOverlayActive) {
     boundaryLayer = L.geoJSON(odishaBlocksGeoJSON, {
       style: feature => {
-        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || '';
-        const blockKey = rawBlock.toLowerCase().trim();
+        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || feature.properties.sdtname || feature.properties.NAME || feature.properties.name || '';
+        const blockKey = normalizeGeoJSONBlock(rawBlock);
         const data = blockAverages[blockKey];
         const avg = data && data.count > 0 ? (data.sum / data.count) : null;
         
@@ -1289,8 +1398,8 @@ function initMap() {
         };
       },
       onEachFeature: (feature, layer) => {
-        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || 'Unknown';
-        const blockKey = rawBlock.toLowerCase().trim();
+        const rawBlock = feature.properties.BLK_NAME01 || feature.properties.Block_Name || feature.properties.blockname || feature.properties.sdtname || feature.properties.NAME || feature.properties.name || 'Unknown';
+        const blockKey = normalizeGeoJSONBlock(rawBlock);
         const data = blockAverages[blockKey];
         const avg = data && data.count > 0 ? (data.sum / data.count).toFixed(2) : null;
         
@@ -1431,7 +1540,7 @@ function openBlockAnalyticsModal(rawBlock, blockKey, props) {
 
   // Find district name for this block from matching wells or GeoJSON properties
   let matchedDistName = selectedDist !== 'ALL' ? selectedDist : '-';
-  const blockWells = getScopedWellsData().filter(w => (w.block || '').toLowerCase().trim() === blockKey);
+  const blockWells = getScopedWellsData().filter(w => normalizeGeoJSONBlock(w.block) === blockKey);
   
   if (matchedDistName === '-' && blockWells.length > 0) {
     matchedDistName = getDistrictFromWell(blockWells[0]);
