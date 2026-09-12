@@ -369,6 +369,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   populateFilterDropdowns();
   applyFilters();
   renderNews();
+  window.populateTrendsDropdown = function() {
+    if (typeof initTrendsView === 'function') initTrendsView();
+  };
   populateTrendsDropdown();
 });
 
@@ -4428,17 +4431,25 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = well.block || '-';
     document.getElementById('trends-well-aquifer').textContent = well.well_type || 'DW';
 
+    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
+
     // Collect historical time-series
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
         const key = `${y}_${s}`;
         labels.push(key);
-        let val = null;
-        if (well.history && well.history[key] !== undefined) {
-          const h = well.history[key];
-          if (typeof h === 'number') val = h;
-          else if (h && typeof h === 'object') val = h.dtgwl_mbgl ?? h.dtgwl_bmp;
+        const sFull = seasonMap[s] || 'Pre-Monsoon';
+        const seasonal = getWellDataForSeason(well, sFull, y, visitsHistory);
+        let val = seasonal.dtgwl_mbgl;
+
+        if (val === null && historicalTrends) {
+          const normBlk = normalizeBlockName(well.block);
+          const blockTrend = historicalTrends?.blocks?.[normBlk] || historicalTrends?.blocks?.[well.block];
+          if (blockTrend) {
+            const item = blockTrend.find(t => t.season === key);
+            if (item && item.value !== undefined) val = item.value;
+          }
         }
         values.push(val);
       });
@@ -4462,20 +4473,28 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = targetBlk;
     document.getElementById('trends-well-aquifer').textContent = 'Block Network';
 
+    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
     const blockWells = getScopedWellsData().filter(w => w.block === targetBlk && isActiveWell(w));
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
         const key = `${y}_${s}`;
         labels.push(key);
+        const sFull = seasonMap[s] || 'Pre-Monsoon';
         let sum = 0, cnt = 0;
         blockWells.forEach(w => {
-          if (w.history && w.history[key] !== undefined) {
-            const h = w.history[key];
-            const v = typeof h === 'number' ? h : (h?.dtgwl_mbgl ?? h?.dtgwl_bmp);
-            if (v !== null && v !== undefined && !isNaN(v)) {
-              sum += v; cnt++;
+          const seasonal = getWellDataForSeason(w, sFull, y, visitsHistory);
+          let v = seasonal.dtgwl_mbgl;
+          if (v === null && historicalTrends) {
+            const normBlk = normalizeBlockName(w.block);
+            const blockTrend = historicalTrends?.blocks?.[normBlk] || historicalTrends?.blocks?.[w.block];
+            if (blockTrend) {
+              const item = blockTrend.find(t => t.season === key);
+              if (item && item.value !== undefined) v = item.value;
             }
+          }
+          if (v !== null && v !== undefined && !isNaN(v)) {
+            sum += v; cnt++;
           }
         });
         values.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
@@ -4495,20 +4514,29 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = 'All Division';
     document.getElementById('trends-well-aquifer').textContent = 'District Network';
 
-    const distWells = getScopedWellsData().filter(w => (targetDist === 'ALL' || getDistrictFromWell(w) === targetDist) && isActiveWell(w));
+    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
+    const normDistTarget = normalizeGeoJSONDistrict(targetDist);
+    const distWells = getScopedWellsData().filter(w => (targetDist === 'ALL' || normalizeGeoJSONDistrict(getDistrictFromWell(w)) === normDistTarget) && isActiveWell(w));
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
         const key = `${y}_${s}`;
         labels.push(key);
+        const sFull = seasonMap[s] || 'Pre-Monsoon';
         let sum = 0, cnt = 0;
         distWells.forEach(w => {
-          if (w.history && w.history[key] !== undefined) {
-            const h = w.history[key];
-            const v = typeof h === 'number' ? h : (h?.dtgwl_mbgl ?? h?.dtgwl_bmp);
-            if (v !== null && v !== undefined && !isNaN(v)) {
-              sum += v; cnt++;
+          const seasonal = getWellDataForSeason(w, sFull, y, visitsHistory);
+          let v = seasonal.dtgwl_mbgl;
+          if (v === null && historicalTrends) {
+            const normBlk = normalizeBlockName(w.block);
+            const blockTrend = historicalTrends?.blocks?.[normBlk] || historicalTrends?.blocks?.[w.block];
+            if (blockTrend) {
+              const item = blockTrend.find(t => t.season === key);
+              if (item && item.value !== undefined) v = item.value;
             }
+          }
+          if (v !== null && v !== undefined && !isNaN(v)) {
+            sum += v; cnt++;
           }
         });
         values.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
