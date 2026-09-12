@@ -1020,8 +1020,27 @@ let showStationMarkers = true;
 
 function updateMapLegend() {
   const legendDiv = document.querySelector('#leaflet-map-element .map-legend-control');
-  if (!legendDiv) return;
+  const sidebarLegendDiv = document.querySelector('.map-filters-panel .map-legend');
   const isDark = theme === 'dark';
+  const statusFilter = document.getElementById('map-filter-status')?.value || 'ACTIVE_PENDING';
+
+  // 1. Update Left Sidebar Legend panel dynamically
+  if (sidebarLegendDiv) {
+    let sidebarHtml = '<h4>Legend</h4>';
+    if (statusFilter === 'MONITORED' || statusFilter === 'ACTIVE_ALL' || statusFilter === 'ALL') {
+      sidebarHtml += `<div class="legend-item"><span class="legend-color pin-green" style="box-shadow: 0 0 6px rgba(16,185,129,0.6);"></span><span>Monitored Active Well</span></div>`;
+    }
+    if (statusFilter === 'ACTIVE_PENDING' || statusFilter === 'ACTIVE_ALL' || statusFilter === 'ALL') {
+      sidebarHtml += `<div class="legend-item"><span class="legend-color pin-red" style="box-shadow: 0 0 6px rgba(239,68,68,0.6);"></span><span>Pending Active Well (Needs Visit)</span></div>`;
+    }
+    if (statusFilter === 'CLOSED' || statusFilter === 'ALL') {
+      sidebarHtml += `<div class="legend-item"><span class="legend-color pin-grey"></span><span>Closed Well</span></div>`;
+    }
+    sidebarLegendDiv.innerHTML = sidebarHtml;
+  }
+
+  // 2. Update Lower-Right Leaflet Control Legend
+  if (!legendDiv) return;
 
   if (!showStationMarkers && !showWaterDepthMap) {
     legendDiv.style.display = 'none';
@@ -1049,12 +1068,23 @@ function updateMapLegend() {
     if (showWaterDepthMap) {
       html += `<div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>`;
     }
-    html += `
-      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
-      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#10b981; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Monitored Active Station</div>
-      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
-      <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
-    `;
+    html += `<div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>`;
+
+    const monitoredSymbol = `<div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#10b981; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block; box-shadow:0 0 4px rgba(16,185,129,0.6);"></span>Monitored Active Station</div>`;
+    const pendingSymbol = `<div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block; box-shadow:0 0 4px rgba(239,68,68,0.6);"></span>Pending Visit (Unmonitored)</div>`;
+    const closedSymbol = `<div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>`;
+
+    if (statusFilter === 'MONITORED') {
+      html += monitoredSymbol;
+    } else if (statusFilter === 'ACTIVE_PENDING') {
+      html += pendingSymbol;
+    } else if (statusFilter === 'CLOSED') {
+      html += closedSymbol;
+    } else if (statusFilter === 'ACTIVE_ALL') {
+      html += monitoredSymbol + pendingSymbol;
+    } else { // 'ALL'
+      html += monitoredSymbol + pendingSymbol + closedSymbol;
+    }
   }
 
   legendDiv.innerHTML = html;
@@ -1353,15 +1383,30 @@ function plotMarkersOnMap() {
       }
       
       const marker = L.circleMarker([well.latitude, well.longitude], {
-        radius: 6,
+        radius: 6.5,
         fillColor: color,
-        color: '#fff',
-        weight: 1.2,
-        fillOpacity: 0.95
+        color: '#ffffff',
+        weight: 1.8,
+        fillOpacity: 0.92
       });
       
-      marker.bindTooltip(`Well: ${well.well_number}<br/>Location: ${well.location}<br/>Water Level: ${tooltipValText}<br/>Remarks: ${well.remarks || 'Active'}`, { sticky: true });
+      marker.bindTooltip(`
+        <div style="font-family:system-ui, -apple-system, sans-serif; font-size:11px; padding:2px;">
+          <strong style="color:#38bdf8; font-size:12px; display:block; margin-bottom:2px;">Well: ${well.well_number}</strong>
+          <div>📍 ${well.location || '-'} (${well.block || ''})</div>
+          <div>💧 Water Level: <strong style="color:#10b981;">${tooltipValText}</strong></div>
+          <div style="font-size:10px; color:#94a3b8; margin-top:2px;">Status: ${well.remarks || 'Active'}</div>
+        </div>
+      `, { sticky: true });
       
+      marker.on('mouseover', function() {
+        this.setStyle({ radius: 9, weight: 2.8, fillOpacity: 1.0 });
+        if (typeof this.bringToFront === 'function') this.bringToFront();
+      });
+      marker.on('mouseout', function() {
+        this.setStyle({ radius: 6.5, weight: 1.8, fillOpacity: 0.92 });
+      });
+
       marker.on('click', () => {
         // Open edit/visit modal
         openVisitEditModal(well);
@@ -1370,6 +1415,8 @@ function plotMarkersOnMap() {
       mainMarkersGroup.addLayer(marker);
     }
   });
+
+  updateMapLegend();
 }
 
 function setupActionButtons() {
