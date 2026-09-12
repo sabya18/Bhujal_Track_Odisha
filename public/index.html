@@ -582,6 +582,25 @@
               <option value="">-- Choose Well Number --</option>
             </select>
           </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="trends-chart-mode" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">CHART TYPE:</label>
+            <select id="trends-chart-mode" class="form-control" style="min-width: 200px;">
+              <option value="depth">📈 Water Table Depth Trend (MBGL)</option>
+              <option value="pre_vs_post">📊 Pre-Monsoon vs Post-Monsoon</option>
+              <option value="fluctuation">🔄 Seasonal Fluctuation (Rise/Fall)</option>
+              <option value="annual_avg">🗓️ Annual Average BGL</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="trends-forecast-mode" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">FORECAST PROJECTION:</label>
+            <select id="trends-forecast-mode" class="form-control" style="min-width: 170px;">
+              <option value="none">Off (Historical)</option>
+              <option value="2036">🔮 10-Year (2036 Horizon)</option>
+              <option value="2047">🇮🇳 Centennial (2047 Horizon)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Selected Well Details Card -->

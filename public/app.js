@@ -744,8 +744,34 @@ function renderDashboard() {
   const percent = active > 0 ? Math.round((monitored / active) * 100) : 0;
   document.getElementById('val-monitored-percent').textContent = `${percent}% of active wells completed`;
   
-  // Render scrollable block monitoring list
+  // Render district breakdown list or selected block list
+  if (selectedDashboardDistrict) {
+    filterDashboardBlocks(selectedDashboardDistrict);
+  } else {
+    renderDistrictBreakdown(statsByDistrict);
+  }
+  
+  renderDashboardMap(statsByDistrict);
+}
+
+let selectedDashboardDistrict = null;
+
+function resetDashboardDistrict() {
+  selectedDashboardDistrict = null;
+  renderDashboard();
+}
+
+function selectDashboardDistrict(distName) {
+  selectedDashboardDistrict = distName;
+  filterDashboardBlocks(distName);
+}
+
+function renderDistrictBreakdown(statsByDistrict) {
+  const detailsTitle = document.getElementById('lbl-block-details-title');
+  if (detailsTitle) detailsTitle.textContent = 'District Details (All Division)';
+  
   const breakdownList = document.getElementById('district-breakdown-list');
+  if (!breakdownList) return;
   breakdownList.innerHTML = '';
   
   const sortedDistricts = Object.keys(statsByDistrict).sort();
@@ -754,27 +780,34 @@ function renderDashboard() {
     if (d.active === 0) return;
     
     const pct = Math.round((d.monitored / d.active) * 100);
-    const avg = d.countMbgl > 0 ? (d.sumMbgl / d.countMbgl).toFixed(2) + ' m' : 'No Data';
+    const avgVal = d.countMbgl > 0 ? (d.sumMbgl / d.countMbgl) : null;
+    const avgStr = avgVal !== null ? avgVal.toFixed(2) + ' m' : 'No Data';
+    
+    let barColor = getCompletionColor(pct);
+    let primaryHeader = `<span style="font-weight:600;">${dist}</span><span style="font-size:0.8rem; color:var(--text-muted);">Avg Level: <strong>${avgStr}</strong></span>`;
+    let subHeader = `<span>Completion: ${d.monitored} / ${d.active} wells</span><span>${pct}%</span>`;
+    
+    if (dashboardMapMode === 'depth') {
+      barColor = avgVal !== null ? getDepthColor(avgVal) : (theme === 'dark' ? '#334155' : '#cbd5e1');
+      primaryHeader = `<span style="font-weight:600;">${dist}</span><span style="font-size:0.85rem; color:${barColor}; font-weight:700;">Avg: ${avgStr}</span>`;
+      subHeader = `<span>Completion: ${d.monitored} / ${d.active} wells (${pct}%)</span><span>Depth BGL</span>`;
+    }
     
     const rowHtml = `
-      <div class="district-row">
+      <div class="district-row" onclick="selectDashboardDistrict('${dist}')" style="cursor:pointer;" title="Click to view ${dist} block breakdown">
         <div class="district-label-row">
-          <span style="font-weight:600;">${dist}</span>
-          <span style="font-size:0.8rem; color:var(--text-muted);">Avg Level: <strong>${avg}</strong></span>
+          ${primaryHeader}
         </div>
         <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
-          <span>Completion: ${d.monitored} / ${d.active} wells</span>
-          <span>${pct}%</span>
+          ${subHeader}
         </div>
         <div style="width:100%; height:6px; background:var(--border-color); border-radius:3px; overflow:hidden;">
-          <div style="width:${pct}%; height:100%; background:${getCompletionColor(pct)}; border-radius:3px;"></div>
+          <div style="width:${dashboardMapMode === 'depth' ? Math.max(8, Math.min(100, (avgVal || 0) * 10)) : pct}%; height:100%; background:${barColor}; border-radius:3px;"></div>
         </div>
       </div>
     `;
     breakdownList.innerHTML += rowHtml;
   });
-  
-  renderDashboardMap(statsByDistrict);
 }
 
 // Mini Odisha Leaflet Map
@@ -870,10 +903,7 @@ function renderDashboardMap(statsByDistrict) {
       });
       
       layer.on('click', () => {
-        // Zoom dashboard list to district
-        const detailsTitle = document.getElementById('lbl-block-details-title');
-        if (detailsTitle) detailsTitle.textContent = `Block Details (${rawName})`;
-        filterDashboardBlocks(rawName);
+        selectDashboardDistrict(rawName);
       });
     }
   }).addTo(miniMap);
@@ -898,7 +928,11 @@ function renderDashboardMap(statsByDistrict) {
 }
 
 function filterDashboardBlocks(districtName) {
+  const detailsTitle = document.getElementById('lbl-block-details-title');
+  if (detailsTitle) detailsTitle.textContent = `Block Details (${districtName})`;
+
   const breakdownList = document.getElementById('district-breakdown-list');
+  if (!breakdownList) return;
   breakdownList.innerHTML = '';
   
   const blocksMap = {};
@@ -923,13 +957,18 @@ function filterDashboardBlocks(districtName) {
   
   const sortedBlocks = Object.keys(blocksMap).sort();
   if (sortedBlocks.length === 0) {
-    breakdownList.innerHTML = '<p class="text-muted p-3">No active blocks found for this district.</p>';
+    breakdownList.innerHTML = `
+      <button class="btn btn-secondary btn-sm mb-3" onclick="resetDashboardDistrict()">
+        ◀ Reset to All Division
+      </button>
+      <p class="text-muted p-3">No active blocks found for ${districtName}.</p>
+    `;
     return;
   }
   
   // Add Reset button
   breakdownList.innerHTML += `
-    <button class="btn btn-secondary btn-sm mb-3" onclick="renderDashboard()">
+    <button class="btn btn-secondary btn-sm mb-3" onclick="resetDashboardDistrict()">
       ◀ Reset to All Division
     </button>
   `;
@@ -939,20 +978,29 @@ function filterDashboardBlocks(districtName) {
     if (b.active === 0) return;
     
     const pct = Math.round((b.monitored / b.active) * 100);
-    const avg = b.countMbgl > 0 ? (b.sumMbgl / b.countMbgl).toFixed(2) + ' m' : 'No Data';
+    const avgVal = b.countMbgl > 0 ? (b.sumMbgl / b.countMbgl) : null;
+    const avgStr = avgVal !== null ? avgVal.toFixed(2) + ' m' : 'No Data';
+
+    let barColor = getCompletionColor(pct);
+    let primaryHeader = `<span style="font-weight:600;">${block} Block</span><span style="font-size:0.8rem; color:var(--text-muted);">Avg: <strong>${avgStr}</strong></span>`;
+    let subHeader = `<span>Completion: ${b.monitored} / ${b.active} wells</span><span>${pct}%</span>`;
+    
+    if (dashboardMapMode === 'depth') {
+      barColor = avgVal !== null ? getDepthColor(avgVal) : (theme === 'dark' ? '#334155' : '#cbd5e1');
+      primaryHeader = `<span style="font-weight:600;">${block} Block</span><span style="font-size:0.85rem; color:${barColor}; font-weight:700;">Avg: ${avgStr}</span>`;
+      subHeader = `<span>Completion: ${b.monitored} / ${b.active} wells (${pct}%)</span><span>Depth BGL</span>`;
+    }
     
     const rowHtml = `
       <div class="district-row">
         <div class="district-label-row">
-          <span style="font-weight:600;">${block} Block</span>
-          <span style="font-size:0.8rem; color:var(--text-muted);">Avg: <strong>${avg}</strong></span>
+          ${primaryHeader}
         </div>
         <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
-          <span>Completion: ${b.monitored} / ${b.active} wells</span>
-          <span>${pct}%</span>
+          ${subHeader}
         </div>
         <div style="width:100%; height:6px; background:var(--border-color); border-radius:3px; overflow:hidden;">
-          <div style="width:${pct}%; height:100%; background:${getCompletionColor(pct)}; border-radius:3px;"></div>
+          <div style="width:${dashboardMapMode === 'depth' ? Math.max(8, Math.min(100, (avgVal || 0) * 10)) : pct}%; height:100%; background:${barColor}; border-radius:3px;"></div>
         </div>
       </div>
     `;
@@ -1020,21 +1068,51 @@ function initMap() {
     div.style.marginRight = '12px';
     div.style.marginBottom = '12px';
 
-    div.innerHTML = `
+    setTimeout(() => updateMapLegend(), 10);
+    return div;
+  };
+  legendControl.addTo(mainMap);
+
+function updateMapLegend() {
+  const legendDiv = document.querySelector('#leaflet-map-element .map-legend-control');
+  if (!legendDiv) return;
+  const isDark = theme === 'dark';
+
+  if (!showStationMarkers && !showWaterDepthMap) {
+    legendDiv.style.display = 'none';
+    return;
+  }
+  
+  legendDiv.style.display = 'block';
+  legendDiv.style.backgroundColor = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  legendDiv.style.border = '1px solid ' + (isDark ? '#334155' : '#cbd5e1');
+  legendDiv.style.color = isDark ? '#f8fafc' : '#0f172a';
+
+  let html = '';
+  if (showWaterDepthMap) {
+    html += `
       <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">WATER TABLE DEPTH</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#0284c7; border-radius:2px; margin-right:6px; display:inline-block;"></span>&lt; 2.0 m (Shallow)</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#10b981; border-radius:2px; margin-right:6px; display:inline-block;"></span>2.0 - 4.0 m</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:2px; margin-right:6px; display:inline-block;"></span>4.0 - 6.0 m</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f97316; border-radius:2px; margin-right:6px; display:inline-block;"></span>6.0 - 8.0 m</div>
       <div style="display:flex; align-items:center; margin-bottom:5px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
-      <div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>
+    `;
+  }
+
+  if (showStationMarkers) {
+    if (showWaterDepthMap) {
+      html += `<div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>`;
+    }
+    html += `
       <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
       <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
       <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
     `;
-    return div;
-  };
-  legendControl.addTo(mainMap);
+  }
+
+  legendDiv.innerHTML = html;
+}
   
   // Calculate average water levels per district
   const districtAverages = {};
@@ -1300,13 +1378,17 @@ function setupActionButtons() {
     chkPins.onchange = (e) => {
       showStationMarkers = e.target.checked;
       plotMarkersOnMap();
+      updateMapLegend();
     };
   }
 
-  chkWater.onchange = (e) => {
-    showWaterDepthMap = e.target.checked;
-    initMap();
-  };
+  if (chkWater) {
+    chkWater.onchange = (e) => {
+      showWaterDepthMap = e.target.checked;
+      initMap();
+      updateMapLegend();
+    };
+  }
   
   chkBlocks.onchange = (e) => {
     showBlocksOverlay = e.target.checked;
@@ -4080,9 +4162,618 @@ function executeWTTOExcelDownload() {
 }
 
 // Auto-initialize WTTO export event handlers once DOM is interactive
+// Auto-initialize WTTO export event handlers once DOM is interactive
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initWTTOExportModal);
+  document.addEventListener('DOMContentLoaded', () => {
+    initWTTOExportModal();
+    initTrendsView();
+  });
 } else {
   initWTTOExportModal();
+  initTrendsView();
+}
+
+// --- Trend Analysis Section Engine ---
+let trendChartInstance = null;
+let rainfallChartInstance = null;
+
+function initTrendsView() {
+  const levelSelect = document.getElementById('trends-level-select');
+  const distSelect = document.getElementById('trends-district-select');
+  const blockSelect = document.getElementById('trends-block-select');
+  const stationSelect = document.getElementById('trends-well-select');
+  const chartModeSelect = document.getElementById('trends-chart-mode');
+  const forecastSelect = document.getElementById('trends-forecast-mode');
+
+  if (!levelSelect || !stationSelect) return;
+
+  // Populate District Select
+  const districts = new Set();
+  getScopedWellsData().forEach(w => {
+    const d = getDistrictFromWell(w);
+    if (d) districts.add(d);
+  });
+
+  distSelect.innerHTML = '<option value="ALL">All Districts</option>';
+  Array.from(districts).sort().forEach(d => {
+    distSelect.innerHTML += `<option value="${d}">${d}</option>`;
+  });
+
+  const updateStationDropdown = () => {
+    const lvl = levelSelect.value;
+    const selectedDist = distSelect.value;
+    const selectedBlk = blockSelect.value;
+
+    const groupDist = document.getElementById('group-trends-district');
+    const groupBlk = document.getElementById('group-trends-block');
+    const groupStation = document.getElementById('group-trends-station');
+
+    if (lvl === 'district') {
+      groupDist.style.display = 'block';
+      groupBlk.style.display = 'none';
+      groupStation.style.display = 'none';
+    } else if (lvl === 'block') {
+      groupDist.style.display = 'block';
+      groupBlk.style.display = 'block';
+      groupStation.style.display = 'none';
+    } else {
+      groupDist.style.display = 'block';
+      groupBlk.style.display = 'block';
+      groupStation.style.display = 'block';
+    }
+
+    // Populate Blocks
+    blockSelect.innerHTML = '<option value="ALL">All Blocks</option>';
+    const blocks = new Set();
+    getScopedWellsData().forEach(w => {
+      const d = getDistrictFromWell(w);
+      if ((selectedDist === 'ALL' || d === selectedDist) && w.block) {
+        blocks.add(w.block);
+      }
+    });
+    Array.from(blocks).sort().forEach(b => {
+      blockSelect.innerHTML += `<option value="${b}">${b}</option>`;
+    });
+
+    // Populate Stations
+    stationSelect.innerHTML = '<option value="">-- Choose Well Number --</option>';
+    getScopedWellsData().forEach(w => {
+      const d = getDistrictFromWell(w);
+      const b = w.block;
+      if ((selectedDist === 'ALL' || d === selectedDist) && (selectedBlk === 'ALL' || b === selectedBlk)) {
+        stationSelect.innerHTML += `<option value="${w.well_number}">${w.well_number} - ${w.location || w.block}</option>`;
+      }
+    });
+
+    // Auto-select first station if available
+    if (lvl === 'station' && stationSelect.options.length > 1 && !stationSelect.value) {
+      stationSelect.selectedIndex = 1;
+    }
+
+    renderTrendsView();
+  };
+
+  levelSelect.addEventListener('change', updateStationDropdown);
+  distSelect.addEventListener('change', updateStationDropdown);
+  blockSelect.addEventListener('change', updateStationDropdown);
+  stationSelect.addEventListener('change', renderTrendsView);
+  if (chartModeSelect) chartModeSelect.addEventListener('change', renderTrendsView);
+  if (forecastSelect) forecastSelect.addEventListener('change', renderTrendsView);
+
+  updateStationDropdown();
+}
+
+function calculateMannKendallAndSensSlope(data) {
+  const validData = data.filter(v => v !== null && v !== undefined && !isNaN(v));
+  const n = validData.length;
+  if (n < 4) {
+    return {
+      s: 0,
+      z: 0,
+      pValue: 1.0,
+      sensSlope: 0.0,
+      trendText: 'N/A (Need >= 4 points)',
+      trendColor: '#64748b'
+    };
+  }
+
+  let s = 0;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const diff = validData[j] - validData[i];
+      if (diff > 0) s += 1;
+      if (diff < 0) s -= 1;
+    }
+  }
+
+  const valueCounts = {};
+  validData.forEach(v => { valueCounts[v] = (valueCounts[v] || 0) + 1; });
+
+  let tieSum = 0;
+  Object.values(valueCounts).forEach(count => {
+    if (count > 1) tieSum += count * (count - 1) * (2 * count + 5);
+  });
+
+  const varS = (n * (n - 1) * (2 * n + 5) - tieSum) / 18;
+
+  let z = 0;
+  if (varS > 0) {
+    if (s > 0) z = (s - 1) / Math.sqrt(varS);
+    else if (s < 0) z = (s + 1) / Math.sqrt(varS);
+  }
+
+  const normCDF = (val) => {
+    const t = 1 / (1 + 0.2316419 * Math.abs(val));
+    const d = 0.3989423 * Math.exp(-val * val / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return val >= 0 ? 1 - p : p;
+  };
+
+  const pValue = 2 * (1 - normCDF(Math.abs(z)));
+
+  const slopes = [];
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = i + 1; j < n; j++) {
+      slopes.push((validData[j] - validData[i]) / (j - i));
+    }
+  }
+  slopes.sort((a, b) => a - b);
+  const mid = Math.floor(slopes.length / 2);
+  const sensSlope = slopes.length % 2 !== 0 ? slopes[mid] : (slopes[mid - 1] + slopes[mid]) / 2;
+
+  const isSignificant = Math.abs(z) >= 1.96;
+  let trendText = 'Stable (No Monotonic Trend)';
+  let trendColor = '#64748b';
+
+  if (isSignificant) {
+    if (s > 0) {
+      trendText = 'Depleting (Increasing BGL 🔴)';
+      trendColor = '#ef4444';
+    } else {
+      trendText = 'Recovering (Decreasing BGL 🟢)';
+      trendColor = '#10b981';
+    }
+  } else {
+    if (s > 0) {
+      trendText = 'Slight Depletion (Non-Sig. 🟡)';
+      trendColor = '#f59e0b';
+    } else if (s < 0) {
+      trendText = 'Slight Recovery (Non-Sig. 🔵)';
+      trendColor = '#3b82f6';
+    }
+  }
+
+  return {
+    s,
+    z: Number(z.toFixed(3)),
+    pValue: Number(pValue.toFixed(4)),
+    sensSlope: Number(sensSlope.toFixed(4)),
+    trendText,
+    trendColor
+  };
+}
+
+function calculateExtendedRegressionLine(values, totalLength) {
+  const n = values.length;
+  if (n < 2) return Array(totalLength).fill(null);
+
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, count = 0;
+  for (let i = 0; i < n; i++) {
+    const y = values[i];
+    if (y !== undefined && y !== null && !isNaN(y)) {
+      sumX += i;
+      sumY += y;
+      sumXY += i * y;
+      sumXX += i * i;
+      count++;
+    }
+  }
+  if (count < 2) return Array(totalLength).fill(null);
+
+  const m = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX);
+  const c = (sumY - m * sumX) / count;
+
+  const result = [];
+  for (let i = 0; i < totalLength; i++) {
+    result.push(Number((m * i + c).toFixed(2)));
+  }
+  return result;
+}
+
+function renderTrendsView() {
+  const levelSelect = document.getElementById('trends-level-select');
+  const distSelect = document.getElementById('trends-district-select');
+  const blockSelect = document.getElementById('trends-block-select');
+  const stationSelect = document.getElementById('trends-well-select');
+  const chartModeSelect = document.getElementById('trends-chart-mode');
+  const forecastSelect = document.getElementById('trends-forecast-mode');
+
+  const card = document.getElementById('trends-well-card');
+  const contentBox = document.getElementById('trends-content-box');
+  if (!card || !contentBox) return;
+
+  const lvl = levelSelect.value;
+  const targetDist = distSelect.value;
+  const targetBlk = blockSelect.value;
+  const targetWellNum = stationSelect.value;
+  const chartMode = chartModeSelect ? chartModeSelect.value : 'depth';
+  const forecastMode = forecastSelect ? forecastSelect.value : 'none';
+
+  let labels = [];
+  let values = [];
+  let titleStr = '';
+  let subStr = '';
+
+  const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+  const seasons = ['Winter', 'PreMon', 'MidMon', 'PostMon'];
+
+  if (lvl === 'station') {
+    if (!targetWellNum) {
+      card.style.display = 'none';
+      contentBox.style.display = 'none';
+      return;
+    }
+
+    const well = getScopedWellsData().find(w => w.well_number === targetWellNum);
+    if (!well) return;
+
+    card.style.display = 'flex';
+    contentBox.style.display = 'grid';
+
+    document.getElementById('trends-well-id').textContent = `Station ID: ${well.well_number}`;
+    document.getElementById('trends-well-desc').textContent = `${well.location || 'Observation Well'}, ${well.block || ''} Block`;
+    document.getElementById('trends-well-dist').textContent = getDistrictFromWell(well);
+    document.getElementById('trends-well-block').textContent = well.block || '-';
+    document.getElementById('trends-well-aquifer').textContent = well.well_type || 'DW';
+
+    // Collect historical time-series
+    years.forEach(y => {
+      seasons.forEach(s => {
+        if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
+        const key = `${y}_${s}`;
+        labels.push(key);
+        let val = null;
+        if (well.history && well.history[key] !== undefined) {
+          const h = well.history[key];
+          if (typeof h === 'number') val = h;
+          else if (h && typeof h === 'object') val = h.dtgwl_mbgl ?? h.dtgwl_bmp;
+        }
+        values.push(val);
+      });
+    });
+
+    titleStr = `Water Level Depth Trend - ${well.well_number}`;
+    subStr = `${well.location || ''} (${well.block})`;
+  } else if (lvl === 'block') {
+    if (targetBlk === 'ALL') {
+      card.style.display = 'none';
+      contentBox.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'flex';
+    contentBox.style.display = 'grid';
+
+    document.getElementById('trends-well-id').textContent = `Block Level: ${targetBlk}`;
+    document.getElementById('trends-well-desc').textContent = `Average groundwater monitoring trend across all active stations in ${targetBlk} Block`;
+    document.getElementById('trends-well-dist').textContent = targetDist;
+    document.getElementById('trends-well-block').textContent = targetBlk;
+    document.getElementById('trends-well-aquifer').textContent = 'Block Network';
+
+    const blockWells = getScopedWellsData().filter(w => w.block === targetBlk && isActiveWell(w));
+    years.forEach(y => {
+      seasons.forEach(s => {
+        if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
+        const key = `${y}_${s}`;
+        labels.push(key);
+        let sum = 0, cnt = 0;
+        blockWells.forEach(w => {
+          if (w.history && w.history[key] !== undefined) {
+            const h = w.history[key];
+            const v = typeof h === 'number' ? h : (h?.dtgwl_mbgl ?? h?.dtgwl_bmp);
+            if (v !== null && v !== undefined && !isNaN(v)) {
+              sum += v; cnt++;
+            }
+          }
+        });
+        values.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
+      });
+    });
+
+    titleStr = `Block Average Water Level Trend - ${targetBlk}`;
+    subStr = `${targetDist} District (${blockWells.length} Stations)`;
+  } else {
+    card.style.display = 'flex';
+    contentBox.style.display = 'grid';
+
+    const distName = targetDist === 'ALL' ? 'Odisha State' : targetDist;
+    document.getElementById('trends-well-id').textContent = `District Level: ${distName}`;
+    document.getElementById('trends-well-desc').textContent = `Groundwater level monitoring average trend across ${distName}`;
+    document.getElementById('trends-well-dist').textContent = distName;
+    document.getElementById('trends-well-block').textContent = 'All Division';
+    document.getElementById('trends-well-aquifer').textContent = 'District Network';
+
+    const distWells = getScopedWellsData().filter(w => (targetDist === 'ALL' || getDistrictFromWell(w) === targetDist) && isActiveWell(w));
+    years.forEach(y => {
+      seasons.forEach(s => {
+        if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
+        const key = `${y}_${s}`;
+        labels.push(key);
+        let sum = 0, cnt = 0;
+        distWells.forEach(w => {
+          if (w.history && w.history[key] !== undefined) {
+            const h = w.history[key];
+            const v = typeof h === 'number' ? h : (h?.dtgwl_mbgl ?? h?.dtgwl_bmp);
+            if (v !== null && v !== undefined && !isNaN(v)) {
+              sum += v; cnt++;
+            }
+          }
+        });
+        values.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
+      });
+    });
+
+    titleStr = `District Average Water Level Trend - ${distName}`;
+    subStr = `Network Total (${distWells.length} Stations)`;
+  }
+
+  // Calculate Mann-Kendall statistics
+  const mkResult = calculateMannKendallAndSensSlope(values);
+  document.getElementById('mk-s-val').textContent = mkResult.s;
+  document.getElementById('mk-z-score').textContent = mkResult.z;
+  document.getElementById('mk-p-val').textContent = mkResult.pValue;
+  document.getElementById('mk-sens-slope').textContent = `${mkResult.sensSlope} m/yr`;
+
+  const mkStatusBox = document.getElementById('mk-trend-status');
+  if (mkStatusBox) {
+    mkStatusBox.textContent = `Trend Result: ${mkResult.trendText}`;
+    mkStatusBox.style.background = mkResult.trendColor + '20';
+    mkStatusBox.style.color = mkResult.trendColor;
+    mkStatusBox.style.border = `1px solid ${mkResult.trendColor}`;
+    mkStatusBox.style.padding = '8px 12px';
+    mkStatusBox.style.borderRadius = '8px';
+    mkStatusBox.style.fontWeight = 'bold';
+    mkStatusBox.style.marginTop = '10px';
+  }
+
+  // Render Forecast years list
+  const forecastList = document.getElementById('forecast-years-list');
+  const forecastWarning = document.getElementById('forecast-warning-box');
+  if (forecastList) {
+    forecastList.innerHTML = '';
+    const validVals = values.filter(v => v !== null && !isNaN(v));
+    const regLine = calculateExtendedRegressionLine(validVals, validVals.length + 8);
+    const lastVal = regLine[validVals.length - 1] || 4.5;
+
+    const futureYears = [2027, 2028, 2029, 2030, 2031];
+    futureYears.forEach((yr, idx) => {
+      const projVal = (lastVal + (mkResult.sensSlope * (idx + 1))).toFixed(2);
+      forecastList.innerHTML += `
+        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border-color); font-size:0.85rem;">
+          <span>Projection Year ${yr}:</span>
+          <strong>${projVal} m BGL</strong>
+        </div>
+      `;
+    });
+
+    if (forecastWarning) {
+      if (mkResult.sensSlope > 0.15) {
+        forecastWarning.textContent = '⚠️ WARNING: High depletion rate observed! Water table rising >0.15 m/yr deeper BGL.';
+        forecastWarning.style.background = '#ef444420';
+        forecastWarning.style.color = '#ef4444';
+      } else {
+        forecastWarning.textContent = '✅ Stable or recovering groundwater regime maintained.';
+        forecastWarning.style.background = '#10b98120';
+        forecastWarning.style.color = '#10b981';
+      }
+    }
+  }
+
+  // Render Primary Chart
+  const ctx = document.getElementById('chart-historical-trends');
+  if (ctx) {
+    if (trendChartInstance) trendChartInstance.destroy();
+
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#f8fafc' : '#0f172a';
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+    let chartDatasets = [];
+
+    if (chartMode === 'pre_vs_post') {
+      // Group by year for Pre vs Post
+      const yearMap = {};
+      labels.forEach((lbl, i) => {
+        const parts = lbl.split('_');
+        const y = parts[0];
+        const s = parts[1];
+        if (!yearMap[y]) yearMap[y] = {};
+        yearMap[y][s] = values[i];
+      });
+
+      const yLabels = Object.keys(yearMap).sort();
+      const preVals = yLabels.map(y => yearMap[y]['PreMon'] ?? null);
+      const postVals = yLabels.map(y => yearMap[y]['PostMon'] ?? null);
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: yLabels,
+          datasets: [
+            { label: 'Pre-Monsoon (m BGL)', data: preVals, backgroundColor: '#f59e0b' },
+            { label: 'Post-Monsoon (m BGL)', data: postVals, backgroundColor: '#0284c7' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
+            x: { grid: { color: gridColor }, ticks: { color: textColor } }
+          },
+          plugins: { legend: { labels: { color: textColor } } }
+        }
+      });
+    } else if (chartMode === 'fluctuation') {
+      const yearMap = {};
+      labels.forEach((lbl, i) => {
+        const parts = lbl.split('_');
+        const y = parts[0];
+        const s = parts[1];
+        if (!yearMap[y]) yearMap[y] = {};
+        yearMap[y][s] = values[i];
+      });
+
+      const yLabels = Object.keys(yearMap).sort();
+      const flucVals = yLabels.map(y => {
+        const pre = yearMap[y]['PreMon'];
+        const post = yearMap[y]['PostMon'];
+        return (pre !== undefined && post !== undefined && pre !== null && post !== null) ? Number((pre - post).toFixed(2)) : null;
+      });
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: yLabels,
+          datasets: [
+            {
+              label: 'Seasonal Fluctuation (PreMon - PostMon Rise in m)',
+              data: flucVals,
+              backgroundColor: flucVals.map(v => v >= 0 ? '#10b981' : '#ef4444')
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { title: { display: true, text: 'Fluctuation Rise (m)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
+            x: { grid: { color: gridColor }, ticks: { color: textColor } }
+          },
+          plugins: { legend: { labels: { color: textColor } } }
+        }
+      });
+    } else {
+      // Default: Line chart of depth BGL over time
+      chartDatasets.push({
+        label: `${titleStr} (m BGL)`,
+        data: values,
+        borderColor: '#0284c7',
+        backgroundColor: 'rgba(2, 132, 199, 0.15)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#0284c7'
+      });
+
+      // Add extended forecast line if enabled
+      if (forecastMode !== 'none') {
+        const extraPoints = forecastMode === '2047' ? 20 : 10;
+        const totalLen = labels.length + extraPoints;
+        const extLabels = [...labels];
+        for (let i = 1; i <= extraPoints; i++) {
+          extLabels.push(`Forecast +${i}`);
+        }
+
+        const validVals = values.filter(v => v !== null && !isNaN(v));
+        const extReg = calculateExtendedRegressionLine(validVals, totalLen);
+
+        chartDatasets.push({
+          label: `Extended Linear Forecast (${forecastMode})`,
+          data: extReg,
+          borderColor: '#ef4444',
+          borderDash: [6, 6],
+          fill: false,
+          pointRadius: 0
+        });
+
+        labels = extLabels;
+      }
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: chartDatasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
+            x: { grid: { color: gridColor }, ticks: { color: textColor, maxRotation: 45 } }
+          },
+          plugins: { legend: { labels: { color: textColor } } }
+        }
+      });
+    }
+  }
+
+  // Render Dual Y-Axis Rainfall Correlation Chart
+  const rainCtx = document.getElementById('chart-rainfall-correlation');
+  if (rainCtx) {
+    if (rainfallChartInstance) rainfallChartInstance.destroy();
+
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#f8fafc' : '#0f172a';
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+    // Mock rainfall pattern aligned with labels
+    const rainVals = labels.map(l => {
+      if (l.includes('PreMon')) return 120;
+      if (l.includes('MidMon')) return 850;
+      if (l.includes('PostMon')) return 320;
+      if (l.includes('Winter')) return 45;
+      return 100;
+    });
+
+    rainfallChartInstance = new Chart(rainCtx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Rainfall (mm)',
+            data: rainVals,
+            backgroundColor: 'rgba(56, 189, 248, 0.4)',
+            borderColor: '#38bdf8',
+            yAxisID: 'yRain'
+          },
+          {
+            type: 'line',
+            label: 'Water Depth (m BGL)',
+            data: values,
+            borderColor: '#0284c7',
+            tension: 0.3,
+            yAxisID: 'yDepth'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          yDepth: {
+            type: 'linear',
+            position: 'left',
+            reverse: true,
+            title: { display: true, text: 'Water Level (m BGL)', color: textColor },
+            grid: { color: gridColor },
+            ticks: { color: textColor }
+          },
+          yRain: {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: 'Rainfall (mm)', color: textColor },
+            grid: { drawOnChartArea: false },
+            ticks: { color: textColor }
+          },
+          x: { grid: { color: gridColor }, ticks: { color: textColor, maxRotation: 45 } }
+        },
+        plugins: { legend: { labels: { color: textColor } } }
+      }
+    });
+  }
 }
 
