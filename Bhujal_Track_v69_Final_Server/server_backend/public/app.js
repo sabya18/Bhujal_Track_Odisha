@@ -4772,6 +4772,26 @@ function interpolateMissingValues(values) {
   return values;
 }
 
+function exportChartAsPNG(canvasId, fileName) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  const ctx = tempCanvas.getContext('2d');
+
+  const isDark = document.body.classList.contains('dark-theme') || theme === 'dark';
+  ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  ctx.drawImage(canvas, 0, 0);
+
+  const link = document.createElement('a');
+  link.download = fileName || 'trend_chart.png';
+  link.href = tempCanvas.toDataURL('image/png');
+  link.click();
+}
+
 function renderTrendsView() {
   const levelSelect = document.getElementById('trends-level-select');
   const distSelect = document.getElementById('trends-district-select');
@@ -5036,19 +5056,20 @@ function renderTrendsView() {
     }
   }
 
+  // Determine dark mode contrast settings
+  const isDark = document.body.classList.contains('dark-theme') || theme === 'dark';
+  const textColor = isDark ? '#ffffff' : '#0f172a';
+  const tickColor = isDark ? '#cbd5e1' : '#334155';
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : '#e2e8f0';
+
   // Render Primary Chart
   const ctx = document.getElementById('chart-historical-trends');
   if (ctx) {
     if (trendChartInstance) trendChartInstance.destroy();
 
-    const isDark = theme === 'dark';
-    const textColor = isDark ? '#f8fafc' : '#0f172a';
-    const gridColor = isDark ? '#334155' : '#e2e8f0';
-
     let chartDatasets = [];
 
     if (chartMode === 'pre_vs_post') {
-      // Group by year for Pre vs Post
       const yearMap = {};
       labels.forEach((lbl, i) => {
         const parts = lbl.split('_');
@@ -5075,10 +5096,10 @@ function renderTrendsView() {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
-            x: { grid: { color: gridColor }, ticks: { color: textColor } }
+            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor, font: { weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' } } },
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' } } }
           },
-          plugins: { legend: { labels: { color: textColor } } }
+          plugins: { legend: { labels: { color: textColor, font: { weight: 'bold' } } } }
         }
       });
     } else if (chartMode === 'fluctuation') {
@@ -5114,26 +5135,24 @@ function renderTrendsView() {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: { title: { display: true, text: 'Fluctuation Rise (m)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
-            x: { grid: { color: gridColor }, ticks: { color: textColor } }
+            y: { title: { display: true, text: 'Fluctuation Rise (m)', color: textColor, font: { weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' } } },
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' } } }
           },
-          plugins: { legend: { labels: { color: textColor } } }
+          plugins: { legend: { labels: { color: textColor, font: { weight: 'bold' } } } }
         }
       });
     } else {
-      // Default: Line chart of depth BGL over time
       chartDatasets.push({
         label: `${titleStr} (m BGL)`,
         data: values,
-        borderColor: '#0284c7',
-        backgroundColor: 'rgba(2, 132, 199, 0.15)',
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.18)',
         fill: true,
         tension: 0.3,
         pointRadius: 4,
-        pointBackgroundColor: '#0284c7'
+        pointBackgroundColor: '#38bdf8'
       });
 
-      // Add extended forecast line if enabled
       if (forecastMode !== 'none') {
         const extraPoints = forecastMode === '2047' ? 20 : 10;
         const totalLen = labels.length + extraPoints;
@@ -5167,10 +5186,10 @@ function renderTrendsView() {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor }, grid: { color: gridColor }, ticks: { color: textColor } },
-            x: { grid: { color: gridColor }, ticks: { color: textColor, maxRotation: 45 } }
+            y: { reverse: true, title: { display: true, text: 'Depth (m BGL)', color: textColor, font: { weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' } } },
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' }, maxRotation: 45 } }
           },
-          plugins: { legend: { labels: { color: textColor } } }
+          plugins: { legend: { labels: { color: textColor, font: { weight: 'bold', size: 13 } } } }
         }
       });
     }
@@ -5181,11 +5200,6 @@ function renderTrendsView() {
   if (rainCtx) {
     if (rainfallChartInstance) rainfallChartInstance.destroy();
 
-    const isDark = theme === 'dark';
-    const textColor = isDark ? '#f8fafc' : '#0f172a';
-    const gridColor = isDark ? '#334155' : '#e2e8f0';
-
-    // Mock rainfall pattern aligned with labels
     const rainVals = labels.map(l => {
       if (l.includes('PreMon')) return 120;
       if (l.includes('MidMon')) return 850;
@@ -5203,7 +5217,7 @@ function renderTrendsView() {
             type: 'bar',
             label: 'Rainfall (mm)',
             data: rainVals,
-            backgroundColor: 'rgba(56, 189, 248, 0.4)',
+            backgroundColor: 'rgba(56, 189, 248, 0.35)',
             borderColor: '#38bdf8',
             yAxisID: 'yRain'
           },
@@ -5225,22 +5239,32 @@ function renderTrendsView() {
             type: 'linear',
             position: 'left',
             reverse: true,
-            title: { display: true, text: 'Water Level (m BGL)', color: textColor },
+            title: { display: true, text: 'Water Level (m BGL)', color: textColor, font: { weight: 'bold' } },
             grid: { color: gridColor },
-            ticks: { color: textColor }
+            ticks: { color: tickColor, font: { weight: '600' } }
           },
           yRain: {
             type: 'linear',
             position: 'right',
-            title: { display: true, text: 'Rainfall (mm)', color: textColor },
+            title: { display: true, text: 'Rainfall (mm)', color: textColor, font: { weight: 'bold' } },
             grid: { drawOnChartArea: false },
-            ticks: { color: textColor }
+            ticks: { color: tickColor, font: { weight: '600' } }
           },
-          x: { grid: { color: gridColor }, ticks: { color: textColor, maxRotation: 45 } }
+          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { weight: '600' }, maxRotation: 45 } }
         },
-        plugins: { legend: { labels: { color: textColor } } }
+        plugins: { legend: { labels: { color: textColor, font: { weight: 'bold', size: 13 } } } }
       }
     });
+  }
+
+  // Attach Export Chart PNG handlers
+  const exportTrendBtn = document.getElementById('btn-export-trend-chart');
+  if (exportTrendBtn) {
+    exportTrendBtn.onclick = () => exportChartAsPNG('chart-historical-trends', `${titleStr.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`);
+  }
+  const exportRainBtn = document.getElementById('btn-export-rain-chart');
+  if (exportRainBtn) {
+    exportRainBtn.onclick = () => exportChartAsPNG('chart-rainfall-correlation', `${titleStr.replace(/[^a-zA-Z0-9]/g, '_')}_Rainfall.png`);
   }
 }
 

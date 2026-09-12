@@ -522,77 +522,90 @@
 
       <!-- TAB content: Trends Analysis -->
       <section id="tab-trends-view" class="tab-content">
-        <div class="trends-control-panel" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: rgba(30, 41, 59, 0.4); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-          <div class="form-group" style="margin: 0;">
-            <label for="trends-level-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">ANALYSIS LEVEL:</label>
-            <select id="trends-level-select" class="form-control" style="min-width: 180px;">
-              <option value="station">📍 Station Level (Well)</option>
-              <option value="block">🏛️ Block Level (Average)</option>
-              <option value="district">🗺️ District Level (Average)</option>
-            </select>
-          </div>
-
-          <div class="form-group" id="group-trends-district" style="margin: 0;">
-            <label for="trends-district-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">DISTRICT:</label>
-            <select id="trends-district-select" class="form-control" style="min-width: 160px;">
-              <option value="ALL">All Districts</option>
-            </select>
-          </div>
-
-          <div class="form-group" id="group-trends-block" style="margin: 0;">
-            <label for="trends-block-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">BLOCK:</label>
-            <select id="trends-block-select" class="form-control" style="min-width: 160px;">
-              <option value="ALL">All Blocks</option>
-            </select>
-          </div>
-
-          <div class="form-group" id="group-trends-station" style="margin: 0; flex: 1; min-width: 240px;">
-            <label for="trends-well-select" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">MONITORING STATION:</label>
-            <select id="trends-well-select" class="form-control select-large">
-              <option value="">-- Choose Well Number --</option>
-            </select>
-          </div>
-
-          <div class="form-group" style="margin: 0;">
-            <label for="trends-chart-mode" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">CHART TYPE:</label>
-            <select id="trends-chart-mode" class="form-control" style="min-width: 200px;">
-              <option value="depth">📈 Water Table Depth Trend (MBGL)</option>
-              <option value="pre_vs_post">📊 Pre-Monsoon vs Post-Monsoon</option>
-              <option value="fluctuation">🔄 Seasonal Fluctuation (Rise/Fall)</option>
-              <option value="annual_avg">🗓️ Annual Average BGL</option>
-            </select>
-          </div>
-
-          <div class="form-group" style="margin: 0;">
-            <label for="trends-forecast-mode" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; display: block; color: var(--text-muted);">FORECAST PROJECTION:</label>
-            <select id="trends-forecast-mode" class="form-control" style="min-width: 170px;">
-              <option value="none">Off (Historical)</option>
-              <option value="2036">🔮 10-Year (2036 Horizon)</option>
-              <option value="2047">🇮🇳 Centennial (2047 Horizon)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Selected Well Details Card -->
-        <div class="trends-well-card" id="trends-well-card" style="display: none;">
-          <div class="well-details-left">
-            <h3 id="trends-well-id">-</h3>
-            <p id="trends-well-desc">-</p>
-          </div>
-          <div class="well-details-right">
-            <div class="detail-badge">
-              <span class="badge-label">District:</span>
-              <span class="badge-val" id="trends-well-dist">-</span>
+        
+        <!-- Top Container: Side-by-Side Flex Layout (Left Controls + Right Details Card) -->
+        <div class="trends-top-container" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; margin-bottom: 20px;">
+          
+          <!-- LEFT PANEL: Filter Controls (Left Aligned & Visually Enhanced) -->
+          <div class="trends-control-panel" style="flex: 1 1 500px; min-width: 300px; background: rgba(30, 41, 59, 0.4); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="font-weight: 800; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <span>⚙️</span> Trends Filter Controls
             </div>
-            <div class="detail-badge">
-              <span class="badge-label">Block:</span>
-              <span class="badge-val" id="trends-well-block">-</span>
-            </div>
-            <div class="detail-badge">
-              <span class="badge-label">Aquifer Type:</span>
-              <span class="badge-val" id="trends-well-aquifer">-</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+              <div class="form-group" style="margin: 0; flex: 1 1 170px;">
+                <label for="trends-level-select" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">ANALYSIS LEVEL:</label>
+                <select id="trends-level-select" class="form-control" style="width: 100%;">
+                  <option value="station">📍 Station Level (Well)</option>
+                  <option value="block">🏛️ Block Level (Average)</option>
+                  <option value="district">🗺️ District Level (Average)</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="group-trends-district" style="margin: 0; flex: 1 1 150px;">
+                <label for="trends-district-select" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">DISTRICT:</label>
+                <select id="trends-district-select" class="form-control" style="width: 100%;">
+                  <option value="ALL">All Districts</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="group-trends-block" style="margin: 0; flex: 1 1 150px;">
+                <label for="trends-block-select" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">BLOCK:</label>
+                <select id="trends-block-select" class="form-control" style="width: 100%;">
+                  <option value="ALL">All Blocks</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="group-trends-station" style="margin: 0; flex: 2 1 240px;">
+                <label for="trends-well-select" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">MONITORING STATION:</label>
+                <select id="trends-well-select" class="form-control select-large" style="width: 100%;">
+                  <option value="">-- Choose Well Number --</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0; flex: 1 1 180px;">
+                <label for="trends-chart-mode" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">CHART TYPE:</label>
+                <select id="trends-chart-mode" class="form-control" style="width: 100%;">
+                  <option value="depth">📈 Water Table Depth Trend (MBGL)</option>
+                  <option value="pre_vs_post">📊 Pre-Monsoon vs Post-Monsoon</option>
+                  <option value="fluctuation">🔄 Seasonal Fluctuation (Rise/Fall)</option>
+                  <option value="annual_avg">🗓️ Annual Average BGL</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0; flex: 1 1 160px;">
+                <label for="trends-forecast-mode" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; display: block; color: var(--text-muted);">FORECAST PROJECTION:</label>
+                <select id="trends-forecast-mode" class="form-control" style="width: 100%;">
+                  <option value="none">Off (Historical)</option>
+                  <option value="2036">🔮 10-Year (2036 Horizon)</option>
+                  <option value="2047">🇮🇳 Centennial (2047 Horizon)</option>
+                </select>
+              </div>
             </div>
           </div>
+
+          <!-- RIGHT PANEL: Station & Network Details (Right Aligned & Colorful Pills) -->
+          <div class="trends-well-card" id="trends-well-card" style="flex: 1 1 360px; min-width: 280px; display: flex; flex-direction: column; justify-content: space-between; background: rgba(30, 41, 59, 0.4); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div>
+              <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">MONITORING SCOPE INFORMATION</div>
+              <h3 id="trends-well-id" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8; margin: 0 0 4px 0;">-</h3>
+              <p id="trends-well-desc" style="font-size: 0.88rem; color: var(--text-muted); margin: 0 0 14px 0; line-height: 1.4;">-</p>
+            </div>
+            <div class="well-details-right" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto;">
+              <div class="detail-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
+                <span class="badge-label" style="font-size: 0.72rem; color: #10b981; display: block; font-weight: 800; margin-bottom: 2px;">DISTRICT</span>
+                <span class="badge-val" id="trends-well-dist" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+              </div>
+              <div class="detail-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
+                <span class="badge-label" style="font-size: 0.72rem; color: #f59e0b; display: block; font-weight: 800; margin-bottom: 2px;">BLOCK</span>
+                <span class="badge-val" id="trends-well-block" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+              </div>
+              <div class="detail-badge" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
+                <span class="badge-label" style="font-size: 0.72rem; color: #a78bfa; display: block; font-weight: 800; margin-bottom: 2px;">AQUIFER TYPE</span>
+                <span class="badge-val" id="trends-well-aquifer" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Trends Content Layout -->
@@ -653,8 +666,11 @@
             
             <!-- Historical Levels Chart -->
             <div class="dashboard-panel chart-panel-large">
-              <div class="panel-header">
-                <h2>Historical Groundwater Level Trend</h2>
+              <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h2>📈 Historical Groundwater Level Trend</h2>
+                <button id="btn-export-trend-chart" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; cursor: pointer;">
+                  📥 Export Graph (PNG)
+                </button>
               </div>
               <div class="panel-body">
                 <div class="canvas-wrapper">
@@ -665,8 +681,11 @@
 
             <!-- Rainfall Correlation Chart -->
             <div class="dashboard-panel chart-panel-large">
-              <div class="panel-header">
-                <h2>Rainfall Correlation Chart</h2>
+              <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h2>🌧️ Rainfall Correlation Chart</h2>
+                <button id="btn-export-rain-chart" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; cursor: pointer;">
+                  📥 Export Graph (PNG)
+                </button>
               </div>
               <div class="panel-body">
                 <div class="canvas-wrapper">
@@ -1091,6 +1110,6 @@
   <script src="wells_initial.js"></script>
   <script src="xlsx.full.min.js"></script>
   <!-- Main application script -->
-  <script src="app.js?v=90"></script>
+  <script src="app.js?v=91"></script>
 </body>
 </html>
