@@ -1480,7 +1480,7 @@ function plotMarkersOnMap() {
     
     // Filter matching
     if (districtFilter !== 'ALL' && dist !== districtFilter) return;
-    if (blockFilter !== 'ALL' && well.block !== blockFilter) return;
+    if (blockFilter !== 'ALL' && well.block !== blockFilter && normalizeGeoJSONBlock(well.block) !== normalizeGeoJSONBlock(blockFilter)) return;
     
     if (statusFilter === 'ACTIVE_PENDING' && (!isAct || isMon)) return;
     if (statusFilter === 'ACTIVE_ALL' && !isAct) return;
@@ -4595,7 +4595,7 @@ function initTrendsView() {
     getScopedWellsData().forEach(w => {
       const d = getDistrictFromWell(w);
       const b = w.block;
-      if ((selectedDist === 'ALL' || d === selectedDist) && (selectedBlk === 'ALL' || b === selectedBlk)) {
+      if ((selectedDist === 'ALL' || d === selectedDist) && (selectedBlk === 'ALL' || b === selectedBlk || normalizeGeoJSONBlock(b) === normalizeGeoJSONBlock(selectedBlk))) {
         stationSelect.innerHTML += `<option value="${w.well_number}">${w.well_number} - ${w.location || w.block}</option>`;
       }
     });
@@ -4824,7 +4824,7 @@ function renderTrendsView() {
     document.getElementById('trends-well-aquifer').textContent = 'Block Network';
 
     const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
-    const blockWells = getScopedWellsData().filter(w => w.block === targetBlk && isActiveWell(w));
+    const blockWells = getScopedWellsData().filter(w => (w.block === targetBlk || normalizeGeoJSONBlock(w.block) === normalizeGeoJSONBlock(targetBlk)) && isActiveWell(w));
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
