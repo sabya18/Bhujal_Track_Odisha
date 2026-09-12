@@ -1021,17 +1021,16 @@ function initMap() {
     div.style.marginBottom = '12px';
 
     div.innerHTML = `
-      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION STATUS</div>
-      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#10b981; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Monitored Station</div>
-      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#0284c7; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Unmonitored Station</div>
-      <div style="display:flex; align-items:center; margin-bottom:6px;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1px solid #0f172a; margin-right:6px; display:inline-block;"></span>Closed / Inactive</div>
-      <div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>
       <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">WATER TABLE DEPTH</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#0284c7; border-radius:2px; margin-right:6px; display:inline-block;"></span>&lt; 2.0 m (Shallow)</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#10b981; border-radius:2px; margin-right:6px; display:inline-block;"></span>2.0 - 4.0 m</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:2px; margin-right:6px; display:inline-block;"></span>4.0 - 6.0 m</div>
       <div style="display:flex; align-items:center; margin-bottom:3px;"><span style="width:12px; height:12px; background:#f97316; border-radius:2px; margin-right:6px; display:inline-block;"></span>6.0 - 8.0 m</div>
-      <div style="display:flex; align-items:center;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
+      <div style="display:flex; align-items:center; margin-bottom:5px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:2px; margin-right:6px; display:inline-block;"></span>&gt; 8.0 m (Depleted)</div>
+      <div style="height:1px; background:${isDark ? '#334155' : '#cbd5e1'}; margin:6px 0;"></div>
+      <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
+      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
+      <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
     `;
     return div;
   };
