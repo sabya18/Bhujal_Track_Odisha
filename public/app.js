@@ -1051,6 +1051,7 @@ function updateMapLegend() {
     }
     html += `
       <div style="font-weight:700; font-size:10px; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; color:${isDark ? '#94a3b8' : '#64748b'};">STATION SYMBOLS</div>
+      <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#10b981; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Monitored Active Station</div>
       <div style="display:flex; align-items:center; margin-bottom:4px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Pending Visit (Unmonitored)</div>
       <div style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#94a3b8; border-radius:50%; border:1.5px solid #ffffff; margin-right:6px; display:inline-block;"></span>Closed / Inactive Station</div>
     `;
