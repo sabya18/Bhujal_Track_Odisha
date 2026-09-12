@@ -997,8 +997,9 @@ function renderDashboardMap(statsByDistrict) {
       const data = mapStats[key];
       
       return {
-        color: border,
-        weight: 1.5,
+        color: '#000000',
+        weight: 2.0,
+        opacity: 1.0,
         fillColor: data ? data.color : (isDark ? '#1e293b' : '#e2e8f0'),
         fillOpacity: data ? 0.45 : 0.20
       };
@@ -1317,9 +1318,9 @@ function initMap() {
   if (odishaDistrictsGeoJSON) {
     L.geoJSON(odishaDistrictsGeoJSON, {
       style: {
-        color: isDark ? '#f8fafc' : '#000000',
-        weight: 3.8,
-        opacity: 0.9,
+        color: '#000000',
+        weight: 4.0,
+        opacity: 1.0,
         fill: false,
         interactive: false
       }
@@ -1336,8 +1337,8 @@ function initMap() {
         const avg = data && data.count > 0 ? (data.sum / data.count) : null;
         
         return {
-          color: border,
-          weight: 2.4,
+          color: '#000000',
+          weight: 2.2,
           opacity: 1.0,
           fillColor: avg !== null ? getDepthColor(avg) : (isDark ? '#1e293b' : '#cbd5e1'),
           fillOpacity: blocksOverlayActive ? 0.25 : (avg !== null ? 0.85 : 0.2) // dim districts if blocks are on top
@@ -1387,9 +1388,9 @@ function initMap() {
   } else {
     L.geoJSON(odishaDistrictsGeoJSON, {
       style: {
-        color: border,
-        weight: 2.4,
-        opacity: 0.95,
+        color: '#000000',
+        weight: 2.2,
+        opacity: 1.0,
         fillColor: 'transparent',
         fillOpacity: 0
       }
@@ -1406,9 +1407,9 @@ function initMap() {
         const avg = data && data.count > 0 ? (data.sum / data.count) : null;
         
         return {
-          color: isDark ? '#38bdf8' : '#0284c7',
-          weight: 1,
-          dashArray: '3, 3',
+          color: '#000000',
+          weight: 1.4,
+          opacity: 0.95,
           fillColor: avg !== null ? getDepthColor(avg) : 'transparent',
           fillOpacity: avg !== null ? 0.7 : 0
         };
