@@ -224,6 +224,11 @@ function authMiddleware(req, res, next) {
 }
 
 // --- Route Protection Configuration ---
+// Render & System Health Check Probe Endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Serve login page and static baseline resources publicly
 app.get('/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));

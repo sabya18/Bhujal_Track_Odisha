@@ -4,6 +4,7 @@
   "description": "Automated groundwater station monitoring and mapping tool",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'Build successful'",
     "start": "node server.js",
     "dev": "node server.js"
   },
