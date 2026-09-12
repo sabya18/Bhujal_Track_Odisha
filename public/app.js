@@ -418,14 +418,17 @@ function getWellDataForSeason(well, seasonName, year, history = {}) {
   }
 
   // 3. Preloaded WTTO history
-  if (well.history && well.history[seasonKey] !== undefined && well.history[seasonKey] !== null) {
-    const val = parseFloat(well.history[seasonKey]);
-    if (!isNaN(val)) {
-      return {
-        date: defaultDate,
-        dtgwl_mbgl: val,
-        dtgwl_bmp: val + (well.parapet_height || 0)
-      };
+  if (well.history) {
+    const rawVal = well.history[seasonKey] ?? well.history[seasonKey.replace('_', '_ ')];
+    if (rawVal !== undefined && rawVal !== null) {
+      const val = parseFloat(rawVal);
+      if (!isNaN(val)) {
+        return {
+          date: defaultDate,
+          dtgwl_mbgl: val,
+          dtgwl_bmp: val + (well.parapet_height || 0)
+        };
+      }
     }
   }
 
@@ -4735,6 +4738,40 @@ function calculateExtendedRegressionLine(values, totalLength) {
   return result;
 }
 
+function interpolateMissingValues(values) {
+  const n = values.length;
+  if (n === 0) return values;
+  let firstIdx = -1;
+  for (let i = 0; i < n; i++) {
+    if (values[i] !== null && values[i] !== undefined && !isNaN(values[i])) {
+      firstIdx = i;
+      break;
+    }
+  }
+  if (firstIdx === -1) return values.map(() => 5.0);
+  for (let i = 0; i < firstIdx; i++) values[i] = values[firstIdx];
+  for (let i = firstIdx + 1; i < n; i++) {
+    if (values[i] === null || values[i] === undefined || isNaN(values[i])) {
+      let nextIdx = -1;
+      for (let j = i + 1; j < n; j++) {
+        if (values[j] !== null && values[j] !== undefined && !isNaN(values[j])) {
+          nextIdx = j;
+          break;
+        }
+      }
+      if (nextIdx !== -1) {
+        const prevVal = values[i - 1];
+        const nextVal = values[nextIdx];
+        const step = (nextVal - prevVal) / (nextIdx - (i - 1));
+        values[i] = Number((prevVal + step).toFixed(2));
+      } else {
+        values[i] = values[i - 1];
+      }
+    }
+  }
+  return values;
+}
+
 function renderTrendsView() {
   const levelSelect = document.getElementById('trends-level-select');
   const distSelect = document.getElementById('trends-district-select');
@@ -4761,6 +4798,40 @@ function renderTrendsView() {
 
   const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
   const seasons = ['Winter', 'PreMon', 'MidMon', 'PostMon'];
+  const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
+
+  // Precompute block & district average maps across active wells
+  const scopedWells = getScopedWellsData().filter(isActiveWell);
+  const blockAvgMap = {};
+  const distAvgMap = {};
+
+  scopedWells.forEach(w => {
+    const bKey = normalizeGeoJSONBlock(w.block);
+    const dKey = normalizeGeoJSONDistrict(getDistrictFromWell(w));
+    years.forEach(y => {
+      seasons.forEach(s => {
+        if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
+        const key = `${y}_${s}`;
+        const sFull = seasonMap[s] || 'Pre-Monsoon';
+        const seasonal = getWellDataForSeason(w, sFull, y, visitsHistory);
+        const v = seasonal.dtgwl_mbgl;
+        if (v !== null && v !== undefined && !isNaN(v)) {
+          if (bKey) {
+            if (!blockAvgMap[bKey]) blockAvgMap[bKey] = {};
+            if (!blockAvgMap[bKey][key]) blockAvgMap[bKey][key] = { sum: 0, cnt: 0 };
+            blockAvgMap[bKey][key].sum += v;
+            blockAvgMap[bKey][key].cnt++;
+          }
+          if (dKey) {
+            if (!distAvgMap[dKey]) distAvgMap[dKey] = {};
+            if (!distAvgMap[dKey][key]) distAvgMap[dKey][key] = { sum: 0, cnt: 0 };
+            distAvgMap[dKey][key].sum += v;
+            distAvgMap[dKey][key].cnt++;
+          }
+        }
+      });
+    });
+  });
 
   if (lvl === 'station') {
     if (!targetWellNum) {
@@ -4781,8 +4852,6 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = well.block || '-';
     document.getElementById('trends-well-aquifer').textContent = well.well_type || 'DW';
 
-    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
-
     // Collect historical time-series
     years.forEach(y => {
       seasons.forEach(s => {
@@ -4799,6 +4868,18 @@ function renderTrendsView() {
           if (blockTrend) {
             const item = blockTrend.find(t => t.season === key);
             if (item && item.value !== undefined) val = item.value;
+          }
+        }
+        if (val === null) {
+          const normBlk = normalizeGeoJSONBlock(well.block);
+          if (normBlk && blockAvgMap[normBlk]?.[key]?.cnt > 0) {
+            val = Number((blockAvgMap[normBlk][key].sum / blockAvgMap[normBlk][key].cnt).toFixed(2));
+          }
+        }
+        if (val === null) {
+          const normDist = normalizeGeoJSONDistrict(getDistrictFromWell(well));
+          if (normDist && distAvgMap[normDist]?.[key]?.cnt > 0) {
+            val = Number((distAvgMap[normDist][key].sum / distAvgMap[normDist][key].cnt).toFixed(2));
           }
         }
         values.push(val);
@@ -4823,8 +4904,9 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = targetBlk;
     document.getElementById('trends-well-aquifer').textContent = 'Block Network';
 
-    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
-    const blockWells = getScopedWellsData().filter(w => (w.block === targetBlk || normalizeGeoJSONBlock(w.block) === normalizeGeoJSONBlock(targetBlk)) && isActiveWell(w));
+    const normBlkTarget = normalizeGeoJSONBlock(targetBlk);
+    const normDistTarget = normalizeGeoJSONDistrict(targetDist);
+    const blockWells = scopedWells.filter(w => (w.block === targetBlk || normalizeGeoJSONBlock(w.block) === normBlkTarget));
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
@@ -4847,7 +4929,11 @@ function renderTrendsView() {
             sum += v; cnt++;
           }
         });
-        values.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
+        let val = cnt > 0 ? Number((sum / cnt).toFixed(2)) : null;
+        if (val === null && normDistTarget && distAvgMap[normDistTarget]?.[key]?.cnt > 0) {
+          val = Number((distAvgMap[normDistTarget][key].sum / distAvgMap[normDistTarget][key].cnt).toFixed(2));
+        }
+        values.push(val);
       });
     });
 
@@ -4864,9 +4950,8 @@ function renderTrendsView() {
     document.getElementById('trends-well-block').textContent = 'All Division';
     document.getElementById('trends-well-aquifer').textContent = 'District Network';
 
-    const seasonMap = { 'Winter': 'Winter', 'PreMon': 'Pre-Monsoon', 'MidMon': 'Mid-Monsoon', 'PostMon': 'Post-Monsoon' };
     const normDistTarget = normalizeGeoJSONDistrict(targetDist);
-    const distWells = getScopedWellsData().filter(w => (targetDist === 'ALL' || normalizeGeoJSONDistrict(getDistrictFromWell(w)) === normDistTarget) && isActiveWell(w));
+    const distWells = scopedWells.filter(w => (targetDist === 'ALL' || normalizeGeoJSONDistrict(getDistrictFromWell(w)) === normDistTarget));
     years.forEach(y => {
       seasons.forEach(s => {
         if (y === 2026 && (s === 'MidMon' || s === 'PostMon')) return;
@@ -4896,6 +4981,8 @@ function renderTrendsView() {
     titleStr = `District Average Water Level Trend - ${distName}`;
     subStr = `Network Total (${distWells.length} Stations)`;
   }
+
+  values = interpolateMissingValues(values);
 
   // Calculate Mann-Kendall statistics
   const mkResult = calculateMannKendallAndSensSlope(values);
