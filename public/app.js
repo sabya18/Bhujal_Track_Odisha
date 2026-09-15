@@ -726,9 +726,15 @@ function setupTabs() {
     
     // Auto-init maps or charts
     if (activeTab === 'dashboard') {
-      setTimeout(() => renderDashboardMap(), 100);
+      setTimeout(() => {
+        renderDashboardMap();
+        if (miniMap && typeof miniMap.invalidateSize === 'function') miniMap.invalidateSize();
+      }, 100);
     } else if (activeTab === 'map-view') {
-      setTimeout(() => initMap(), 100);
+      setTimeout(() => {
+        initMap();
+        if (mainMap && typeof mainMap.invalidateSize === 'function') mainMap.invalidateSize();
+      }, 100);
     } else if (activeTab === 'trends-view') {
       updateTrendsTab();
     } else if (activeTab === 'telemetry-view') {
@@ -1457,6 +1463,12 @@ function initMap() {
   // 3. Draw Station Well markers
   mainMarkersGroup = L.layerGroup().addTo(mainMap);
   plotMarkersOnMap();
+
+  setTimeout(() => {
+    if (mainMap && typeof mainMap.invalidateSize === 'function') {
+      mainMap.invalidateSize();
+    }
+  }, 150);
 }
 
 function plotMarkersOnMap() {
@@ -1471,10 +1483,10 @@ function plotMarkersOnMap() {
   const baseRadius = currentZoom <= 7 ? 4.0 : (currentZoom === 8 ? 5.5 : 7.5);
   const strokeWeight = currentZoom <= 7 ? 1.2 : 1.8;
 
-  const districtFilter = document.getElementById('map-filter-district').value;
-  const blockFilter = document.getElementById('map-filter-block').value;
-  const statusFilter = document.getElementById('map-filter-status').value;
-  const query = document.getElementById('map-search-input').value.toLowerCase();
+  const districtFilter = document.getElementById('map-filter-district')?.value || 'ALL';
+  const blockFilter = document.getElementById('map-filter-block')?.value || 'ALL';
+  const statusFilter = document.getElementById('map-filter-status')?.value || 'ACTIVE_PENDING';
+  const query = document.getElementById('map-search-input')?.value?.toLowerCase() || '';
   
   getScopedWellsData().forEach(well => {
     const dist = getDistrictFromSheet(well.sheet);
