@@ -13,7 +13,7 @@ let visitsHistory = {};
 let selectedYear = '2026';
 let selectedSeason = 'Pre-Monsoon';
 let activeTab = 'dashboard';
-let theme = localStorage.getItem('gw_theme') || 'dark'; // theme state
+let theme = localStorage.getItem('gw_theme') || 'light'; // theme state
 
 // Map & Table state
 let mainMap = null;

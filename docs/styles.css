@@ -2245,6 +2245,30 @@ body.light-theme .quick-filter-btn:hover {
   border-color: #0284c7 !important;
 }
 
+body.light-theme .badge-blue {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #7dd3fc !important;
+}
+
+body.light-theme .badge-emerald {
+  background: #d1fae5 !important;
+  color: #059669 !important;
+  border: 1px solid #6ee7b7 !important;
+}
+
+body.light-theme .badge-amber {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+  border: 1px solid #fde047 !important;
+}
+
+body.light-theme .badge-rose {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
 /* Global Selectors */
 .global-selectors {
   display: flex;
