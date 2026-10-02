@@ -100,6 +100,7 @@
       position: relative;
       display: flex;
       align-items: center;
+      cursor: text;
     }
 
     .input-icon {
@@ -108,6 +109,7 @@
       color: #64748b;
       font-size: 1.1rem;
       pointer-events: none;
+      z-index: 20;
     }
 
     .input-login {
@@ -119,6 +121,12 @@
       padding: 0 16px 0 42px !important;
       color: #ffffff !important;
       font-size: 0.95rem !important;
+      cursor: text !important;
+      pointer-events: auto !important;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      position: relative;
+      z-index: 10;
       transition: all 0.2s ease-in-out;
       box-sizing: border-box;
     }
@@ -173,7 +181,17 @@
 
   <div class="login-container">
     <div class="login-header">
-      <div class="login-logo">💧</div>
+      <div class="login-logo" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(0, 242, 254, 0.15)); border: 1.5px solid rgba(0, 242, 254, 0.4); padding: 4px; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="url(#dropletGradLogin)" style="width: 34px; height: 34px; filter: drop-shadow(0 2px 6px rgba(0,180,216,0.5));">
+          <defs>
+            <linearGradient id="dropletGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00f2fe" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+          </defs>
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+        </svg>
+      </div>
       <h1 class="login-title">GWD Portal</h1>
       <p class="login-subtitle">Ground Water Development Department, Odisha</p>
     </div>
@@ -188,7 +206,7 @@
         <label for="input-officer-id" class="form-label-login">Officer ID / Username</label>
         <div class="input-wrapper">
           <span class="input-icon">👤</span>
-          <input type="text" id="input-officer-id" class="input-login" placeholder="e.g. gwd_officer" required autocomplete="username">
+          <input type="text" id="input-officer-id" class="input-login" placeholder="e.g. gwd_officer" required autocomplete="username" autofocus>
         </div>
       </div>
 
@@ -208,6 +226,14 @@
   </div>
 
   <script>
+    // Click wrapper to focus input
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+      wrapper.addEventListener('click', () => {
+        const inp = wrapper.querySelector('input');
+        if (inp) inp.focus();
+      });
+    });
+
     // Prevent access if already logged in (Server session cookie checks are primary, sessionStorage is static fallback)
     (function() {
       if (sessionStorage.getItem('gwd_authenticated') === 'true') {
@@ -229,6 +255,25 @@
       submitBtn.textContent = 'Verifying Credentials...';
       errorBanner.style.display = 'none';
 
+      const divisionMap = {
+        "admin": "ALL",
+        "gwd_officer": "ALL",
+        "admin_cuttack": "CUTTACK DIVISION",
+        "cuttack_div": "CUTTACK DIVISION",
+        "balasore_div": "BARIPADA DIVISION",
+        "baripada_div": "BARIPADA DIVISION",
+        "berhampur_div": "BERHAMPUR DIVISION",
+        "sambalpur_div": "SAMBALPUR DIVISION",
+        "bolangir_div": "BOLANGIR DIVISION",
+        "koraput_div": "KORAPUT DIVISION",
+        "bhawanipatna_div": "BHAWANIPATNA DIVISION",
+        "angul_div": "ANGUL DIVISION",
+        "rs_div": "RS DIVISION",
+        "ad_hp_div": "AD HP DIVISION",
+        "phulbani_div": "PHULBANI DIVISION",
+        "rayagada_div": "RAYAGADA DIVISION"
+      };
+
       // 1. Try server API login first (if backend is active)
       try {
         const res = await fetch('api/login', {
@@ -238,8 +283,11 @@
         });
         
         if (res.ok) {
+          const authData = await res.json();
+          const userDiv = authData.division || divisionMap[username] || 'ALL';
           sessionStorage.setItem('gwd_authenticated', 'true');
           sessionStorage.setItem('gwd_username', username);
+          sessionStorage.setItem('gwd_user_division', userDiv);
           window.location.href = 'index.html';
           return;
         } else if (res.status === 401) {
@@ -251,21 +299,31 @@
         console.warn("Server auth endpoint unavailable. Falling back to local offline validator...");
       }
 
-      // 2. Client-side static fallback (uses simple base64/obfuscated comparisons for GitHub Pages)
-      // "Z3dkX29mZmljZXI=" is base64 for "gwd_officer"
-      // "Z3dkX3Bhc3N3b3JkXzIwMjY=" is base64 for "gwd_password_2026"
-      // "YWRtaW5fY3V0dGFjaw==" is base64 for "admin_cuttack"
-      // "Y3V0dGFja19wYXNzXzk5" is base64 for "cuttack_pass_99"
-      
-      const encUser = btoa(username);
-      const encPass = btoa(password);
-      
-      if (
-        (encUser === "Z3dkX29mZmljZXI=" && encPass === "Z3dkX3Bhc3N3b3JkXzIwMjY=") ||
-        (encUser === "YWRtaW5fY3V0dGFjaw==" && encPass === "Y3V0dGFja19wYXNzXzk5")
-      ) {
+      // 2. Client-side static fallback (offline validator for all GWD Divisions & Admin accounts)
+      const validUsers = {
+        "admin": "admin_password_2026",
+        "gwd_officer": "gwd_password_2026",
+        "admin_cuttack": "cuttack_pass_99",
+        "cuttack_div": "cuttack2026",
+        "balasore_div": "balasore2026",
+        "baripada_div": "balasore2026",
+        "berhampur_div": "berhampur2026",
+        "sambalpur_div": "sambalpur2026",
+        "bolangir_div": "bolangir2026",
+        "koraput_div": "koraput2026",
+        "bhawanipatna_div": "bhawanipatna2026",
+        "angul_div": "angul2026",
+        "rs_div": "rsdiv2026",
+        "ad_hp_div": "adhp2026",
+        "phulbani_div": "phulbani2026",
+        "rayagada_div": "rayagada_2026"
+      };
+
+      if (validUsers[username] && validUsers[username] === password) {
+        const userDiv = divisionMap[username] || 'ALL';
         sessionStorage.setItem('gwd_authenticated', 'true');
         sessionStorage.setItem('gwd_username', username);
+        sessionStorage.setItem('gwd_user_division', userDiv);
         window.location.href = 'index.html';
       } else {
         showError("Authentication failed. Invalid GWD Officer credentials.");

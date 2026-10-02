@@ -2189,6 +2189,62 @@ body.light-theme ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
 }
 
+/* Executive Light Mode Contrast Enhancements */
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.light-theme ::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+body.light-theme .badge,
+body.light-theme .tag,
+body.light-theme .status-badge {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+body.light-theme .filter-group label,
+body.light-theme .input-group label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+body.light-theme .leaflet-control-zoom a {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  color: #475569 !important;
+}
+
+body.light-theme .quick-filter-btn {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light-theme .quick-filter-btn.active,
+body.light-theme .quick-filter-btn:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+
 /* Global Selectors */
 .global-selectors {
   display: flex;

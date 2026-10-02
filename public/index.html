@@ -60,8 +60,16 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo-icon">
-          <img src="assets/logo.png" alt="Bhujal Logo" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,242,254,0.3));" onerror="this.onerror=null; this.src='logo.png';">
+        <div class="logo-icon" style="display: flex; align-items: center; justify-content: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="url(#dropletGrad)" style="width: 28px; height: 28px; filter: drop-shadow(0 2px 6px rgba(0,180,216,0.5));">
+            <defs>
+              <linearGradient id="dropletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f2fe" />
+                <stop offset="100%" stop-color="#0284c7" />
+              </linearGradient>
+            </defs>
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
         </div>
         <div class="logo-text">
           <h2>GW-MONITOR</h2>

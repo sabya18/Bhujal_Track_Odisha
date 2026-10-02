@@ -181,8 +181,16 @@
 
   <div class="login-container">
     <div class="login-header">
-      <div class="login-logo" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(0, 242, 254, 0.15)); border: 1.5px solid rgba(0, 242, 254, 0.4); padding: 4px; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);">
-        <img src="assets/logo.png" alt="Bhujal Logo" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.onerror=null; this.src='logo.png';">
+      <div class="login-logo" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(0, 242, 254, 0.15)); border: 1.5px solid rgba(0, 242, 254, 0.4); padding: 4px; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="url(#dropletGradLogin)" style="width: 34px; height: 34px; filter: drop-shadow(0 2px 6px rgba(0,180,216,0.5));">
+          <defs>
+            <linearGradient id="dropletGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00f2fe" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+          </defs>
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+        </svg>
       </div>
       <h1 class="login-title">GWD Portal</h1>
       <p class="login-subtitle">Ground Water Development Department, Odisha</p>
