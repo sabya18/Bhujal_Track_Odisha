@@ -2684,6 +2684,36 @@ body.light-theme .badge-rose {
   color: var(--accent-blue);
 }
 
+/* --- Add Water Level Data & Field Book Enhancements --- */
+#btn-add-water-level:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+  opacity: 0.95;
+}
+
+#btn-open-fieldbook-import:hover {
+  background: var(--bg-hover) !important;
+  color: #0284c7 !important;
+}
+
+#lbl-auto-season-badge {
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.modal-backdrop.show-modal {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: fadeInModal 0.25s ease-out forwards;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
 /* --- Auth User Profile Styling --- */
 .user-profile-badge {
   display: flex;

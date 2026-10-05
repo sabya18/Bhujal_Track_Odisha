@@ -668,57 +668,157 @@ function inferSeasonKeyFromDate(dateStr) {
   return `${year}_${season}`;
 }
 
-// API: Update groundwater level measurements
+// API: Update or Insert groundwater level measurements
 app.post('/api/wells/update', async (req, res) => {
-  const { date, bmp, mbgl, parapet, well_number, lat, lon } = req.body;
+  const { date, bmp, mbgl, parapet, well_number, lat, lon, district, block, location, well_type, season_key, msl, remarks } = req.body;
   
   if (!well_number) {
     return res.status(400).json({ error: "Missing well_number parameter" });
   }
   
+  const formattedWellNum = well_number.trim().toUpperCase();
+  const pHeight = parapet !== undefined && parapet !== null && parapet !== '' ? parseFloat(parapet) : 0.0;
+  const mslVal = msl !== undefined && msl !== null && msl !== '' ? parseFloat(msl) : null;
+  const latVal = lat !== undefined && lat !== null && lat !== '' ? parseFloat(lat) : null;
+  const lonVal = lon !== undefined && lon !== null && lon !== '' ? parseFloat(lon) : null;
+
   try {
-    // 1. Update well coordinates and parapet height in wells table if provided
-    if (lat !== undefined && lat !== null && lat !== '' && lon !== undefined && lon !== null && lon !== '') {
-      const pHeight = parapet !== undefined && parapet !== null && parapet !== '' ? parseFloat(parapet) : 0.0;
+    // 1. Ensure well exists or update well master info in PostgreSQL if DB is available
+    if (usePostgres && pgPool) {
+      const wellExists = await pgPool.query(`SELECT well_number FROM wells WHERE well_number = $1`, [formattedWellNum]);
+      if (wellExists.rows.length === 0) {
+        // Insert new well
+        await pgPool.query(
+          `INSERT INTO wells (well_number, district, block, location, well_type, lat, lon, lat_raw, lon_raw, parapet_height, msl_elevation)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            formattedWellNum,
+            district || 'ALL',
+            block || 'ALL',
+            location || formattedWellNum,
+            well_type || 'DW',
+            latVal,
+            lonVal,
+            latVal ? latVal.toString() : '',
+            lonVal ? lonVal.toString() : '',
+            pHeight,
+            mslVal
+          ]
+        );
+      } else {
+        // Update existing well details
+        if (latVal !== null && lonVal !== null) {
+          await pgPool.query(
+            `UPDATE wells 
+             SET lat = $1, lon = $2, lat_raw = $3, lon_raw = $4, parapet_height = $5, msl_elevation = COALESCE($6, msl_elevation)
+             WHERE well_number = $7`,
+            [latVal, lonVal, latVal.toString(), lonVal.toString(), pHeight, mslVal, formattedWellNum]
+          );
+        } else if (parapet !== undefined && parapet !== null && parapet !== '') {
+          await pgPool.query(
+            `UPDATE wells SET parapet_height = $1, msl_elevation = COALESCE($2, msl_elevation) WHERE well_number = $3`,
+            [pHeight, mslVal, formattedWellNum]
+          );
+        }
+      }
+
+      // 2. Insert or update the visit measurement
+      const targetSeasonKey = season_key || inferSeasonKeyFromDate(date);
       await pgPool.query(
-        `UPDATE wells 
-         SET lat = $1, lon = $2, lat_raw = $3, lon_raw = $4, parapet_height = $5
-         WHERE well_number = $6`,
-        [parseFloat(lat), parseFloat(lon), lat.toString(), lon.toString(), pHeight, well_number.toUpperCase()]
-      );
-    } else if (parapet !== undefined && parapet !== null && parapet !== '') {
-      await pgPool.query(
-        `UPDATE wells SET parapet_height = $1 WHERE well_number = $2`,
-        [parseFloat(parapet), well_number.toUpperCase()]
+        `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (well_number, season_key) DO UPDATE
+         SET date = EXCLUDED.date,
+             dtgwl_bmp = EXCLUDED.dtgwl_bmp,
+             dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
+             remarks = EXCLUDED.remarks;`,
+        [
+          formattedWellNum,
+          targetSeasonKey,
+          date || '',
+          bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null,
+          mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null,
+          remarks || ''
+        ]
       );
     }
     
-    // 2. Insert or update the visit measurement
-    const seasonKey = inferSeasonKeyFromDate(date);
-    await pgPool.query(
-      `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (well_number, season_key) DO UPDATE
-       SET date = EXCLUDED.date,
-           dtgwl_bmp = EXCLUDED.dtgwl_bmp,
-           dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
-           remarks = EXCLUDED.remarks;`,
-      [
-        well_number.toUpperCase(),
-        seasonKey,
-        date || '',
-        bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null,
-        mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null,
-        ''
-      ]
-    );
-    
-    res.json({ success: true });
+    res.json({ success: true, well_number: formattedWellNum });
   } catch (err) {
     console.error("Error updating well measurement in PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
+// API: Bulk import groundwater level measurements from Field Book
+app.post('/api/wells/bulk-import', async (req, res) => {
+  const { records } = req.body;
+  if (!Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ error: "Invalid or empty records array" });
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const rec of records) {
+    const well_number = (rec.well_id || rec.well_number || rec.station_code || '').trim().toUpperCase();
+    if (!well_number) {
+      errorCount++;
+      continue;
+    }
+
+    try {
+      const date = rec.date || rec.visit_date || '';
+      const bmp = rec.dtgwl_bmp !== undefined ? parseFloat(rec.dtgwl_bmp) : null;
+      const mbgl = rec.dtgwl_mbgl !== undefined ? parseFloat(rec.dtgwl_mbgl) : (bmp !== null && rec.parapet ? bmp - parseFloat(rec.parapet) : null);
+      const parapet = rec.parapet !== undefined ? parseFloat(rec.parapet) : 0.0;
+      const lat = rec.lat ? parseFloat(rec.lat) : null;
+      const lon = rec.lon ? parseFloat(rec.lon) : null;
+      const seasonKey = rec.season_key || inferSeasonKeyFromDate(date);
+      const remarks = rec.remarks || 'Active';
+
+      if (usePostgres && pgPool) {
+        const wellExists = await pgPool.query(`SELECT well_number FROM wells WHERE well_number = $1`, [well_number]);
+        if (wellExists.rows.length === 0) {
+          await pgPool.query(
+            `INSERT INTO wells (well_number, district, block, location, well_type, lat, lon, lat_raw, lon_raw, parapet_height)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              well_number,
+              rec.district || 'ALL',
+              rec.block || 'ALL',
+              rec.location || well_number,
+              rec.well_type || 'DW',
+              lat,
+              lon,
+              lat ? lat.toString() : '',
+              lon ? lon.toString() : '',
+              parapet
+            ]
+          );
+        }
+
+        await pgPool.query(
+          `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (well_number, season_key) DO UPDATE
+           SET date = EXCLUDED.date,
+               dtgwl_bmp = EXCLUDED.dtgwl_bmp,
+               dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
+               remarks = EXCLUDED.remarks;`,
+          [well_number, seasonKey, date, bmp, mbgl, remarks]
+        );
+      }
+      successCount++;
+    } catch (err) {
+      console.error(`Error processing bulk record for ${well_number}:`, err);
+      errorCount++;
+    }
+  }
+
+  res.json({ success: true, imported: successCount, failed: errorCount });
+});
+
 
 // Configure Multer for photo uploads
 const storage = multer.diskStorage({
