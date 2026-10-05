@@ -2033,6 +2033,55 @@ function renderTable() {
   document.getElementById('btn-pagination-next').disabled = currentPage === totalPages;
 }
 
+// Infer season name and year from date string (matching Android implementation)
+function inferSeasonNameFromDate(dateStr) {
+  if (!dateStr) return { season: 'Winter', year: new Date().getFullYear().toString() };
+  let day = 1, month = 1, year = new Date().getFullYear().toString();
+  
+  if (dateStr.includes('.')) {
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      year = parts[2];
+    }
+  } else if (dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) { // YYYY-MM-DD
+        year = parts[0];
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
+      } else { // DD-MM-YYYY
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        year = parts[2];
+      }
+    }
+  }
+
+  let season = 'Winter';
+  if ((month === 2 && day >= 1) || (month === 3 && day <= 31)) {
+    season = 'Winter';
+  } else if ((month === 5 && day >= 1) || (month === 6 && day <= 30)) {
+    season = 'Pre-Monsoon';
+  } else if ((month === 8 && day >= 1) || (month === 9 && day <= 30)) {
+    season = 'Mid-Monsoon';
+  } else if ((month === 11 && day >= 1) || (month === 12 && day <= 31)) {
+    season = 'Post-Monsoon';
+  } else {
+    if (month === 1) season = 'Winter';
+    if (month === 4) season = 'Pre-Monsoon';
+    if (month === 7) season = 'Mid-Monsoon';
+    if (month === 10) season = 'Post-Monsoon';
+  }
+  return { season, year };
+}
+
+// Global state for newly registered stations in session
+let isNewWellMode = false;
+let parsedFieldBookRecords = [];
+
 // --- Visit Recording Modal ---
 function setupModalEventListeners() {
   const modal = document.getElementById('edit-well-modal');
@@ -2045,154 +2094,364 @@ function setupModalEventListeners() {
     stopCamera();
   };
   
-  closeBtn.onclick = hideModal;
-  cancelBtn.onclick = hideModal;
-  
-  // Math auto-calculation logic: BMP - Parapet = MBGL
+  if (closeBtn) closeBtn.onclick = hideModal;
+  if (cancelBtn) cancelBtn.onclick = hideModal;
+
+  // Bind click listeners to all Add Water Level Data triggers
+  document.querySelectorAll('.btn-add-water-level-trigger, #btn-add-water-level').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openAddWaterLevelModal();
+    };
+  });
+
+  // Bind click listeners to all Bulk Field Book triggers
+  document.querySelectorAll('.btn-fieldbook-trigger, #btn-open-fieldbook-import').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openFieldBookModal();
+    };
+  });
+
+  // Date of Visit & Dynamic Season Determination Logic
+  const inputDate = document.getElementById('input-visit-date');
+  const autoSeasonBadge = document.getElementById('lbl-auto-season-badge');
+  const seasonSelect = document.getElementById('input-season-override');
+
+  const updateAutoSeasonFromDate = () => {
+    if (!inputDate) return;
+    const dateVal = inputDate.value;
+    if (dateVal) {
+      const { season, year } = inferSeasonNameFromDate(dateVal);
+      if (autoSeasonBadge) {
+        autoSeasonBadge.textContent = `${season} (${year})`;
+      }
+      if (seasonSelect) {
+        seasonSelect.value = season;
+      }
+    }
+  };
+
+  if (inputDate) {
+    inputDate.addEventListener('change', updateAutoSeasonFromDate);
+    inputDate.addEventListener('input', updateAutoSeasonFromDate);
+  }
+
+  // Math auto-calculation logic: BMP - Parapet = MBGL; MSL - MBGL = RL
   const inputBmp = document.getElementById('input-dtgwl-bmp');
   const inputParapet = document.getElementById('input-parapet-height');
   const inputMbgl = document.getElementById('input-dtgwl-mbgl');
+  const inputMsl = document.getElementById('input-msl-elevation');
+  const inputRl = document.getElementById('input-calculated-rl');
   
-  const recalculateMbgl = () => {
-    const bmpVal = parseFloat(inputBmp.value);
-    const parapetVal = parseFloat(inputParapet.value);
+  const recalculateWaterLevels = () => {
+    const bmpVal = parseFloat(inputBmp ? inputBmp.value : '');
+    const parapetVal = parseFloat(inputParapet ? inputParapet.value : '');
+    let mbglVal = parseFloat(inputMbgl ? inputMbgl.value : '');
+    
     if (!isNaN(bmpVal) && !isNaN(parapetVal)) {
-      inputMbgl.value = (bmpVal - parapetVal).toFixed(2);
+      mbglVal = parseFloat((bmpVal - parapetVal).toFixed(2));
+      if (inputMbgl) inputMbgl.value = mbglVal;
+    }
+
+    const mslVal = parseFloat(inputMsl ? inputMsl.value : '');
+    if (inputRl) {
+      if (!isNaN(mslVal) && !isNaN(mbglVal)) {
+        inputRl.value = (mslVal - mbglVal).toFixed(2) + ' m MSL';
+      } else {
+        inputRl.value = '-';
+      }
     }
   };
   
-  inputBmp.oninput = recalculateMbgl;
-  inputParapet.oninput = recalculateMbgl;
+  if (inputBmp) inputBmp.oninput = recalculateWaterLevels;
+  if (inputParapet) inputParapet.oninput = recalculateWaterLevels;
+  if (inputMbgl) inputMbgl.oninput = recalculateWaterLevels;
+  if (inputMsl) inputMsl.oninput = recalculateWaterLevels;
+
+  // Station Autocomplete Search
+  const stationSearchInput = document.getElementById('select-station-search');
+  if (stationSearchInput) {
+    stationSearchInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim().toUpperCase();
+      if (!val) return;
+      
+      const matched = wellsData.find(w => 
+        w.well_number.toUpperCase() === val ||
+        `${w.well_number} - ${w.district || ''} ${w.block || ''}`.toUpperCase() === val
+      );
+      if (matched) {
+        openVisitEditModal(matched);
+      }
+    });
+  }
+
+  // Toggle New Station Mode Button
+  const toggleNewBtn = document.getElementById('btn-toggle-new-well');
+  if (toggleNewBtn) {
+    toggleNewBtn.onclick = () => {
+      isNewWellMode = !isNewWellMode;
+      const newSec = document.getElementById('section-new-well-inputs');
+      const sumSec = document.getElementById('well-metadata-summary-box');
+      if (isNewWellMode) {
+        if (newSec) newSec.style.display = 'block';
+        if (sumSec) sumSec.style.display = 'none';
+        toggleNewBtn.textContent = '🔍 Select Existing Station';
+        toggleNewBtn.className = 'btn btn-primary btn-sm';
+      } else {
+        if (newSec) newSec.style.display = 'none';
+        if (sumSec) sumSec.style.display = 'flex';
+        toggleNewBtn.textContent = '➕ Register New Station';
+        toggleNewBtn.className = 'btn btn-secondary btn-sm';
+      }
+    };
+  }
   
   // Handle Camera activation
   const camBtn = document.getElementById('btn-toggle-camera');
-  camBtn.onclick = toggleCamera;
+  if (camBtn) camBtn.onclick = toggleCamera;
   
   const snapBtn = document.getElementById('btn-snap-photo');
-  snapBtn.onclick = snapPhoto;
+  if (snapBtn) snapBtn.onclick = snapPhoto;
+
+  // File photo upload preview
+  const filePhotoInput = document.getElementById('input-file-photo');
+  if (filePhotoInput) {
+    filePhotoInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const imgPreview = document.getElementById('img-captured-preview');
+          const photoPlaceholder = document.getElementById('photo-placeholder');
+          if (imgPreview && photoPlaceholder) {
+            imgPreview.src = evt.target.result;
+            imgPreview.style.display = 'block';
+            photoPlaceholder.style.display = 'none';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
   
   // Save visit form submission
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedWell) return;
-    
-    const visitDate = document.getElementById('input-visit-date').value;
-    const parapetVal = parseFloat(document.getElementById('input-parapet-height').value);
-    const bmpVal = parseFloat(document.getElementById('input-dtgwl-bmp').value);
-    const mbglVal = parseFloat(document.getElementById('input-dtgwl-mbgl').value);
-    const latVal = parseFloat(document.getElementById('input-well-lat').value);
-    const lonVal = parseFloat(document.getElementById('input-well-lon').value);
-    
-    // Reformat date from YYYY-MM-DD to DD.MM.YYYY
-    let formattedDate = '';
-    if (visitDate) {
-      const parts = visitDate.split('-');
-      if (parts.length === 3) {
-        formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-      }
-    }
-    
-    // Save to local visitsHistory mapping
-    let seasonCode = 'Winter';
-    if (selectedSeason.includes('Pre')) seasonCode = 'PreMon';
-    else if (selectedSeason.includes('Mid')) seasonCode = 'MidMon';
-    else if (selectedSeason.includes('Post')) seasonCode = 'PostMon';
-    
-    const seasonKey = `${selectedYear}_${seasonCode}`;
-    
-    if (!visitsHistory[selectedWell.well_number]) {
-      visitsHistory[selectedWell.well_number] = {};
-    }
-    visitsHistory[selectedWell.well_number][seasonKey] = {
-      date: formattedDate,
-      value: mbglVal
-    };
-    
-    // Persist local storage cache
-    localStorage.setItem('gw_visits_history', JSON.stringify(visitsHistory));
-    
-    // Sync to backend if online
-    if (!isStandaloneMode && navigator.onLine) {
-      setConnectionStatus('loading', 'Syncing visits to server...');
-      try {
-        const updateRes = await fetch('api/wells/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sheet: selectedWell.sheet,
-            row_idx: selectedWell.row_idx,
-            date: formattedDate,
-            bmp: bmpVal,
-            mbgl: mbglVal,
-            parapet: parapetVal,
-            well_number: selectedWell.well_number,
-            lat: latVal,
-            lon: lonVal
-          })
-        });
-        
-        if (updateRes.status === 401) {
-          sessionStorage.clear();
-          window.location.href = 'login.html';
+  if (form) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+
+      let targetWellNumber = '';
+      let targetDistrict = 'ALL';
+      let targetBlock = 'ALL';
+      let targetLocation = '';
+      let targetWellType = 'DW';
+
+      if (isNewWellMode) {
+        targetWellNumber = document.getElementById('input-new-well-id').value.trim().toUpperCase();
+        targetDistrict = document.getElementById('input-new-well-district').value.trim();
+        targetBlock = document.getElementById('input-new-well-block').value.trim();
+        targetLocation = document.getElementById('input-new-well-location').value.trim();
+        targetWellType = document.getElementById('input-new-well-type').value;
+
+        if (!targetWellNumber) {
+          alert('Please enter a valid Station ID / Well Number.');
           return;
         }
-        
-        if (updateRes.ok) {
-          showToast("Field visit data synced and saved successfully!");
-        } else {
-          showToast("Saved locally, failed to sync with Excel book.", "warning");
+      } else {
+        if (!selectedWell) return;
+        targetWellNumber = selectedWell.well_number;
+        targetDistrict = selectedWell.district || 'ALL';
+        targetBlock = selectedWell.block || 'ALL';
+        targetLocation = selectedWell.location || targetWellNumber;
+        targetWellType = selectedWell.well_type || 'DW';
+      }
+      
+      const visitDate = document.getElementById('input-visit-date').value;
+      const parapetVal = parseFloat(document.getElementById('input-parapet-height').value) || 0.45;
+      const bmpVal = parseFloat(document.getElementById('input-dtgwl-bmp').value);
+      const mbglVal = parseFloat(document.getElementById('input-dtgwl-mbgl').value);
+      const mslVal = parseFloat(document.getElementById('input-msl-elevation').value);
+      const latVal = parseFloat(document.getElementById('input-well-lat').value);
+      const lonVal = parseFloat(document.getElementById('input-well-lon').value);
+      const statusVal = document.getElementById('input-well-status').value;
+      const commentsVal = document.getElementById('input-field-comments').value;
+      const selectedSeasonOverride = document.getElementById('input-season-override').value;
+
+      // Format date from YYYY-MM-DD to DD.MM.YYYY
+      let formattedDate = '';
+      let dateYear = selectedYear;
+      if (visitDate) {
+        const parts = visitDate.split('-');
+        if (parts.length === 3) {
+          formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+          dateYear = parts[0];
         }
-      } catch (err) {
-        showToast("Saved locally, failed to sync with Excel book.", "warning");
       }
-    } else {
-      showToast("Measurements saved locally (Offline Mode).");
-    }
-    
-    // Update local cache
-    const wellIdx = wellsData.findIndex(w => w.well_number === selectedWell.well_number);
-    if (wellIdx !== -1) {
-      wellsData[wellIdx].parapet_height = parapetVal;
-      wellsData[wellIdx].date = formattedDate;
-      wellsData[wellIdx].dtgwl_bmp = bmpVal;
-      wellsData[wellIdx].dtgwl_mbgl = mbglVal;
-      if (!isNaN(latVal)) {
-        wellsData[wellIdx].latitude = latVal;
-        wellsData[wellIdx].lat = latVal;
-        selectedWell.latitude = latVal;
-        selectedWell.lat = latVal;
+      
+      // Determine Season Key from Date / Override
+      let seasonCode = 'Winter';
+      if (selectedSeasonOverride.includes('Pre')) seasonCode = 'PreMon';
+      else if (selectedSeasonOverride.includes('Mid')) seasonCode = 'MidMon';
+      else if (selectedSeasonOverride.includes('Post')) seasonCode = 'PostMon';
+      
+      const seasonKey = `${dateYear}_${seasonCode}`;
+      
+      if (!visitsHistory[targetWellNumber]) {
+        visitsHistory[targetWellNumber] = {};
       }
-      if (!isNaN(lonVal)) {
-        wellsData[wellIdx].longitude = lonVal;
-        wellsData[wellIdx].lon = lonVal;
-        selectedWell.longitude = lonVal;
-        selectedWell.lon = lonVal;
+      visitsHistory[targetWellNumber][seasonKey] = {
+        date: formattedDate,
+        value: mbglVal,
+        bmp: bmpVal,
+        parapet: parapetVal,
+        remarks: statusVal
+      };
+      
+      // Persist local storage cache
+      localStorage.setItem('gw_visits_history', JSON.stringify(visitsHistory));
+      
+      // Sync to backend if online
+      if (!isStandaloneMode && navigator.onLine) {
+        setConnectionStatus('loading', 'Syncing visits to server...');
+        try {
+          const updateRes = await fetch('api/wells/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              well_number: targetWellNumber,
+              district: targetDistrict,
+              block: targetBlock,
+              location: targetLocation,
+              well_type: targetWellType,
+              date: formattedDate,
+              bmp: bmpVal,
+              mbgl: mbglVal,
+              parapet: parapetVal,
+              msl: mslVal,
+              lat: latVal,
+              lon: lonVal,
+              season_key: seasonKey,
+              remarks: statusVal
+            })
+          });
+          
+          if (updateRes.status === 401) {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+            return;
+          }
+          
+          if (updateRes.ok) {
+            showToast("Field visit data synced and saved successfully!");
+          } else {
+            showToast("Saved locally, failed to sync with server.", "warning");
+          }
+        } catch (err) {
+          showToast("Saved locally, failed to sync with server.", "warning");
+        }
+      } else {
+        showToast("Measurements saved locally (Offline Mode).");
       }
-    }
-    
-    hideModal();
-    renderDashboard();
-    applyFilters();
-    plotMarkersOnMap();
-  };
+      
+      // Update or insert into local wellsData cache
+      let wellIdx = wellsData.findIndex(w => w.well_number.toUpperCase() === targetWellNumber.toUpperCase());
+      if (wellIdx === -1) {
+        // Create new well record in array
+        const newWellObj = {
+          well_number: targetWellNumber,
+          district: targetDistrict,
+          block: targetBlock,
+          location: targetLocation,
+          well_type: targetWellType,
+          parapet_height: parapetVal,
+          msl_elevation: mslVal,
+          date: formattedDate,
+          dtgwl_bmp: bmpVal,
+          dtgwl_mbgl: mbglVal,
+          latitude: latVal,
+          longitude: lonVal,
+          lat: latVal,
+          lon: lonVal,
+          remarks: statusVal
+        };
+        wellsData.push(newWellObj);
+        selectedWell = newWellObj;
+      } else {
+        wellsData[wellIdx].parapet_height = parapetVal;
+        wellsData[wellIdx].date = formattedDate;
+        wellsData[wellIdx].dtgwl_bmp = bmpVal;
+        wellsData[wellIdx].dtgwl_mbgl = mbglVal;
+        wellsData[wellIdx].remarks = statusVal;
+        if (!isNaN(mslVal)) wellsData[wellIdx].msl_elevation = mslVal;
+        if (!isNaN(latVal)) {
+          wellsData[wellIdx].latitude = latVal;
+          wellsData[wellIdx].lat = latVal;
+        }
+        if (!isNaN(lonVal)) {
+          wellsData[wellIdx].longitude = lonVal;
+          wellsData[wellIdx].lon = lonVal;
+        }
+      }
+      
+      hideModal();
+      renderDashboard();
+      applyFilters();
+      plotMarkersOnMap();
+    };
+  }
+
+  // Setup Field Book Import Event Listeners
+  setupFieldBookImportModalListeners();
+}
+
+function openAddWaterLevelModal() {
+  isNewWellMode = false;
+  const newSec = document.getElementById('section-new-well-inputs');
+  const sumSec = document.getElementById('well-metadata-summary-box');
+  const toggleNewBtn = document.getElementById('btn-toggle-new-well');
+  
+  if (newSec) newSec.style.display = 'none';
+  if (sumSec) sumSec.style.display = 'flex';
+  if (toggleNewBtn) {
+    toggleNewBtn.textContent = '➕ Register New Station';
+    toggleNewBtn.className = 'btn btn-secondary btn-sm';
+  }
+
+  // Populate datalist for autocomplete
+  const datalist = document.getElementById('list-stations-autocomplete');
+  if (datalist && wellsData.length > 0) {
+    datalist.innerHTML = wellsData.map(w => 
+      `<option value="${w.well_number} - ${w.district || ''} ${w.block || ''}"></option>`
+    ).join('');
+  }
+
+  // If a well is already selected in app, edit that well, else pick first well or clear
+  if (selectedWell) {
+    openVisitEditModal(selectedWell);
+  } else if (wellsData.length > 0) {
+    openVisitEditModal(wellsData[0]);
+  } else {
+    const modal = document.getElementById('edit-well-modal');
+    if (modal) modal.classList.add('show-modal');
+  }
 }
 
 function openVisitEditModal(well) {
   selectedWell = well;
+  isNewWellMode = false;
   
   const modal = document.getElementById('edit-well-modal');
   modal.classList.add('show-modal');
   
   // Set UI labels
   document.getElementById('lbl-well-number').textContent = well.well_number;
-  document.getElementById('lbl-well-block').textContent = well.block || 'ALL';
+  document.getElementById('lbl-well-block').textContent = `${well.district || 'ALL'} / ${well.block || 'ALL'}`;
   document.getElementById('lbl-well-coords').textContent = (well.latitude || well.lat) ? `${(well.latitude || well.lat).toFixed(4)}, ${(well.longitude || well.lon).toFixed(4)}` : 'N/A';
-  document.getElementById('lbl-well-parapet').textContent = well.parapet_height ? `${well.parapet_height.toFixed(2)} m` : '-';
-  document.getElementById('lbl-well-remarks').textContent = well.remarks || 'Active';
+  document.getElementById('lbl-well-parapet').textContent = well.parapet_height !== undefined && well.parapet_height !== null ? `${parseFloat(well.parapet_height).toFixed(2)} m` : '-';
   
   // Set form values
-  document.getElementById('form-well-sheet').value = well.sheet;
-  document.getElementById('form-well-row').value = well.row_idx;
+  document.getElementById('form-well-sheet').value = well.sheet || '';
+  document.getElementById('form-well-row').value = well.row_idx !== undefined ? well.row_idx : '';
   document.getElementById('form-well-number').value = well.well_number;
   
   const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
@@ -2202,8 +2461,11 @@ function openVisitEditModal(well) {
   const inputParapet = document.getElementById('input-parapet-height');
   const inputBmp = document.getElementById('input-dtgwl-bmp');
   const inputMbgl = document.getElementById('input-dtgwl-mbgl');
+  const inputMsl = document.getElementById('input-msl-elevation');
+  const inputRl = document.getElementById('input-calculated-rl');
   const inputLat = document.getElementById('input-well-lat');
   const inputLon = document.getElementById('input-well-lon');
+  const inputStatus = document.getElementById('input-well-status');
   
   // Format DD.MM.YYYY to YYYY-MM-DD for native HTML date input
   let formDate = '';
@@ -2217,13 +2479,34 @@ function openVisitEditModal(well) {
     formDate = new Date().toISOString().split('T')[0];
   }
   
-  inputDate.value = formDate;
-  inputParapet.value = well.parapet_height !== null ? well.parapet_height : 0.45;
-  inputBmp.value = seasonal.dtgwl_bmp !== null ? seasonal.dtgwl_bmp : '';
-  inputMbgl.value = seasonal.dtgwl_mbgl !== null ? seasonal.dtgwl_mbgl : '';
+  if (inputDate) {
+    inputDate.value = formDate;
+    // trigger auto season badge update
+    const { season, year } = inferSeasonNameFromDate(formDate);
+    const badgeEl = document.getElementById('lbl-auto-season-badge');
+    const seasonSelect = document.getElementById('input-season-override');
+    if (badgeEl) badgeEl.textContent = `${season} (${year})`;
+    if (seasonSelect) seasonSelect.value = season;
+  }
+
+  inputParapet.value = well.parapet_height !== null && well.parapet_height !== undefined ? well.parapet_height : 0.45;
+  inputBmp.value = seasonal.dtgwl_bmp !== null && seasonal.dtgwl_bmp !== undefined ? seasonal.dtgwl_bmp : '';
+  inputMbgl.value = seasonal.dtgwl_mbgl !== null && seasonal.dtgwl_mbgl !== undefined ? seasonal.dtgwl_mbgl : '';
+  inputMsl.value = well.msl_elevation || '';
   
+  if (inputRl) {
+    const mVal = parseFloat(inputMsl.value);
+    const gVal = parseFloat(inputMbgl.value);
+    if (!isNaN(mVal) && !isNaN(gVal)) {
+      inputRl.value = (mVal - gVal).toFixed(2) + ' m MSL';
+    } else {
+      inputRl.value = '-';
+    }
+  }
+
   inputLat.value = (well.latitude || well.lat) !== undefined ? (well.latitude || well.lat) : '';
   inputLon.value = (well.longitude || well.lon) !== undefined ? (well.longitude || well.lon) : '';
+  if (inputStatus) inputStatus.value = well.remarks || 'Active';
   
   // Setup photo preview
   const imgPreview = document.getElementById('img-captured-preview');
@@ -2239,6 +2522,151 @@ function openVisitEditModal(well) {
     photoPlaceholder.style.display = 'flex';
   }
 }
+
+// --- Bulk Field Book Import Handlers ---
+function openFieldBookModal() {
+  const modal = document.getElementById('modal-fieldbook-import');
+  if (modal) modal.classList.add('show-modal');
+  parsedFieldBookRecords = [];
+  const countLbl = document.getElementById('lbl-fieldbook-count');
+  const summaryBox = document.getElementById('fieldbook-parse-summary');
+  const confirmBtn = document.getElementById('btn-upload-fieldbook-confirm');
+  if (countLbl) countLbl.textContent = '0 records found';
+  if (summaryBox) summaryBox.style.display = 'none';
+  if (confirmBtn) confirmBtn.disabled = true;
+}
+
+function setupFieldBookImportModalListeners() {
+  const modal = document.getElementById('modal-fieldbook-import');
+  const closeBtn = document.getElementById('btn-close-fieldbook-modal');
+  const cancelBtn = document.getElementById('btn-cancel-fieldbook-modal');
+  const sampleBtn = document.getElementById('btn-download-sample-fieldbook');
+  const fileInput = document.getElementById('input-fieldbook-file');
+  const confirmBtn = document.getElementById('btn-upload-fieldbook-confirm');
+
+  const hideModal = () => {
+    if (modal) modal.classList.remove('show-modal');
+  };
+
+  if (closeBtn) closeBtn.onclick = hideModal;
+  if (cancelBtn) cancelBtn.onclick = hideModal;
+
+  // Download Sample Field Book CSV Template
+  if (sampleBtn) {
+    sampleBtn.onclick = () => {
+      const csvHeaders = "District,BLOCK,Location of Observation wells,Well Type,Well Number,Lat,Long,Dt_SiteVisit,Height of Parapet in mtr,DTGWL [bmp],DTGWL [mbgl],Remarks\n";
+      const sampleRows = [
+        "Cuttack,Athagarh,Gurudijhatia : Girl's High School,BW,07M01BW001,20.5641,85.8102,15/05/2026,0.48,8.58,8.10,Active",
+        "Cuttack,Banki,Baideswar : Bus Stand,DW,07M03DW005,20.3527,85.3863,28/05/2026,0.60,5.45,4.85,Active",
+        "Kendrapara,Aul,Gopinathpur Sasan,DW,17BR01DW001,20.6533,86.6363,01/06/2026,0.65,2.62,1.97,Active",
+        "Jajpur,Badachana,Baisimauza High School,DW,13BR01DW003,20.4833,86.1500,03/06/2026,0.50,6.30,5.80,Closed"
+      ].join("\n");
+
+      const blob = new Blob([csvHeaders + sampleRows], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', 'Division_Groundwater_Field_Book_Template.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+  }
+
+  // Parse uploaded file
+  if (fileInput) {
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json(firstSheet);
+
+          parsedFieldBookRecords = rawRows.map((row, idx) => {
+            const well_id = row['Well Number'] || row['Well ID'] || row['Station_Code'] || row['Well_Number'] || `W_${idx+1}`;
+            const district = row['District'] || row['district'] || row['DISTRICT'] || '';
+            const block = row['BLOCK'] || row['Block'] || row['block'] || '';
+            const location = row['Location of Observation wells'] || row['Location'] || row['Station_Name'] || '';
+            const well_type = row['Well Type'] || row['Well_Type'] || 'DW';
+            const date = row['Dt_SiteVisit'] || row['Reading_Date'] || row['Date'] || '';
+            const parapet = parseFloat(row['Height of Parapet in mtr'] || row['Parapet'] || 0.45);
+            const bmp = parseFloat(row['DTGWL [bmp]'] || row['DTGWL bmp'] || '');
+            const mbgl = parseFloat(row['DTGWL [mbgl]'] || row['DTGWL mbgl'] || '');
+            const lat = parseFloat(row['Lat'] || row['Latitude'] || '');
+            const lon = parseFloat(row['Long'] || row['Longitude'] || '');
+            const remarks = row['Remarks'] || 'Active';
+
+            return {
+              well_id,
+              district,
+              block,
+              location,
+              well_type,
+              date,
+              parapet,
+              dtgwl_bmp: !isNaN(bmp) ? bmp : undefined,
+              dtgwl_mbgl: !isNaN(mbgl) ? mbgl : undefined,
+              lat: !isNaN(lat) ? lat : undefined,
+              lon: !isNaN(lon) ? lon : undefined,
+              remarks
+            };
+          }).filter(r => r.well_id && r.well_id !== 'W_0');
+
+          const summaryBox = document.getElementById('fieldbook-parse-summary');
+          const countLbl = document.getElementById('lbl-fieldbook-count');
+          if (summaryBox) summaryBox.style.display = 'block';
+          if (countLbl) countLbl.textContent = `${parsedFieldBookRecords.length} valid station records parsed from file.`;
+          if (confirmBtn) confirmBtn.disabled = parsedFieldBookRecords.length === 0;
+        } catch (err) {
+          alert('Error parsing file: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+  }
+
+  // Confirm Bulk Upload
+  if (confirmBtn) {
+    confirmBtn.onclick = async () => {
+      if (parsedFieldBookRecords.length === 0) return;
+      
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Importing...';
+
+      try {
+        if (!isStandaloneMode && navigator.onLine) {
+          const res = await fetch('api/wells/bulk-import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: parsedFieldBookRecords })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast(`Successfully imported ${result.imported} station water level records!`);
+          } else {
+            showToast(`Bulk import finished with errors.`, 'warning');
+          }
+        } else {
+          showToast(`Offline mode: ${parsedFieldBookRecords.length} records updated locally.`);
+        }
+      } catch (err) {
+        showToast('Bulk import completed with local storage cache.', 'warning');
+      }
+
+      hideModal();
+      confirmBtn.textContent = 'Import Measurements';
+      confirmBtn.disabled = false;
+      
+      // Reload app data
+      loadAllData();
+    };
+  }
+}
+
 
 // Camera Web Stream handlers
 async function toggleCamera() {

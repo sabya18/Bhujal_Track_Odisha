@@ -54,14 +54,22 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="dark-theme">
+<body class="light-theme">
   
   <div class="app-container">
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo-icon">
-          <img src="assets/logo.png" alt="Bhujal Logo" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,242,254,0.3));" onerror="this.onerror=null; this.src='logo.png';">
+        <div class="logo-icon" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 28px; height: 28px; filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.4));">
+            <defs>
+              <linearGradient id="dropletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f2fe" />
+                <stop offset="100%" stop-color="#0284c7" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#dropletGrad)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
         </div>
         <div class="logo-text">
           <h2>GW-MONITOR</h2>
@@ -80,6 +88,9 @@
         <button class="nav-item" data-tab="directory">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           Wells Directory
+        </button>
+        <button class="nav-item btn-add-water-level-trigger" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2)); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8 !important; font-weight: 700; margin: 6px 0; border-radius: 8px;">
+          <span style="font-size: 1.1rem; margin-right: 6px;">➕</span> Add Water Level Data
         </button>
         <button class="nav-item" data-tab="trends-view">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -122,6 +133,14 @@
         <h1 id="page-title">Dashboard</h1>
         <div class="top-bar-actions">
           
+          <button id="btn-add-water-level" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; color: #fff; padding: 7px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3); cursor: pointer;">
+            <span style="font-size: 1.1rem;">➕</span> Add Water Level Data
+          </button>
+
+          <button id="btn-open-fieldbook-import" class="btn btn-secondary btn-sm" style="font-weight: 600; padding: 7px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <span>📄</span> Bulk Field Book
+          </button>
+
           <!-- Season & Year Dropdowns (Synced globally) -->
           <div class="global-selectors">
             <select id="global-filter-year" class="form-control select-sm">
@@ -188,6 +207,24 @@
           <span class="banner-title">ACTIVE MONITORING SEASON:</span>
           <span class="banner-value" id="banner-season-value">Mid-Monsoon 2026</span>
           <span class="banner-icon" id="banner-season-icon">🌧️</span>
+        </div>
+
+        <!-- Water Level Data Entry Quick Action Bar -->
+        <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(2, 132, 199, 0.3); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+              <span>📝</span> Field Data Collection & Water Level Entry
+            </h3>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">Record site visits, update water level readings (BMP/MBGL), calculate RL, or upload Division Field Books.</span>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-add-water-level-trigger" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+              <span style="font-size: 1.1rem;">➕</span> Add Water Level Data
+            </button>
+            <button class="btn btn-secondary btn-fieldbook-trigger" style="font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              📄 Bulk Field Book Import
+            </button>
+          </div>
         </div>
 
         <div class="dashboard-stats-grid">
@@ -814,22 +851,35 @@
 
   <!-- Well Detail & Record Visit Edit Modal -->
   <div class="modal-backdrop" id="edit-well-modal">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width: 850px; width: 95%;">
       <div class="modal-header">
         <h2 id="modal-well-title">Record Site Visit & Groundwater Levels</h2>
         <button class="btn-close-modal" id="btn-close-modal">✕</button>
       </div>
       <div class="modal-body">
+        
+        <!-- Mode Switch: Search/Select Station or Create New -->
+        <div style="background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="flex: 1; min-width: 250px;">
+            <label for="select-station-search" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 4px;">Select Station / Well ID</label>
+            <input type="text" id="select-station-search" class="form-control" list="list-stations-autocomplete" placeholder="Type or search Station ID, District, Block..." style="width: 100%;">
+            <datalist id="list-stations-autocomplete"></datalist>
+          </div>
+          <button type="button" id="btn-toggle-new-well" class="btn btn-secondary btn-sm" style="margin-top: 18px; font-weight: 600;">
+            ➕ Register New Station
+          </button>
+        </div>
+
         <div class="modal-grid-layout">
           <!-- Edit Form -->
           <div class="modal-form-section">
-            <div class="well-metadata-summary">
+            <div class="well-metadata-summary" id="well-metadata-summary-box">
               <div class="meta-item">
                 <span class="meta-label">Station ID</span>
                 <span class="meta-value text-highlight" id="lbl-well-number">-</span>
               </div>
               <div class="meta-item">
-                <span class="meta-label">Block</span>
+                <span class="meta-label">District / Block</span>
                 <span class="meta-value" id="lbl-well-block">-</span>
               </div>
               <div class="meta-item">
@@ -841,59 +891,131 @@
                 <span class="meta-value" id="lbl-well-parapet">-</span>
               </div>
             </div>
+
+            <!-- New Well Specific Inputs (Hidden by default, shown when creating new well) -->
+            <div id="section-new-well-inputs" style="display: none; background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+              <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #10b981;">🆕 Station Master Information</h4>
+              <div class="form-row mb-2">
+                <div class="form-col">
+                  <label class="form-label">Station ID / Well No *</label>
+                  <input type="text" id="input-new-well-id" class="form-control" placeholder="e.g. 07M01DW001">
+                </div>
+                <div class="form-col">
+                  <label class="form-label">District *</label>
+                  <input type="text" id="input-new-well-district" class="form-control" placeholder="e.g. Cuttack">
+                </div>
+              </div>
+              <div class="form-row mb-2">
+                <div class="form-col">
+                  <label class="form-label">Block *</label>
+                  <input type="text" id="input-new-well-block" class="form-control" placeholder="e.g. Athagarh">
+                </div>
+                <div class="form-col">
+                  <label class="form-label">Location / Village</label>
+                  <input type="text" id="input-new-well-location" class="form-control" placeholder="e.g. Gurudijhatia">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-col">
+                  <label class="form-label">Well Type</label>
+                  <select id="input-new-well-type" class="form-control">
+                    <option value="DW" selected>Dug Well (DW)</option>
+                    <option value="BW">Bore Well (BW)</option>
+                    <option value="PZ">Piezometer (PZ)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             
             <form id="frm-record-visit">
               <input type="hidden" id="form-well-sheet">
               <input type="hidden" id="form-well-row">
               <input type="hidden" id="form-well-number">
               
+              <!-- Location Coords -->
               <div class="form-row mb-3">
                 <div class="form-col">
                   <label for="input-well-lat" class="form-label">Latitude</label>
                   <input type="number" id="input-well-lat" class="form-control" step="0.000001" placeholder="e.g. 20.4625" required>
-                  <span class="form-helper">Latitude in decimal degrees</span>
                 </div>
                 <div class="form-col">
                   <label for="input-well-lon" class="form-label">Longitude</label>
                   <input type="number" id="input-well-lon" class="form-control" step="0.000001" placeholder="e.g. 85.8755" required>
-                  <span class="form-helper">Longitude in decimal degrees</span>
-                </div>
-              </div>
-              
-              <div class="form-row mb-3">
-                <div class="form-col">
-                  <label for="input-visit-date" class="form-label">Date of Site Visit</label>
-                  <input type="date" id="input-visit-date" class="form-control" required>
-                  <span class="form-helper">Format: DD.MM.YYYY</span>
-                </div>
-                <div class="form-col">
-                  <label for="input-parapet-height" class="form-label">Parapet Height (m)</label>
-                  <input type="number" id="input-parapet-height" class="form-control" step="0.01" placeholder="e.g. 0.45" required>
-                  <span class="form-helper">Station Parapet Height in meters</span>
-                </div>
-              </div>
-              
-              <div class="form-row mb-3">
-                <div class="form-col">
-                  <label for="input-dtgwl-bmp" class="form-label">DTGWL below Measuring Point - BMP (m)</label>
-                  <input type="number" id="input-dtgwl-bmp" class="form-control" step="0.01" placeholder="e.g. 3.96" required>
-                  <span class="form-helper">Read from measuring point</span>
-                </div>
-                <div class="form-col">
-                  <label for="input-dtgwl-mbgl" class="form-label">DTGWL below Ground Level - MBGL (m)</label>
-                  <input type="number" id="input-dtgwl-mbgl" class="form-control" step="0.01" placeholder="e.g. 3.31">
-                  <span class="form-helper">Auto-calculates: BMP - Parapet Height</span>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label text-highlight">Remarks / Status in sheet</label>
-                <div id="lbl-well-remarks" class="meta-value text-muted">-</div>
+              <!-- Date of Visit & Dynamic Season Determination -->
+              <div class="form-row mb-3">
+                <div class="form-col">
+                  <label for="input-visit-date" class="form-label">Date of Site Visit *</label>
+                  <input type="date" id="input-visit-date" class="form-control" required>
+                  <span class="form-helper" style="color: #0284c7; font-weight: 600; margin-top: 4px; display: block;">
+                    🗓️ Auto Season: <span id="lbl-auto-season-badge" style="background: rgba(2, 132, 199, 0.15); padding: 2px 8px; border-radius: 6px;">Mid-Monsoon (2026)</span>
+                  </span>
+                </div>
+                <div class="form-col">
+                  <label for="input-season-override" class="form-label">Season of Observation</label>
+                  <select id="input-season-override" class="form-control">
+                    <option value="Pre-Monsoon">Pre-Monsoon (May - Jun)</option>
+                    <option value="Mid-Monsoon" selected>Mid-Monsoon (Aug - Sep)</option>
+                    <option value="Post-Monsoon">Post-Monsoon (Nov - Dec)</option>
+                    <option value="Winter">Winter (Jan - Mar)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Parapet & Water Levels -->
+              <div class="form-row mb-3">
+                <div class="form-col">
+                  <label for="input-parapet-height" class="form-label">Parapet Height (m)</label>
+                  <input type="number" id="input-parapet-height" class="form-control" step="0.01" placeholder="e.g. 0.45" value="0.45" required>
+                </div>
+                <div class="form-col">
+                  <label for="input-dtgwl-bmp" class="form-label">DTGWL [BMP] (m) *</label>
+                  <input type="number" id="input-dtgwl-bmp" class="form-control" step="0.01" placeholder="e.g. 6.80" required>
+                </div>
+              </div>
+              
+              <div class="form-row mb-3">
+                <div class="form-col">
+                  <label for="input-dtgwl-mbgl" class="form-label">DTGWL [MBGL] (m)</label>
+                  <input type="number" id="input-dtgwl-mbgl" class="form-control" step="0.01" placeholder="Auto-calculated (BMP - Parapet)">
+                  <span class="form-helper">BMP minus Parapet height</span>
+                </div>
+                <div class="form-col">
+                  <label for="input-msl-elevation" class="form-label">MSL Elevation (m)</label>
+                  <input type="number" id="input-msl-elevation" class="form-control" step="0.01" placeholder="e.g. 25.50">
+                  <span class="form-helper">Ground elevation above MSL</span>
+                </div>
+              </div>
+
+              <!-- Reduced Level RL -->
+              <div class="form-row mb-3">
+                <div class="form-col">
+                  <label for="input-calculated-rl" class="form-label">Calculated RL (m)</label>
+                  <input type="text" id="input-calculated-rl" class="form-control" readonly style="font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.08);" placeholder="MSL - MBGL">
+                  <span class="form-helper">Water Table Reduced Level</span>
+                </div>
+                <div class="form-col">
+                  <label for="input-well-status" class="form-label">Station Status / Remarks</label>
+                  <select id="input-well-status" class="form-control">
+                    <option value="Active" selected>Active / Normal</option>
+                    <option value="Closed">Closed / Covered</option>
+                    <option value="Dry">Dry</option>
+                    <option value="Depleted">Depleted</option>
+                    <option value="Unreachable">Unreachable</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group mb-3">
+                <label for="input-field-comments" class="form-label">Field Notes / Comments</label>
+                <textarea id="input-field-comments" class="form-control" rows="2" placeholder="Enter observation notes, weather condition, or landmark reference..."></textarea>
               </div>
               
               <div class="form-actions mt-4">
                 <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="btn-save-visit">Save Field Measurements</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-visit" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700;">Save Field Measurements</button>
               </div>
             </form>
           </div>
@@ -929,6 +1051,44 @@
               <button id="btn-remove-photo" type="button" class="btn btn-danger w-100 mt-2" style="display: none;">Clear/Remove Photo</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Field Book Import Modal -->
+  <div class="modal-backdrop" id="modal-fieldbook-import">
+    <div class="modal-box" style="max-width: 600px; width: 92%;">
+      <div class="modal-header">
+        <h2>📄 Bulk Division Field Book Import</h2>
+        <button class="btn-close-modal" id="btn-close-fieldbook-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+          Upload your official district CSV or Excel file to parse and batch update groundwater level measurements for all stations.
+        </p>
+
+        <div style="background: rgba(2, 132, 199, 0.08); border: 1px border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+          <h4 style="margin: 0 0 6px 0; font-size: 0.9rem; color: #0284c7;">📥 Official Template</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">Download official CSV template format with columns: District, BLOCK, Location, Well Number, Lat, Long, Dt_SiteVisit, DTGWL [bmp], Height of Parapet, Remarks.</p>
+          <button id="btn-download-sample-fieldbook" class="btn btn-secondary btn-sm">
+            ⬇️ Download Sample Field Book CSV
+          </button>
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="form-label">Select Division CSV / Excel File</label>
+          <input type="file" id="input-fieldbook-file" class="form-control" accept=".csv, .xlsx, .xls">
+        </div>
+
+        <div id="fieldbook-parse-summary" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 4px 0; color: #10b981; font-size: 0.9rem;">Parsed Records Summary</h4>
+          <span id="lbl-fieldbook-count" style="font-size: 0.85rem; font-weight: 600;">0 records found</span>
+        </div>
+
+        <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-fieldbook-modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-upload-fieldbook-confirm" disabled style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700;">Import Measurements</button>
         </div>
       </div>
     </div>
@@ -1108,7 +1268,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Static database cache and client-side SheetJS exporter -->
   <script src="wells_initial.js"></script>
-  <script src="xlsx.full.min.js"></script>
+  <!-- SheetJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main application script -->
   <script src="app.js?v=92"></script>
 </body>
