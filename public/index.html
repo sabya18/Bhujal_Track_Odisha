@@ -89,6 +89,9 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           Wells Directory
         </button>
+        <button class="nav-item btn-add-water-level-trigger" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2)); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8 !important; font-weight: 700; margin: 6px 0; border-radius: 8px;">
+          <span style="font-size: 1.1rem; margin-right: 6px;">➕</span> Add Water Level Data
+        </button>
         <button class="nav-item" data-tab="trends-view">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           Trends Analysis
@@ -204,6 +207,24 @@
           <span class="banner-title">ACTIVE MONITORING SEASON:</span>
           <span class="banner-value" id="banner-season-value">Mid-Monsoon 2026</span>
           <span class="banner-icon" id="banner-season-icon">🌧️</span>
+        </div>
+
+        <!-- Water Level Data Entry Quick Action Bar -->
+        <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(2, 132, 199, 0.3); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+              <span>📝</span> Field Data Collection & Water Level Entry
+            </h3>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">Record site visits, update water level readings (BMP/MBGL), calculate RL, or upload Division Field Books.</span>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-add-water-level-trigger" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+              <span style="font-size: 1.1rem;">➕</span> Add Water Level Data
+            </button>
+            <button class="btn btn-secondary btn-fieldbook-trigger" style="font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              📄 Bulk Field Book Import
+            </button>
+          </div>
         </div>
 
         <div class="dashboard-stats-grid">

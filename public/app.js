@@ -2097,17 +2097,21 @@ function setupModalEventListeners() {
   if (closeBtn) closeBtn.onclick = hideModal;
   if (cancelBtn) cancelBtn.onclick = hideModal;
 
-  // Header Add Data button hook
-  const headerAddBtn = document.getElementById('btn-add-water-level');
-  if (headerAddBtn) {
-    headerAddBtn.onclick = () => openAddWaterLevelModal();
-  }
+  // Bind click listeners to all Add Water Level Data triggers
+  document.querySelectorAll('.btn-add-water-level-trigger, #btn-add-water-level').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openAddWaterLevelModal();
+    };
+  });
 
-  // Header Bulk Field Book button hook
-  const fieldbookBtn = document.getElementById('btn-open-fieldbook-import');
-  if (fieldbookBtn) {
-    fieldbookBtn.onclick = () => openFieldBookModal();
-  }
+  // Bind click listeners to all Bulk Field Book triggers
+  document.querySelectorAll('.btn-fieldbook-trigger, #btn-open-fieldbook-import').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openFieldBookModal();
+    };
+  });
 
   // Date of Visit & Dynamic Season Determination Logic
   const inputDate = document.getElementById('input-visit-date');
