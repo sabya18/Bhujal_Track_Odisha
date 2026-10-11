@@ -2247,18 +2247,27 @@ function setupModalEventListeners() {
       let targetWellType = 'DW';
 
       if (isNewWellMode) {
-        targetWellNumber = document.getElementById('input-new-well-id').value.trim().toUpperCase();
-        targetDistrict = document.getElementById('input-new-well-district').value.trim();
-        targetBlock = document.getElementById('input-new-well-block').value.trim();
-        targetLocation = document.getElementById('input-new-well-location').value.trim();
-        targetWellType = document.getElementById('input-new-well-type').value;
+        const idEl = document.getElementById('input-new-well-id');
+        const distEl = document.getElementById('input-new-well-district');
+        const blkEl = document.getElementById('input-new-well-block');
+        const locEl = document.getElementById('input-new-well-location');
+        const typeEl = document.getElementById('input-new-well-type');
+
+        targetWellNumber = idEl ? idEl.value.trim().toUpperCase() : '';
+        targetDistrict = distEl ? distEl.value.trim() : 'ALL';
+        targetBlock = blkEl ? blkEl.value.trim() : 'ALL';
+        targetLocation = locEl ? locEl.value.trim() : '';
+        targetWellType = typeEl ? typeEl.value : 'DW';
 
         if (!targetWellNumber) {
-          alert('Please enter a valid Station ID / Well Number.');
+          showToast('Please enter a valid Station ID / Well Number.', 'warning');
           return;
         }
       } else {
-        if (!selectedWell) return;
+        if (!selectedWell) {
+          showToast('Please select a station or click Register New Station.', 'warning');
+          return;
+        }
         targetWellNumber = selectedWell.well_number;
         targetDistrict = selectedWell.district || 'ALL';
         targetBlock = selectedWell.block || 'ALL';
@@ -2266,16 +2275,32 @@ function setupModalEventListeners() {
         targetWellType = selectedWell.well_type || 'DW';
       }
       
-      const visitDate = document.getElementById('input-visit-date').value;
-      const parapetVal = parseFloat(document.getElementById('input-parapet-height').value) || 0.45;
-      const bmpVal = parseFloat(document.getElementById('input-dtgwl-bmp').value);
-      const mbglVal = parseFloat(document.getElementById('input-dtgwl-mbgl').value);
-      const mslVal = parseFloat(document.getElementById('input-msl-elevation').value);
-      const latVal = parseFloat(document.getElementById('input-well-lat').value);
-      const lonVal = parseFloat(document.getElementById('input-well-lon').value);
-      const statusVal = document.getElementById('input-well-status').value;
-      const commentsVal = document.getElementById('input-field-comments').value;
-      const selectedSeasonOverride = document.getElementById('input-season-override').value;
+      const visitDateInput = document.getElementById('input-visit-date');
+      const parapetInput = document.getElementById('input-parapet-height');
+      const bmpInput = document.getElementById('input-dtgwl-bmp');
+      const mbglInput = document.getElementById('input-dtgwl-mbgl');
+      const mslInput = document.getElementById('input-msl-elevation');
+      const latInput = document.getElementById('input-well-lat');
+      const lonInput = document.getElementById('input-well-lon');
+      const statusInput = document.getElementById('input-well-status');
+      const commentsInput = document.getElementById('input-field-comments');
+      const seasonOverrideInput = document.getElementById('input-season-override');
+
+      const visitDate = visitDateInput ? visitDateInput.value : '';
+      const parapetVal = parapetInput ? (parseFloat(parapetInput.value) || 0.45) : 0.45;
+      const bmpVal = bmpInput ? parseFloat(bmpInput.value) : NaN;
+      const mbglVal = mbglInput ? parseFloat(mbglInput.value) : NaN;
+      const mslVal = mslInput ? parseFloat(mslInput.value) : NaN;
+      const latVal = latInput ? parseFloat(latInput.value) : NaN;
+      const lonVal = lonInput ? parseFloat(lonInput.value) : NaN;
+      const statusVal = statusInput ? statusInput.value : 'Active';
+      const commentsVal = commentsInput ? commentsInput.value : '';
+      const selectedSeasonOverride = seasonOverrideInput ? seasonOverrideInput.value : 'Mid-Monsoon';
+
+      if (isNaN(bmpVal) && isNaN(mbglVal)) {
+        showToast('Please enter DTGWL [BMP] or DTGWL [MBGL] water level.', 'warning');
+        return;
+      }
 
       // Format date from YYYY-MM-DD to DD.MM.YYYY
       let formattedDate = '';
@@ -2295,24 +2320,27 @@ function setupModalEventListeners() {
       else if (selectedSeasonOverride.includes('Post')) seasonCode = 'PostMon';
       
       const seasonKey = `${dateYear}_${seasonCode}`;
-      
+      const calculatedMbgl = !isNaN(mbglVal) ? mbglVal : (!isNaN(bmpVal) ? parseFloat((bmpVal - parapetVal).toFixed(2)) : null);
+
       if (!visitsHistory[targetWellNumber]) {
         visitsHistory[targetWellNumber] = {};
       }
       visitsHistory[targetWellNumber][seasonKey] = {
         date: formattedDate,
-        value: mbglVal,
+        value: calculatedMbgl,
         bmp: bmpVal,
         parapet: parapetVal,
-        remarks: statusVal
+        remarks: statusVal,
+        comments: commentsVal
       };
       
       // Persist local storage cache
       localStorage.setItem('gw_visits_history', JSON.stringify(visitsHistory));
       
       // Sync to backend if online
+      let syncSuccess = false;
       if (!isStandaloneMode && navigator.onLine) {
-        setConnectionStatus('loading', 'Syncing visits to server...');
+        setConnectionStatus('loading', 'Syncing visit...');
         try {
           const updateRes = await fetch('api/wells/update', {
             method: 'POST',
@@ -2325,7 +2353,7 @@ function setupModalEventListeners() {
               well_type: targetWellType,
               date: formattedDate,
               bmp: bmpVal,
-              mbgl: mbglVal,
+              mbgl: calculatedMbgl,
               parapet: parapetVal,
               msl: mslVal,
               lat: latVal,
@@ -2342,21 +2370,24 @@ function setupModalEventListeners() {
           }
           
           if (updateRes.ok) {
-            showToast("Field visit data synced and saved successfully!");
-          } else {
-            showToast("Saved locally, failed to sync with server.", "warning");
+            syncSuccess = true;
           }
         } catch (err) {
-          showToast("Saved locally, failed to sync with server.", "warning");
+          console.warn("Server API sync endpoint un-reachable, stored locally:", err);
+        } finally {
+          setConnectionStatus('connected', 'Connected');
         }
+      }
+      
+      if (syncSuccess) {
+        showToast("Field visit data synced & saved successfully!");
       } else {
-        showToast("Measurements saved locally (Offline Mode).");
+        showToast("Water level measurement saved locally!", "success");
       }
       
       // Update or insert into local wellsData cache
       let wellIdx = wellsData.findIndex(w => w.well_number.toUpperCase() === targetWellNumber.toUpperCase());
       if (wellIdx === -1) {
-        // Create new well record in array
         const newWellObj = {
           well_number: targetWellNumber,
           district: targetDistrict,
@@ -2367,7 +2398,7 @@ function setupModalEventListeners() {
           msl_elevation: mslVal,
           date: formattedDate,
           dtgwl_bmp: bmpVal,
-          dtgwl_mbgl: mbglVal,
+          dtgwl_mbgl: calculatedMbgl,
           latitude: latVal,
           longitude: lonVal,
           lat: latVal,
@@ -2380,7 +2411,7 @@ function setupModalEventListeners() {
         wellsData[wellIdx].parapet_height = parapetVal;
         wellsData[wellIdx].date = formattedDate;
         wellsData[wellIdx].dtgwl_bmp = bmpVal;
-        wellsData[wellIdx].dtgwl_mbgl = mbglVal;
+        wellsData[wellIdx].dtgwl_mbgl = calculatedMbgl;
         wellsData[wellIdx].remarks = statusVal;
         if (!isNaN(mslVal)) wellsData[wellIdx].msl_elevation = mslVal;
         if (!isNaN(latVal)) {
@@ -2425,11 +2456,10 @@ function openAddWaterLevelModal() {
     ).join('');
   }
 
-  // If a well is already selected in app, edit that well, else pick first well or clear
-  if (selectedWell) {
-    openVisitEditModal(selectedWell);
-  } else if (wellsData.length > 0) {
-    openVisitEditModal(wellsData[0]);
+  // Target selected well or first well
+  let targetWell = selectedWell || (wellsData.length > 0 ? wellsData[0] : null);
+  if (targetWell) {
+    openVisitEditModal(targetWell);
   } else {
     const modal = document.getElementById('edit-well-modal');
     if (modal) modal.classList.add('show-modal');
@@ -2437,24 +2467,37 @@ function openAddWaterLevelModal() {
 }
 
 function openVisitEditModal(well) {
+  if (!well) return;
   selectedWell = well;
   isNewWellMode = false;
   
   const modal = document.getElementById('edit-well-modal');
-  modal.classList.add('show-modal');
+  if (modal) modal.classList.add('show-modal');
   
   // Set UI labels
-  document.getElementById('lbl-well-number').textContent = well.well_number;
-  document.getElementById('lbl-well-block').textContent = `${well.district || 'ALL'} / ${well.block || 'ALL'}`;
-  document.getElementById('lbl-well-coords').textContent = (well.latitude || well.lat) ? `${(well.latitude || well.lat).toFixed(4)}, ${(well.longitude || well.lon).toFixed(4)}` : 'N/A';
-  document.getElementById('lbl-well-parapet').textContent = well.parapet_height !== undefined && well.parapet_height !== null ? `${parseFloat(well.parapet_height).toFixed(2)} m` : '-';
-  
+  const lblNum = document.getElementById('lbl-well-number');
+  const lblBlk = document.getElementById('lbl-well-block');
+  const lblCoords = document.getElementById('lbl-well-coords');
+  const lblParapet = document.getElementById('lbl-well-parapet');
+  const stationSearchInput = document.getElementById('select-station-search');
+
+  if (lblNum) lblNum.textContent = well.well_number || '-';
+  if (lblBlk) lblBlk.textContent = `${well.district || 'ALL'} / ${well.block || 'ALL'}`;
+  if (lblCoords) lblCoords.textContent = (well.latitude || well.lat) ? `${(well.latitude || well.lat).toFixed(4)}, ${(well.longitude || well.lon).toFixed(4)}` : 'N/A';
+  if (lblParapet) lblParapet.textContent = well.parapet_height !== undefined && well.parapet_height !== null ? `${parseFloat(well.parapet_height).toFixed(2)} m` : '-';
+  if (stationSearchInput && well.well_number) {
+    stationSearchInput.value = `${well.well_number} - ${well.district || ''} ${well.block || ''}`;
+  }
+
   // Set form values
-  document.getElementById('form-well-sheet').value = well.sheet || '';
-  document.getElementById('form-well-row').value = well.row_idx !== undefined ? well.row_idx : '';
-  document.getElementById('form-well-number').value = well.well_number;
+  const formSheet = document.getElementById('form-well-sheet');
+  const formRow = document.getElementById('form-well-row');
+  const formNum = document.getElementById('form-well-number');
+  if (formSheet) formSheet.value = well.sheet || '';
+  if (formRow) formRow.value = well.row_idx !== undefined ? well.row_idx : '';
+  if (formNum) formNum.value = well.well_number || '';
   
-  const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory);
+  const seasonal = getWellDataForSeason(well, selectedSeason, selectedYear, visitsHistory) || {};
   
   // Set inputs
   const inputDate = document.getElementById('input-visit-date');
@@ -2474,14 +2517,13 @@ function openVisitEditModal(well) {
     if (parts.length === 3) {
       formDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
-  } else {
-    // default to today
+  }
+  if (!formDate) {
     formDate = new Date().toISOString().split('T')[0];
   }
   
   if (inputDate) {
     inputDate.value = formDate;
-    // trigger auto season badge update
     const { season, year } = inferSeasonNameFromDate(formDate);
     const badgeEl = document.getElementById('lbl-auto-season-badge');
     const seasonSelect = document.getElementById('input-season-override');
@@ -2489,12 +2531,12 @@ function openVisitEditModal(well) {
     if (seasonSelect) seasonSelect.value = season;
   }
 
-  inputParapet.value = well.parapet_height !== null && well.parapet_height !== undefined ? well.parapet_height : 0.45;
-  inputBmp.value = seasonal.dtgwl_bmp !== null && seasonal.dtgwl_bmp !== undefined ? seasonal.dtgwl_bmp : '';
-  inputMbgl.value = seasonal.dtgwl_mbgl !== null && seasonal.dtgwl_mbgl !== undefined ? seasonal.dtgwl_mbgl : '';
-  inputMsl.value = well.msl_elevation || '';
+  if (inputParapet) inputParapet.value = well.parapet_height !== null && well.parapet_height !== undefined ? well.parapet_height : 0.45;
+  if (inputBmp) inputBmp.value = seasonal.dtgwl_bmp !== null && seasonal.dtgwl_bmp !== undefined ? seasonal.dtgwl_bmp : '';
+  if (inputMbgl) inputMbgl.value = seasonal.dtgwl_mbgl !== null && seasonal.dtgwl_mbgl !== undefined ? seasonal.dtgwl_mbgl : '';
+  if (inputMsl) inputMsl.value = well.msl_elevation || '';
   
-  if (inputRl) {
+  if (inputRl && inputMsl && inputMbgl) {
     const mVal = parseFloat(inputMsl.value);
     const gVal = parseFloat(inputMbgl.value);
     if (!isNaN(mVal) && !isNaN(gVal)) {
@@ -2504,22 +2546,24 @@ function openVisitEditModal(well) {
     }
   }
 
-  inputLat.value = (well.latitude || well.lat) !== undefined ? (well.latitude || well.lat) : '';
-  inputLon.value = (well.longitude || well.lon) !== undefined ? (well.longitude || well.lon) : '';
+  if (inputLat) inputLat.value = (well.latitude || well.lat) !== undefined ? (well.latitude || well.lat) : '';
+  if (inputLon) inputLon.value = (well.longitude || well.lon) !== undefined ? (well.longitude || well.lon) : '';
   if (inputStatus) inputStatus.value = well.remarks || 'Active';
   
   // Setup photo preview
   const imgPreview = document.getElementById('img-captured-preview');
   const photoPlaceholder = document.getElementById('photo-placeholder');
   
-  if (well.photoUrl) {
-    imgPreview.src = well.photoUrl;
-    imgPreview.style.display = 'block';
-    photoPlaceholder.style.display = 'none';
-  } else {
-    imgPreview.src = '';
-    imgPreview.style.display = 'none';
-    photoPlaceholder.style.display = 'flex';
+  if (imgPreview && photoPlaceholder) {
+    if (well.photoUrl) {
+      imgPreview.src = well.photoUrl;
+      imgPreview.style.display = 'block';
+      photoPlaceholder.style.display = 'none';
+    } else {
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
+      photoPlaceholder.style.display = 'flex';
+    }
   }
 }
 
