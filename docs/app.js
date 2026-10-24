@@ -981,7 +981,7 @@ function renderDashboardMap(statsByDistrict) {
   // Baselayers
   const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
   const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
-  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const darkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: '&copy; Esri' });
   const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
 
   if (isDark) {
@@ -1258,7 +1258,7 @@ function initMap() {
   // Baselayers
   const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
   const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
-  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+  const darkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: '&copy; Esri' });
   const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
 
   if (isDark) {
@@ -3574,14 +3574,31 @@ function initTelemetryMap() {
     attributionControl: true
   }).setView([20.95, 84.8], 7.0);
   
-  const isDark = theme === 'dark';
-  const tileUrl = isDark 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-    
-  L.tileLayer(tileUrl, {
-    maxZoom: 19
-  }).addTo(telemetryMap);
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  });
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+    maxZoom: 18,
+    attribution: '&copy; Esri World Imagery'
+  });
+  const darkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+    maxZoom: 16,
+    attribution: '&copy; Esri'
+  });
+
+  if (theme === 'dark') {
+    darkLayer.addTo(telemetryMap);
+  } else {
+    osmLayer.addTo(telemetryMap);
+  }
+
+  const baseMaps = {
+    "🌐 Streets (OSM)": osmLayer,
+    "🛰️ Satellite": satelliteLayer,
+    "🌙 Dark Canvas": darkLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(telemetryMap);
   
   telemetryLayerGroup = L.layerGroup().addTo(telemetryMap);
 }
@@ -3703,8 +3720,9 @@ function setupTelemetryEvents() {
       try {
         let allRecords = [];
         let offset = 0;
-        const limit = 2000;
-        let total = 0;
+        const limit = 2500;
+        const maxBatches = 2; // fetch at most 5000 latest records
+        let batchCount = 0;
         
         const queryFilters = { "State": stateVal };
         if (districtVal) {
@@ -3714,12 +3732,14 @@ function setupTelemetryEvents() {
           queryFilters["Agency"] = agencyVal;
         }
 
-        do {
+        while (batchCount < maxBatches) {
+          batchCount++;
           const payload = {
             resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
             filters: queryFilters,
             limit: limit,
-            offset: offset
+            offset: offset,
+            sort: '_id desc'
           };
           
           let res = await fetch('api/nwic/telemetry', {
@@ -3734,23 +3754,32 @@ function setupTelemetryEvents() {
               resource_id: '7de68858-4e78-4a09-8a3a-c63c4a027eeb',
               filters: JSON.stringify(queryFilters),
               limit: limit.toString(),
-              offset: offset.toString()
+              offset: offset.toString(),
+              sort: '_id desc'
             });
             res = await fetch(`https://nwdp.nwic.gov.in/api/3/action/datastore_search?${queryParams.toString()}`).catch(() => ({ ok: false }));
           }
           
-          if (!res.ok) throw new Error("CORS or network connection failed.");
+          if (!res.ok) throw new Error("CORS or network connection failed. Ensure backend server is running.");
           
           const data = await res.json();
           if (!data.success) throw new Error(data.error || "NWIC server error");
           
           const records = data.result.records || [];
-          total = data.result.total;
+          if (records.length === 0) break;
           allRecords.push(...records);
           offset += limit;
           
-          if (allRecords.length >= total) break;
-        } while (offset < total);
+          // Check if oldest record in this batch is already before startLimit
+          if (startLimit && records.length > 0) {
+            const oldestInBatch = parseTelemetryDate(records[records.length - 1]["Data Acquisition Time"]);
+            if (oldestInBatch && oldestInBatch < startLimit) {
+              break;
+            }
+          }
+          
+          if (records.length < limit) break;
+        }
         
         const filtered = allRecords.filter(row => {
           if (row["Data Acquisition Time"]) {
@@ -3778,7 +3807,7 @@ function setupTelemetryEvents() {
         
       } catch (err) {
         console.error("Telemetry query failed:", err);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 40px;">⚠️ Query Failed: ${err.message}. Ensure local Node.js proxy is running.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 40px;">⚠️ Query Failed: ${err.message}. Ensure backend server is running.</td></tr>`;
         showToast("Telemetry query failed", "error");
       } finally {
         fetchBtn.disabled = false;

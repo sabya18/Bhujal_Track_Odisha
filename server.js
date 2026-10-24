@@ -900,17 +900,26 @@ app.get('/api/export/district', async (req, res) => {
 // Proxy endpoint to query NWIC datastore API securely (bypasses CORS blocks)
 const https = require('https');
 app.all('/api/nwic/telemetry', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+
   const params = req.method === 'POST' ? req.body : req.query;
   const resource_id = params.resource_id || '7de68858-4e78-4a09-8a3a-c63c4a027eeb';
   const filters = params.filters ? (typeof params.filters === 'string' ? params.filters : JSON.stringify(params.filters)) : '{}';
-  const limit = params.limit || 1000;
+  const limit = params.limit || 2500;
   const offset = params.offset || 0;
+  const sort = params.sort || '_id desc';
 
   const queryParams = new URLSearchParams({
     resource_id: resource_id,
     filters: filters,
     limit: limit.toString(),
-    offset: offset.toString()
+    offset: offset.toString(),
+    sort: sort
   });
 
   const targetUrl = `https://nwdp.nwic.gov.in/api/3/action/datastore_search?${queryParams.toString()}`;
@@ -918,7 +927,7 @@ app.all('/api/nwic/telemetry', (req, res) => {
   https.get(targetUrl, {
     headers: {
       'Accept': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
   }, (nwRes) => {
     let body = '';
