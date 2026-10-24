@@ -17,34 +17,35 @@
   <link rel="stylesheet" href="styles.css">
   
   <style>
-    /* Inline specific styles for the login page to guarantee layout */
+    /* Inline specific styles for the login page to guarantee responsive layout and input behavior */
     body.login-page-body {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      min-height: 100dvh;
       background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
       margin: 0;
       font-family: 'Outfit', sans-serif;
       padding: 20px;
       box-sizing: border-box;
+      overflow-y: auto;
     }
 
     .login-container {
       width: 100%;
-      max-width: 420px;
-      background: rgba(30, 41, 59, 0.45);
+      max-width: 440px;
+      background: rgba(30, 41, 59, 0.7);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       border-radius: 16px;
-      padding: 40px 32px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+      padding: 36px 28px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 25px rgba(2, 132, 199, 0.15);
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
       position: relative;
-      overflow: hidden;
     }
 
     .login-header {
@@ -56,17 +57,15 @@
     }
 
     .login-logo {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      width: 58px;
+      height: 58px;
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(0, 242, 254, 0.15));
+      border: 1.5px solid rgba(0, 242, 254, 0.4);
       border-radius: 14px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #ffffff;
-      box-shadow: 0 0 20px rgba(2, 132, 199, 0.4);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
     }
 
     .login-title {
@@ -74,12 +73,14 @@
       font-weight: 700;
       color: #ffffff;
       margin: 0;
+      letter-spacing: -0.5px;
     }
 
     .login-subtitle {
       font-size: 0.88rem;
       color: #94a3b8;
       margin: 0;
+      line-height: 1.4;
     }
 
     .form-group-login {
@@ -91,7 +92,7 @@
     .form-label-login {
       font-size: 0.82rem;
       font-weight: 600;
-      color: #94a3b8;
+      color: #cbd5e1;
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
@@ -100,64 +101,108 @@
       position: relative;
       display: flex;
       align-items: center;
-      cursor: text;
+      width: 100%;
     }
 
     .input-icon {
       position: absolute;
       left: 14px;
-      color: #64748b;
+      color: #38bdf8;
       font-size: 1.1rem;
       pointer-events: none;
       z-index: 20;
+      user-select: none;
+      opacity: 0.85;
     }
 
     .input-login {
       width: 100%;
       height: 48px;
-      background-color: rgba(15, 23, 42, 0.6) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      background-color: rgba(15, 23, 42, 0.85) !important;
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
       border-radius: 8px !important;
-      padding: 0 16px 0 42px !important;
+      padding: 0 44px 0 42px !important;
       color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      caret-color: #38bdf8 !important;
       font-size: 0.95rem !important;
+      font-family: inherit !important;
       cursor: text !important;
       pointer-events: auto !important;
       user-select: text !important;
       -webkit-user-select: text !important;
       position: relative;
       z-index: 10;
-      transition: all 0.2s ease-in-out;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
       box-sizing: border-box;
     }
 
     .input-login:focus {
       outline: none !important;
-      border-color: #0284c7 !important;
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25) !important;
+      border-color: #38bdf8 !important;
+      background-color: rgba(15, 23, 42, 0.98) !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+    }
+
+    .input-login::placeholder {
+      color: #64748b !important;
+      -webkit-text-fill-color: #64748b !important;
+      opacity: 0.75 !important;
+      font-size: 0.9rem;
+    }
+
+    .input-login:-webkit-autofill,
+    .input-login:-webkit-autofill:hover, 
+    .input-login:-webkit-autofill:focus, 
+    .input-login:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+      -webkit-text-fill-color: #ffffff !important;
+      caret-color: #38bdf8 !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .toggle-pass-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 6px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .toggle-pass-btn:hover {
+      color: #38bdf8;
     }
 
     .btn-login {
       height: 48px;
       background: linear-gradient(135deg, #0284c7, #0369a1);
-      border: none;
+      border: 1px solid rgba(56, 189, 248, 0.3);
       border-radius: 8px;
       color: #ffffff;
-      font-size: 0.95rem;
+      font-size: 0.98rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.25s ease-in-out;
+      transition: all 0.2s ease-in-out;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      margin-top: 4px;
     }
 
     .btn-login:hover {
-      background: linear-gradient(135deg, #0369a1, #075985);
+      background: linear-gradient(135deg, #0369a1, #0ea5e9);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
       transform: translateY(-1px);
-      box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);
     }
 
     .btn-login:active {
@@ -165,9 +210,9 @@
     }
 
     .login-error-banner {
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      background-color: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
       padding: 12px 16px;
       border-radius: 8px;
       font-size: 0.85rem;
@@ -175,13 +220,61 @@
       align-items: center;
       gap: 10px;
     }
+
+    /* Quick login badges */
+    .quick-login-section {
+      margin-top: 10px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quick-login-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .quick-login-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-quick-fill {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 6px;
+      color: #38bdf8;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-quick-fill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body class="login-page-body">
 
   <div class="login-container">
     <div class="login-header">
-      <div class="login-logo" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(0, 242, 254, 0.15)); border: 1.5px solid rgba(0, 242, 254, 0.4); padding: 4px; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); display: flex; align-items: center; justify-content: center;">
+      <div class="login-logo">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="url(#dropletGradLogin)" style="width: 34px; height: 34px; filter: drop-shadow(0 2px 6px rgba(0,180,216,0.5));">
           <defs>
             <linearGradient id="dropletGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -201,12 +294,23 @@
       <span id="login-error-text">Invalid Officer ID or Password.</span>
     </div>
 
-    <form id="frm-gwd-login" style="display: flex; flex-direction: column; gap: 20px;">
+    <form id="frm-gwd-login" style="display: flex; flex-direction: column; gap: 16px;">
       <div class="form-group-login">
         <label for="input-officer-id" class="form-label-login">Officer ID / Username</label>
         <div class="input-wrapper">
           <span class="input-icon">👤</span>
-          <input type="text" id="input-officer-id" class="input-login" placeholder="e.g. gwd_officer" required autocomplete="username" autofocus>
+          <input 
+            type="text" 
+            id="input-officer-id" 
+            class="input-login" 
+            placeholder="Enter username (e.g. gwd_officer)" 
+            required 
+            autocomplete="username" 
+            inputmode="text" 
+            autocapitalize="none" 
+            autocorrect="off" 
+            spellcheck="false"
+          >
         </div>
       </div>
 
@@ -214,7 +318,20 @@
         <label for="input-officer-password" class="form-label-login">Password</label>
         <div class="input-wrapper">
           <span class="input-icon">🔒</span>
-          <input type="password" id="input-officer-password" class="input-login" placeholder="••••••••" required autocomplete="current-password">
+          <input 
+            type="password" 
+            id="input-officer-password" 
+            class="input-login" 
+            placeholder="Enter password" 
+            required 
+            autocomplete="current-password"
+            autocapitalize="none" 
+            autocorrect="off" 
+            spellcheck="false"
+          >
+          <button type="button" class="toggle-pass-btn" id="btn-toggle-password" title="Show or hide password" aria-label="Toggle password visibility">
+            👁️
+          </button>
         </div>
       </div>
 
@@ -223,16 +340,61 @@
         <span>➔</span>
       </button>
     </form>
+
+    <!-- 1-Click Quick Fill Credentials Helper -->
+    <div class="quick-login-section">
+      <div class="quick-login-label">⚡ 1-Click Demo / Quick Logins</div>
+      <div class="quick-login-pills">
+        <button type="button" class="btn-quick-fill" onclick="fillCreds('gwd_officer', 'gwd_password_2026')">
+          👮 Officer (Statewide)
+        </button>
+        <button type="button" class="btn-quick-fill" onclick="fillCreds('admin', 'admin_password_2026')">
+          👑 State Admin
+        </button>
+        <button type="button" class="btn-quick-fill" onclick="fillCreds('cuttack_div', 'cuttack2026')">
+          🏛️ Cuttack Div
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Click wrapper to focus input
+    // Safe wrapper click delegation: only trigger focus if clicking wrapper icon/padding, NOT the input itself
     document.querySelectorAll('.input-wrapper').forEach(wrapper => {
-      wrapper.addEventListener('click', () => {
+      wrapper.addEventListener('click', (e) => {
         const inp = wrapper.querySelector('input');
-        if (inp) inp.focus();
+        if (inp && e.target !== inp && !e.target.closest('button')) {
+          inp.focus();
+        }
       });
     });
+
+    // Password show/hide toggle
+    const togglePassBtn = document.getElementById('btn-toggle-password');
+    if (togglePassBtn) {
+      togglePassBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const passInp = document.getElementById('input-officer-password');
+        if (passInp.type === 'password') {
+          passInp.type = 'text';
+          togglePassBtn.textContent = '🙈';
+        } else {
+          passInp.type = 'password';
+          togglePassBtn.textContent = '👁️';
+        }
+      });
+    }
+
+    // 1-Click Fill Credentials Helper
+    window.fillCreds = function(username, password) {
+      const userInp = document.getElementById('input-officer-id');
+      const passInp = document.getElementById('input-officer-password');
+      userInp.value = username;
+      passInp.value = password;
+      document.getElementById('login-error-alert').style.display = 'none';
+      userInp.focus();
+    };
 
     // Prevent access if already logged in (Server session cookie checks are primary, sessionStorage is static fallback)
     (function() {
@@ -245,12 +407,18 @@
     document.getElementById('frm-gwd-login').onsubmit = async (e) => {
       e.preventDefault();
       
-      const username = document.getElementById('input-officer-id').value.trim();
-      const password = document.getElementById('input-officer-password').value;
+      const rawUser = document.getElementById('input-officer-id').value || '';
+      const username = rawUser.trim().toLowerCase();
+      const password = document.getElementById('input-officer-password').value || '';
       const errorBanner = document.getElementById('login-error-alert');
       const errorText = document.getElementById('login-error-text');
       const submitBtn = document.getElementById('btn-submit-login');
       
+      if (!username || !password) {
+        showError("Please enter both Officer ID and Password.");
+        return;
+      }
+
       submitBtn.disabled = true;
       submitBtn.textContent = 'Verifying Credentials...';
       errorBanner.style.display = 'none';
