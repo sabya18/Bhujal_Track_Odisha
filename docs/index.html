@@ -52,7 +52,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=111">
+  <link rel="stylesheet" href="styles.css?v=114">
 </head>
 <body class="light-theme">
   
@@ -643,27 +643,118 @@
             </div>
           </div>
 
-          <!-- RIGHT PANEL: Station & Network Details (Right Aligned & Colorful Pills) -->
-          <div class="trends-well-card" id="trends-well-card" style="flex: 1 1 360px; min-width: 280px; display: flex; flex-direction: column; justify-content: space-between; background: rgba(30, 41, 59, 0.4); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <!-- RIGHT PANEL: Monitoring Scope Information & Hydrological Vitals Card -->
+          <div class="trends-well-card" id="trends-well-card" style="flex: 1.2 1 480px; min-width: 320px; display: flex; flex-direction: column; gap: 12px; background: rgba(30, 41, 59, 0.45); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
+            
+            <!-- Scope Header with Trend Badge & GPS Coordinates -->
             <div>
-              <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">MONITORING SCOPE INFORMATION</div>
-              <h3 id="trends-well-id" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8; margin: 0 0 4px 0;">-</h3>
-              <p id="trends-well-desc" style="font-size: 0.88rem; color: var(--text-muted); margin: 0 0 14px 0; line-height: 1.4;">-</p>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">MONITORING SCOPE INFORMATION</span>
+                <span id="trends-scope-trend-badge" style="display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);">
+                  <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+                  <span id="trends-scope-trend-text">Calculating...</span>
+                </span>
+              </div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <h3 id="trends-well-id" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8; margin: 0;">-</h3>
+                <span id="trends-scope-gps" style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted); background: rgba(15, 23, 42, 0.5); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border-color);">📍 --</span>
+              </div>
+              <p id="trends-well-desc" style="font-size: 0.85rem; color: var(--text-muted); margin: 3px 0 0 0; line-height: 1.3;">-</p>
             </div>
-            <div class="well-details-right" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto;">
-              <div class="detail-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
-                <span class="badge-label" style="font-size: 0.72rem; color: #10b981; display: block; font-weight: 800; margin-bottom: 2px;">DISTRICT</span>
-                <span class="badge-val" id="trends-well-dist" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+
+            <!-- Compact Metadata Strip: District, Block, Well Type -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              <div class="detail-badge" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 8px;">
+                <span class="badge-label" style="font-size: 0.68rem; color: #10b981; display: block; font-weight: 800; margin-bottom: 2px;">DISTRICT</span>
+                <span class="badge-val" id="trends-well-dist" style="font-weight: 800; font-size: 0.88rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">-</span>
               </div>
-              <div class="detail-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
-                <span class="badge-label" style="font-size: 0.72rem; color: #f59e0b; display: block; font-weight: 800; margin-bottom: 2px;">BLOCK</span>
-                <span class="badge-val" id="trends-well-block" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+              <div class="detail-badge" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); padding: 6px 10px; border-radius: 8px;">
+                <span class="badge-label" style="font-size: 0.68rem; color: #f59e0b; display: block; font-weight: 800; margin-bottom: 2px;">BLOCK</span>
+                <span class="badge-val" id="trends-well-block" style="font-weight: 800; font-size: 0.88rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">-</span>
               </div>
-              <div class="detail-badge" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); padding: 8px 12px; border-radius: 8px; flex: 1 1 110px;">
-                <span class="badge-label" id="trends-well-type-label" style="font-size: 0.72rem; color: #a78bfa; display: block; font-weight: 800; margin-bottom: 2px;">WELL TYPE</span>
-                <span class="badge-val" id="trends-well-aquifer" style="font-weight: 800; font-size: 0.95rem; color: var(--text-color);">-</span>
+              <div class="detail-badge" style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); padding: 6px 10px; border-radius: 8px;">
+                <span class="badge-label" id="trends-well-type-label" style="font-size: 0.68rem; color: #a78bfa; display: block; font-weight: 800; margin-bottom: 2px;">WELL TYPE</span>
+                <span class="badge-val" id="trends-well-aquifer" style="font-weight: 800; font-size: 0.88rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">-</span>
               </div>
             </div>
+
+            <!-- Hydrological Vitals Panel -->
+            <div id="trends-vitals-panel" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">💧 Water Table Vitals (10-Yr Record)</span>
+                <span id="trends-scope-period" style="font-size: 0.72rem; font-weight: 700; color: #38bdf8; font-family: monospace;">2016 – 2026</span>
+              </div>
+
+              <!-- 2x2 Grid Vitals -->
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                <div class="scope-vital-card">
+                  <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">💧</div>
+                  <div style="min-width: 0;">
+                    <span style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 600;">Latest Level</span>
+                    <span id="trends-scope-latest-level" style="font-size: 0.95rem; font-weight: 800; color: #38bdf8;">-</span>
+                  </div>
+                </div>
+
+                <div class="scope-vital-card">
+                  <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(99, 102, 241, 0.15); color: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">📉</div>
+                  <div style="min-width: 0;">
+                    <span style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 600;">10-Yr Fluctuation</span>
+                    <span id="trends-scope-fluctuation" style="font-size: 0.95rem; font-weight: 800; color: #a5b4fc;">-</span>
+                  </div>
+                </div>
+
+                <div class="scope-vital-card">
+                  <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900; flex-shrink: 0;">↑</div>
+                  <div style="min-width: 0;">
+                    <span style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 600;">Shallowest (Peak Rec.)</span>
+                    <span id="trends-scope-shallowest" style="font-size: 0.88rem; font-weight: 800; color: #10b981;">-</span>
+                  </div>
+                </div>
+
+                <div class="scope-vital-card">
+                  <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900; flex-shrink: 0;">↓</div>
+                  <div style="min-width: 0;">
+                    <span style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 600;">Deepest (Peak Dep.)</span>
+                    <span id="trends-scope-deepest" style="font-size: 0.88rem; font-weight: 800; color: #f87171;">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Depth Gauge Bar -->
+              <div style="padding-top: 2px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
+                  <span id="trends-gauge-shallow-lbl">Shallow: -</span>
+                  <span id="trends-gauge-current-lbl" style="color: #38bdf8; font-weight: 800;">Current: -</span>
+                  <span id="trends-gauge-deep-lbl">Deep: -</span>
+                </div>
+                <div style="position: relative; height: 8px; width: 100%; border-radius: 999px; background: linear-gradient(90deg, #10b981 0%, #84cc16 30%, #eab308 60%, #f97316 80%, #ef4444 100%);">
+                  <div id="trends-scope-gauge-needle" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 2.5px solid #0284c7; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: left 0.4s ease;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Benchmark Specifications (Parapet, Elevation MSL, RL) -->
+            <div id="trends-scope-benchmarks" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; flex-wrap: wrap; gap: 6px;">
+              <span>📐 Parapet: <strong id="trends-scope-parapet" style="color: var(--text-color); font-weight: 700;">-</strong></span>
+              <span>•</span>
+              <span>Elevation: <strong id="trends-scope-elevation" style="color: var(--text-color); font-weight: 700;">-</strong></span>
+              <span>•</span>
+              <span>Reduced Level (RL): <strong id="trends-scope-rl" style="color: #38bdf8; font-weight: 700;">-</strong></span>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 4px; border-top: 1px solid var(--border-color);">
+              <button id="btn-trends-scope-map" type="button" class="scope-action-btn" title="Center station on interactive map">
+                <span>🗺️</span> Locate Map
+              </button>
+              <button id="btn-trends-scope-add" type="button" class="scope-action-btn" title="Add or update water level readings">
+                <span>➕</span> Add Reading
+              </button>
+              <button id="btn-trends-scope-export" type="button" class="scope-action-btn" title="Download hydrograph or view chart">
+                <span>📊</span> Hydrograph
+              </button>
+            </div>
+
           </div>
 
         </div>
@@ -1471,6 +1562,6 @@
   <!-- SheetJS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main application script -->
-  <script src="app.js?v=113"></script>
+  <script src="app.js?v=114"></script>
 </body>
 </html>

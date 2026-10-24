@@ -3777,6 +3777,161 @@ function updateTrendsTab() {
     statusBox.style.color = '#fff';
   }
 
+  // --- Redesigned Scope Card & Vitals Population ---
+  // A. Header Trend Badge & GPS
+  const scopeTrendBadge = document.getElementById('trends-scope-trend-badge');
+  const scopeTrendText = document.getElementById('trends-scope-trend-text');
+  if (scopeTrendBadge && scopeTrendText) {
+    const slopeStr = (mkStats.sensSlope > 0 ? '+' : '') + mkStats.sensSlope.toFixed(3) + ' m/yr';
+    scopeTrendText.textContent = `${mkStats.trendText} (${slopeStr})`;
+    scopeTrendBadge.style.color = mkStats.trendColor;
+    scopeTrendBadge.style.borderColor = mkStats.trendColor;
+    scopeTrendBadge.style.backgroundColor = mkStats.trendColor === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : (mkStats.trendColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.15)');
+    const dot = scopeTrendBadge.querySelector('span');
+    if (dot) dot.style.backgroundColor = mkStats.trendColor;
+  }
+
+  const gpsEl = document.getElementById('trends-scope-gps');
+  if (gpsEl) {
+    if (trendAnalysisLevel === 'station' && selectedWell) {
+      const lat = selectedWell.latitude !== undefined ? selectedWell.latitude : selectedWell.lat;
+      const lon = selectedWell.longitude !== undefined ? selectedWell.longitude : selectedWell.lon;
+      if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+        const latVal = parseFloat(lat);
+        const lonVal = parseFloat(lon);
+        gpsEl.textContent = `📍 ${Math.abs(latVal).toFixed(4)}° ${latVal >= 0 ? 'N' : 'S'}, ${Math.abs(lonVal).toFixed(4)}° ${lonVal >= 0 ? 'E' : 'W'}`;
+      } else {
+        gpsEl.textContent = '📍 Coords N/A';
+      }
+    } else if (trendAnalysisLevel === 'block') {
+      gpsEl.textContent = `📍 ${blockStr} Composite Network`;
+    } else {
+      gpsEl.textContent = `📍 ${distStr} District Composite`;
+    }
+  }
+
+  // B. Hydrological Vitals Calculation
+  const validVals = historicalList.map(h => h.value).filter(v => v !== null && v !== undefined && !isNaN(v) && v > 0);
+  const latestVal = validVals.length > 0 ? validVals[validVals.length - 1] : null;
+  const shallowVal = validVals.length > 0 ? Math.min(...validVals) : null;
+  const deepVal = validVals.length > 0 ? Math.max(...validVals) : null;
+  const flucVal = (shallowVal !== null && deepVal !== null) ? (deepVal - shallowVal) : null;
+
+  const latestEl = document.getElementById('trends-scope-latest-level');
+  if (latestEl) {
+    latestEl.innerHTML = latestVal !== null ? `${latestVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  const flucEl = document.getElementById('trends-scope-fluctuation');
+  if (flucEl) {
+    flucEl.innerHTML = flucVal !== null ? `Δ ${flucVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">m</span>` : '-';
+  }
+
+  const shallowEl = document.getElementById('trends-scope-shallowest');
+  if (shallowEl) {
+    shallowEl.innerHTML = shallowVal !== null ? `${shallowVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  const deepEl = document.getElementById('trends-scope-deepest');
+  if (deepEl) {
+    deepEl.innerHTML = deepVal !== null ? `${deepVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  // C. Depth Gauge Bar
+  const gaugeShallow = document.getElementById('trends-gauge-shallow-lbl');
+  const gaugeCurrent = document.getElementById('trends-gauge-current-lbl');
+  const gaugeDeep = document.getElementById('trends-gauge-deep-lbl');
+  const needle = document.getElementById('trends-scope-gauge-needle');
+
+  if (gaugeShallow) gaugeShallow.textContent = shallowVal !== null ? `Shallow: ${shallowVal.toFixed(2)}m` : 'Shallow: -';
+  if (gaugeCurrent) gaugeCurrent.textContent = latestVal !== null ? `Current: ${latestVal.toFixed(2)} mbgl` : 'Current: -';
+  if (gaugeDeep) gaugeDeep.textContent = deepVal !== null ? `Deep: ${deepVal.toFixed(2)}m` : 'Deep: -';
+
+  if (needle) {
+    if (shallowVal !== null && deepVal !== null && deepVal > shallowVal && latestVal !== null) {
+      const pct = Math.max(5, Math.min(95, ((latestVal - shallowVal) / (deepVal - shallowVal)) * 100));
+      needle.style.left = `${pct}%`;
+    } else {
+      needle.style.left = '50%';
+    }
+  }
+
+  // D. Parapet, Elevation & Reduced Level (RL)
+  const parapetEl = document.getElementById('trends-scope-parapet');
+  const elevationEl = document.getElementById('trends-scope-elevation');
+  const rlEl = document.getElementById('trends-scope-rl');
+
+  if (trendAnalysisLevel === 'station' && selectedWell) {
+    const pVal = selectedWell.parapet_height !== undefined && selectedWell.parapet_height !== null ? parseFloat(selectedWell.parapet_height) : 0.45;
+    if (parapetEl) parapetEl.textContent = `${pVal.toFixed(2)} m`;
+    
+    const rawElev = selectedWell.msl_elevation || selectedWell.elevation || selectedWell.msl;
+    const elevVal = rawElev !== undefined && rawElev !== null && !isNaN(parseFloat(rawElev)) ? parseFloat(rawElev) : null;
+    
+    if (elevationEl) elevationEl.textContent = elevVal !== null ? `${elevVal.toFixed(1)} m MSL` : '108.0 m MSL (Ref)';
+    
+    if (rlEl) {
+      const baseElev = elevVal !== null ? elevVal : 108.0;
+      if (latestVal !== null) {
+        rlEl.textContent = `${(baseElev - latestVal).toFixed(2)} m`;
+      } else {
+        rlEl.textContent = '-';
+      }
+    }
+  } else {
+    if (parapetEl) parapetEl.textContent = 'Avg 0.45 m';
+    if (elevationEl) elevationEl.textContent = 'Regional Datum';
+    if (rlEl) rlEl.textContent = 'Regional Avg';
+  }
+
+  // E. Action Buttons Wiring
+  const btnMap = document.getElementById('btn-trends-scope-map');
+  if (btnMap) {
+    btnMap.onclick = () => {
+      switchTab('map-view', 'Station Map');
+      if (trendAnalysisLevel === 'station' && selectedWell) {
+        const lat = selectedWell.latitude !== undefined ? selectedWell.latitude : selectedWell.lat;
+        const lon = selectedWell.longitude !== undefined ? selectedWell.longitude : selectedWell.lon;
+        if (lat && lon && typeof mainMap !== 'undefined' && mainMap) {
+          setTimeout(() => {
+            mainMap.setView([lat, lon], 14);
+          }, 300);
+        }
+      }
+    };
+  }
+
+  const btnAdd = document.getElementById('btn-trends-scope-add');
+  if (btnAdd) {
+    btnAdd.onclick = () => {
+      if (trendAnalysisLevel === 'station' && selectedWell) {
+        openVisitEditModal(selectedWell);
+      } else {
+        openAddWaterLevelModal();
+      }
+    };
+  }
+
+  const btnExport = document.getElementById('btn-trends-scope-export');
+  if (btnExport) {
+    btnExport.onclick = () => {
+      if (chartHistorical && typeof chartHistorical.toBase64Image === 'function') {
+        try {
+          const a = document.createElement('a');
+          a.href = chartHistorical.toBase64Image();
+          a.download = `Hydrograph_${titleStr.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (err) {
+          document.getElementById('chart-historical-trends')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        document.getElementById('chart-historical-trends')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+  }
+
   // 2. Generate Linear Projections
   const annualAverages = [];
   const yrSums = {};
