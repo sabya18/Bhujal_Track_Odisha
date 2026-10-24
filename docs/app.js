@@ -3235,6 +3235,8 @@ function updateTrendsTab() {
   document.getElementById('trends-well-desc').textContent = descStr;
   document.getElementById('trends-well-dist').textContent = distStr;
   document.getElementById('trends-well-block').textContent = blockStr;
+  const typeLbl = document.getElementById('trends-well-type-label');
+  if (typeLbl) typeLbl.textContent = trendAnalysisLevel === 'station' ? 'WELL TYPE' : 'NETWORK TYPE';
   document.getElementById('trends-well-aquifer').textContent = aquiferStr;
 
   // 1. Calculate Mann-Kendall statistics
@@ -5477,6 +5479,8 @@ function renderTrendsView() {
     document.getElementById('trends-well-desc').textContent = `${well.location || 'Observation Well'}, ${well.block || ''} Block`;
     document.getElementById('trends-well-dist').textContent = getDistrictFromWell(well);
     document.getElementById('trends-well-block').textContent = well.block || '-';
+    const typeLbl = document.getElementById('trends-well-type-label');
+    if (typeLbl) typeLbl.textContent = 'WELL TYPE';
     document.getElementById('trends-well-aquifer').textContent = well.well_type || 'DW';
 
     // Collect historical time-series
@@ -5529,6 +5533,8 @@ function renderTrendsView() {
     document.getElementById('trends-well-desc').textContent = `Average groundwater monitoring trend across all active stations in ${targetBlk} Block`;
     document.getElementById('trends-well-dist').textContent = targetDist;
     document.getElementById('trends-well-block').textContent = targetBlk;
+    const typeLblBlock = document.getElementById('trends-well-type-label');
+    if (typeLblBlock) typeLblBlock.textContent = 'NETWORK TYPE';
     document.getElementById('trends-well-aquifer').textContent = 'Block Network';
 
     const normBlkTarget = normalizeGeoJSONBlock(targetBlk);
@@ -5575,6 +5581,8 @@ function renderTrendsView() {
     document.getElementById('trends-well-desc').textContent = `Groundwater level monitoring average trend across ${distName}`;
     document.getElementById('trends-well-dist').textContent = distName;
     document.getElementById('trends-well-block').textContent = 'All Division';
+    const typeLblDist = document.getElementById('trends-well-type-label');
+    if (typeLblDist) typeLblDist.textContent = 'NETWORK TYPE';
     document.getElementById('trends-well-aquifer').textContent = 'District Network';
 
     const normDistTarget = normalizeGeoJSONDistrict(targetDist);
