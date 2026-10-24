@@ -92,6 +92,9 @@
         <button class="nav-item btn-add-water-level-trigger" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2)); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8 !important; font-weight: 700; margin: 6px 0 2px 0; border-radius: 8px;">
           <span style="font-size: 1.1rem; margin-right: 6px;">➕</span> Add Water Level Data
         </button>
+        <button class="nav-item btn-season-ingest-trigger" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.25)); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399 !important; font-weight: 700; margin: 2px 0; border-radius: 8px;">
+          <span style="font-size: 1.1rem; margin-right: 6px;">📥</span> Ingest Season Data
+        </button>
         <button class="nav-item btn-add-new-well-trigger" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399 !important; font-weight: 700; margin: 2px 0 6px 0; border-radius: 8px;">
           <span style="font-size: 1.1rem; margin-right: 6px;">🆕</span> Register New Station
         </button>
@@ -209,11 +212,16 @@
       <!-- TAB content: Dashboard -->
       <section id="tab-dashboard" class="tab-content active-tab">
         <!-- Active Season Banner -->
-        <div class="active-season-banner" id="active-season-banner">
-          <div class="pulse-effect"></div>
-          <span class="banner-title">ACTIVE MONITORING SEASON:</span>
-          <span class="banner-value" id="banner-season-value">Mid-Monsoon 2026</span>
-          <span class="banner-icon" id="banner-season-icon">🌧️</span>
+        <div class="active-season-banner" id="active-season-banner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="pulse-effect"></div>
+            <span class="banner-title">ACTIVE MONITORING SEASON:</span>
+            <span class="banner-value" id="banner-season-value">Mid-Monsoon 2026</span>
+            <span class="banner-icon" id="banner-season-icon">🌧️</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-season-ingest-trigger" style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; font-weight: 700; padding: 6px 14px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+            📥 Ingest Water Levels for this Season
+          </button>
         </div>
 
         <!-- Water Level Data Entry Quick Action Bar -->
@@ -222,17 +230,17 @@
             <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
               <span>📝</span> Field Data Collection & Water Level Entry
             </h3>
-            <span style="font-size: 0.82rem; color: var(--text-muted);">Record site visits, update water level readings (BMP/MBGL), calculate RL, or upload Division Field Books.</span>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">Record site visits, update single well readings, or bulk-ingest seasonal water levels across all stations.</span>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-season-ingest-trigger" style="background: linear-gradient(135deg, #059669, #10b981); border: none; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3); color: #fff;">
+              <span style="font-size: 1.1rem;">📥</span> Ingest Season Data (All Wells)
+            </button>
             <button class="btn btn-primary btn-add-water-level-trigger" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
               <span style="font-size: 1.1rem;">➕</span> Add Water Level Data
             </button>
             <button class="btn btn-secondary btn-add-new-well-trigger" style="font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1); color: #10b981;">
               <span style="font-size: 1.1rem;">🆕</span> Register New Station
-            </button>
-            <button class="btn btn-secondary btn-fieldbook-trigger" style="font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              📄 Bulk Field Book Import
             </button>
           </div>
         </div>
@@ -1111,6 +1119,181 @@
     </div>
   </div>
 
+  <!-- Season-Wise Water Level Ingestion Modal -->
+  <div class="modal-backdrop" id="modal-season-ingest">
+    <div class="modal-box" style="max-width: 940px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); border-bottom: 1px solid var(--border-color); padding: 18px 24px;">
+        <div>
+          <h2 style="margin: 0; font-size: 1.28rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+            <span>📥</span> Season-Wise Water Level Ingestion
+          </h2>
+          <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted);">
+            Input or batch-import groundwater level measurements season-wise. Once ingested, all portal metrics, maps, and trends automatically update.
+          </p>
+        </div>
+        <button class="btn-close-modal" id="btn-close-season-ingest-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px;">
+        
+        <!-- Target Season Selector Strip -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+              🗓️ Target Monitoring Year
+            </label>
+            <select id="sel-ingest-year" class="form-control" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); height: 42px;">
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+              🌦️ Target Monitoring Season
+            </label>
+            <select id="sel-ingest-season" class="form-control" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); height: 42px;">
+              <option value="Pre-Monsoon">Pre-Monsoon (Apr - May) [PreMon]</option>
+              <option value="Mid-Monsoon" selected>Mid-Monsoon (Aug - Sep) [MidMon]</option>
+              <option value="Post-Monsoon">Post-Monsoon (Nov - Dec) [PostMon]</option>
+              <option value="Winter">Winter (Jan - Feb) [Winter]</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+              🏢 Scope / District Filter
+            </label>
+            <select id="sel-ingest-district" class="form-control" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); height: 42px;">
+              <option value="ALL">All Districts (Statewide)</option>
+            </select>
+          </div>
+
+          <div style="background: rgba(2, 132, 199, 0.15); border: 1px solid rgba(2, 132, 199, 0.35); border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center;">
+            <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Active Season Key</span>
+            <span id="lbl-ingest-season-key" style="font-size: 0.95rem; font-weight: 700; color: #38bdf8; font-family: monospace;">2026_MidMon</span>
+            <span id="lbl-ingest-scope-count" style="font-size: 0.74rem; color: #34d399; margin-top: 2px;">1,459 active stations in scope</span>
+          </div>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+          <button type="button" id="tab-btn-ingest-file" class="btn btn-sm" style="background: rgba(2, 132, 199, 0.3); border: 1px solid #0284c7; color: #fff; font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+            📁 Mode A: Excel / CSV Spreadsheet Upload
+          </button>
+          <button type="button" id="tab-btn-ingest-grid" class="btn btn-sm" style="background: transparent; border: 1px solid rgba(255,255,255,0.15); color: var(--text-muted); font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+            ✍️ Mode B: Interactive On-Screen Quick Grid
+          </button>
+        </div>
+
+        <!-- MODE A: FILE UPLOAD PANE -->
+        <div id="pane-ingest-file" style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: rgba(2, 132, 199, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h4 style="margin: 0 0 4px 0; color: #38bdf8; font-size: 0.92rem; display: flex; align-items: center; gap: 6px;">
+                <span>📋</span> Step 1: Download Pre-Populated Station Template
+              </h4>
+              <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
+                Generates a clean CSV file with all in-scope stations, districts, blocks, locations, and parapet heights pre-filled for this season.
+              </p>
+            </div>
+            <button type="button" id="btn-download-season-template" class="btn btn-secondary btn-sm" style="background: #1e293b; border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+              ⬇️ Download Station CSV Template
+            </button>
+          </div>
+
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+            <label style="font-size: 0.88rem; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+              <span>📤</span> Step 2: Upload Completed Season Spreadsheet (.xlsx, .csv)
+            </label>
+            <input type="file" id="input-season-ingest-file" class="form-control" accept=".csv, .xlsx, .xls" style="background: #0f172a; padding: 10px; border-radius: 8px; cursor: pointer;">
+            <span style="font-size: 0.76rem; color: #94a3b8;">
+              Accepts standard GWD Field Books, WTTO season sheets, or the downloaded template. Automatically detects columns like <code>Well Number</code>, <code>DTGWL [mbgl]</code>, <code>DTGWL [bmp]</code>, <code>Date</code>.
+            </span>
+          </div>
+
+          <!-- Parse Summary Card -->
+          <div id="ingest-file-summary" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+              <h4 style="margin: 0; color: #10b981; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                <span>✅</span> <span id="lbl-ingest-file-status">Spreadsheet Ready for Ingestion</span>
+              </h4>
+              <span id="lbl-ingest-records-stat" style="font-size: 0.82rem; font-weight: 700; color: #34d399;">0 / 0 Valid Records</span>
+            </div>
+            <div id="ingest-preview-table-box" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                <thead style="background: #1e293b; color: #94a3b8; position: sticky; top: 0;">
+                  <tr>
+                    <th style="padding: 6px 10px; text-align: left;">Well ID</th>
+                    <th style="padding: 6px 10px; text-align: left;">District</th>
+                    <th style="padding: 6px 10px; text-align: left;">Block</th>
+                    <th style="padding: 6px 10px; text-align: right;">DTGWL (mbgl)</th>
+                    <th style="padding: 6px 10px; text-align: center;">Visit Date</th>
+                  </tr>
+                </thead>
+                <tbody id="ingest-preview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODE B: ON-SCREEN GRID PANE -->
+        <div id="pane-ingest-grid" style="display: none; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 10px 14px; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px;">
+              <span style="color: #94a3b8;">🔍</span>
+              <input type="text" id="input-ingest-grid-search" class="form-control" placeholder="Search by station ID, district, or block..." style="height: 36px; font-size: 0.85rem; background: #0f172a;">
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="btn-ingest-demo-fill" class="btn btn-secondary btn-sm" style="font-size: 0.76rem; padding: 6px 12px; border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; cursor: pointer;">
+                🎲 Auto-Fill Sample Levels
+              </button>
+              <button type="button" id="btn-ingest-clear-grid" class="btn btn-secondary btn-sm" style="font-size: 0.76rem; padding: 6px 12px; border: 1px solid rgba(239, 68, 68, 0.35); color: #ef4444; cursor: pointer;">
+                🧹 Clear
+              </button>
+            </div>
+          </div>
+
+          <div style="max-height: 340px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+              <thead style="background: #1e293b; color: #94a3b8; position: sticky; top: 0; z-index: 5;">
+                <tr>
+                  <th style="padding: 8px 12px; text-align: left;">#</th>
+                  <th style="padding: 8px 12px; text-align: left;">Well ID</th>
+                  <th style="padding: 8px 12px; text-align: left;">District</th>
+                  <th style="padding: 8px 12px; text-align: left;">Block</th>
+                  <th style="padding: 8px 12px; text-align: left;">Location</th>
+                  <th style="padding: 8px 12px; text-align: center;">Water Level [mbgl]</th>
+                  <th style="padding: 8px 12px; text-align: center;">Date</th>
+                </tr>
+              </thead>
+              <tbody id="ingest-grid-tbody"></tbody>
+            </table>
+          </div>
+          <span style="font-size: 0.74rem; color: #94a3b8;">
+            💡 Tip: Entering values directly here updates the selected season for all modified stations upon clicking Ingest below.
+          </span>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <span id="lbl-ingest-feedback" style="font-size: 0.82rem; color: #94a3b8;">Ready to ingest season data.</span>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-season-ingest">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-confirm-season-ingest" style="background: linear-gradient(135deg, #059669, #10b981); border: none; font-weight: 700; padding: 10px 22px; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <span>⚡ Ingest & Reflect Across Portal</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div class="toast-container" id="toast-message-box">
     <div class="toast-card" id="toast-card-element">
@@ -1288,6 +1471,6 @@
   <!-- SheetJS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main application script -->
-  <script src="app.js?v=112"></script>
+  <script src="app.js?v=113"></script>
 </body>
 </html>

@@ -461,6 +461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupModalEventListeners();
   setupFilterEventListeners();
   initAdvancedExportFeatures();
+  initSeasonIngestionModal();
   
   // Set up User profile display
   const loggedUser = document.getElementById('lbl-logged-user');
@@ -2831,6 +2832,527 @@ function setupFieldBookImportModalListeners() {
       loadAllData();
     };
   }
+}
+
+// --- Season-Wise Water Level Ingestion Feature ---
+let parsedSeasonRecords = [];
+let activeIngestMode = 'file'; // 'file' or 'grid'
+
+function getSeasonCode(seasonName) {
+  if (!seasonName) return 'PreMon';
+  if (seasonName.includes('Pre')) return 'PreMon';
+  if (seasonName.includes('Mid')) return 'MidMon';
+  if (seasonName.includes('Post')) return 'PostMon';
+  return 'Winter';
+}
+
+function openSeasonIngestModal() {
+  const modal = document.getElementById('modal-season-ingest');
+  if (!modal) return;
+
+  // Initialize Target Year & Season with global active filters
+  const selYear = document.getElementById('sel-ingest-year');
+  const selSeason = document.getElementById('sel-ingest-season');
+  if (selYear && selectedYear) selYear.value = selectedYear;
+  if (selSeason && selectedSeason) selSeason.value = selectedSeason;
+
+  // Populate District / Scope selector
+  const selDist = document.getElementById('sel-ingest-district');
+  if (selDist) {
+    const userDiv = typeof getUserDivision === 'function' ? getUserDivision() : 'ALL';
+    let availableDistricts = [];
+    if (userDiv === 'ALL') {
+      availableDistricts = [
+        "ANGUL", "BALANGIR", "BALESHWAR", "BARGARH", "BAUDH", "BHADRAK", "CUTTACK", 
+        "DEBAGARH", "DHENKANAL", "GAJAPATI", "GANJAM", "JAGATSINGHAPUR", "JAJAPUR", 
+        "JHARSUGUDA", "KALAHANDI", "KANDHAMAL", "KENDRAPARA", "KENDUJHAR", "KHORDHA", 
+        "KORAPUT", "MALKANGIRI", "MAYURBHANJ", "NABARANGAPUR", "NAYAGARH", "NUAPADA", 
+        "PURI", "RAYAGADA", "SAMBALPUR", "SUBARNAPUR", "SUNDARGARH"
+      ];
+    } else {
+      const scoped = getScopedWellsData();
+      const distSet = new Set();
+      scoped.forEach(w => {
+        const d = getDistrictFromWell(w);
+        if (d) distSet.add(d);
+      });
+      availableDistricts = Array.from(distSet).sort();
+    }
+    
+    selDist.innerHTML = `<option value="ALL">All Stations (${userDiv === 'ALL' ? 'Statewide' : userDiv})</option>`;
+    availableDistricts.forEach(d => {
+      selDist.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  updateIngestModalHeaderInfo();
+  modal.classList.add('open', 'show-modal');
+  renderIngestGrid();
+}
+
+function updateIngestModalHeaderInfo() {
+  const selYear = document.getElementById('sel-ingest-year');
+  const selSeason = document.getElementById('sel-ingest-season');
+  const selDist = document.getElementById('sel-ingest-district');
+  const lblKey = document.getElementById('lbl-ingest-season-key');
+  const lblCount = document.getElementById('lbl-ingest-scope-count');
+
+  const yr = selYear ? selYear.value : '2026';
+  const sea = selSeason ? selSeason.value : 'Mid-Monsoon';
+  const code = getSeasonCode(sea);
+  const dist = selDist ? selDist.value : 'ALL';
+
+  if (lblKey) lblKey.textContent = `${yr}_${code}`;
+
+  let targetWells = wellsData || [];
+  if (dist !== 'ALL') {
+    targetWells = targetWells.filter(w => getDistrictFromWell(w).toUpperCase() === dist.toUpperCase());
+  } else {
+    targetWells = getScopedWellsData();
+  }
+
+  if (lblCount) lblCount.textContent = `${targetWells.length} active stations in scope`;
+}
+
+function initSeasonIngestionModal() {
+  // Bind trigger clicks across sidebar, banner, and dashboard
+  document.querySelectorAll('.btn-season-ingest-trigger').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openSeasonIngestModal();
+    };
+  });
+
+  // Close modal handlers
+  const btnClose = document.getElementById('btn-close-season-ingest-modal');
+  const btnCancel = document.getElementById('btn-cancel-season-ingest');
+  [btnClose, btnCancel].forEach(b => {
+    if (b) {
+      b.onclick = () => {
+        const modal = document.getElementById('modal-season-ingest');
+        if (modal) modal.classList.remove('open', 'show-modal');
+      };
+    }
+  });
+
+  // Watch selectors to update header
+  const selYear = document.getElementById('sel-ingest-year');
+  const selSeason = document.getElementById('sel-ingest-season');
+  const selDist = document.getElementById('sel-ingest-district');
+  [selYear, selSeason, selDist].forEach(sel => {
+    if (sel) {
+      sel.onchange = () => {
+        updateIngestModalHeaderInfo();
+        if (activeIngestMode === 'grid') renderIngestGrid();
+      };
+    }
+  });
+
+  // Tab switching (Mode A vs Mode B)
+  const tabBtnFile = document.getElementById('tab-btn-ingest-file');
+  const tabBtnGrid = document.getElementById('tab-btn-ingest-grid');
+  const paneFile = document.getElementById('pane-ingest-file');
+  const paneGrid = document.getElementById('pane-ingest-grid');
+
+  if (tabBtnFile && tabBtnGrid) {
+    tabBtnFile.onclick = () => {
+      activeIngestMode = 'file';
+      tabBtnFile.style.background = 'rgba(2, 132, 199, 0.3)';
+      tabBtnFile.style.borderColor = '#0284c7';
+      tabBtnFile.style.color = '#fff';
+
+      tabBtnGrid.style.background = 'transparent';
+      tabBtnGrid.style.borderColor = 'rgba(255,255,255,0.15)';
+      tabBtnGrid.style.color = 'var(--text-muted)';
+
+      if (paneFile) paneFile.style.display = 'flex';
+      if (paneGrid) paneGrid.style.display = 'none';
+    };
+
+    tabBtnGrid.onclick = () => {
+      activeIngestMode = 'grid';
+      tabBtnGrid.style.background = 'rgba(2, 132, 199, 0.3)';
+      tabBtnGrid.style.borderColor = '#0284c7';
+      tabBtnGrid.style.color = '#fff';
+
+      tabBtnFile.style.background = 'transparent';
+      tabBtnFile.style.borderColor = 'rgba(255,255,255,0.15)';
+      tabBtnFile.style.color = 'var(--text-muted)';
+
+      if (paneFile) paneFile.style.display = 'none';
+      if (paneGrid) paneGrid.style.display = 'flex';
+      renderIngestGrid();
+    };
+  }
+
+  // Step 1: Download Season Station CSV Template
+  const btnDownloadTemplate = document.getElementById('btn-download-season-template');
+  if (btnDownloadTemplate) {
+    btnDownloadTemplate.onclick = () => {
+      const yr = document.getElementById('sel-ingest-year').value;
+      const sea = document.getElementById('sel-ingest-season').value;
+      const dist = document.getElementById('sel-ingest-district').value;
+      downloadSeasonTemplate(sea, yr, dist);
+    };
+  }
+
+  // Step 2: Upload and parse spreadsheet
+  const fileInput = document.getElementById('input-season-ingest-file');
+  if (fileInput) {
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const yr = document.getElementById('sel-ingest-year').value;
+      const sea = document.getElementById('sel-ingest-season').value;
+      const defaultDate = (sea === 'Pre-Monsoon') ? `15/05/${yr}` :
+                          (sea === 'Mid-Monsoon') ? `15/09/${yr}` :
+                          (sea === 'Post-Monsoon') ? `15/11/${yr}` : `15/01/${yr}`;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json(firstSheet);
+
+          parsedSeasonRecords = [];
+          rawRows.forEach((row, idx) => {
+            const well_number = (
+              row['Well Number'] || row['Well_Number'] || row['Station_Code'] || 
+              row['Well ID'] || row['Station Code'] || row['Well No'] || row['well_number'] || ''
+            ).toString().trim().toUpperCase();
+
+            if (!well_number) return;
+
+            const parapet = parseFloat(row['Height of Parapet in mtr'] || row['Parapet'] || row['parapet_height'] || 0.45);
+            let mbgl = parseFloat(row['DTGWL [mbgl]'] || row['DTGWL mbgl'] || row['mbgl'] || row['Water Level'] || row['Water_Level'] || row['Level']);
+            const bmp = parseFloat(row['DTGWL [bmp]'] || row['DTGWL bmp'] || row['bmp']);
+            
+            if (isNaN(mbgl) && !isNaN(bmp)) {
+              mbgl = bmp - parapet;
+            }
+
+            const date = row['Dt_SiteVisit'] || row['Date'] || row['Reading_Date'] || row['date'] || defaultDate;
+            const remarks = row['Remarks'] || row['Status'] || 'Active';
+            const district = row['District'] || row['district'] || '';
+            const block = row['BLOCK'] || row['Block'] || row['block'] || '';
+
+            if (!isNaN(mbgl)) {
+              parsedSeasonRecords.push({
+                well_number,
+                dtgwl_mbgl: Number(mbgl.toFixed(2)),
+                dtgwl_bmp: !isNaN(bmp) ? Number(bmp.toFixed(2)) : Number((mbgl + parapet).toFixed(2)),
+                parapet,
+                date,
+                remarks,
+                district,
+                block
+              });
+            }
+          });
+
+          // Show parse summary & preview table
+          const summaryCard = document.getElementById('ingest-file-summary');
+          const statLbl = document.getElementById('lbl-ingest-records-stat');
+          const previewTbody = document.getElementById('ingest-preview-tbody');
+          const feedbackLbl = document.getElementById('lbl-ingest-feedback');
+
+          if (summaryCard) summaryCard.style.display = 'block';
+          if (statLbl) statLbl.textContent = `${parsedSeasonRecords.length} / ${rawRows.length} Valid Station Records`;
+          if (feedbackLbl) feedbackLbl.textContent = `Ready: ${parsedSeasonRecords.length} water levels parsed. Click button below to ingest.`;
+
+          if (previewTbody) {
+            const previewRows = parsedSeasonRecords.slice(0, 10);
+            previewTbody.innerHTML = previewRows.map(r => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 6px 10px; font-weight: 700; color: #38bdf8;">${r.well_number}</td>
+                <td style="padding: 6px 10px;">${r.district || '-'}</td>
+                <td style="padding: 6px 10px;">${r.block || '-'}</td>
+                <td style="padding: 6px 10px; text-align: right; font-weight: 700; color: #34d399;">${r.dtgwl_mbgl} m</td>
+                <td style="padding: 6px 10px; text-align: center; color: var(--text-muted);">${r.date}</td>
+              </tr>
+            `).join('');
+          }
+
+        } catch (err) {
+          alert('Error parsing spreadsheet file: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+  }
+
+  // Grid Search & Filter
+  const gridSearch = document.getElementById('input-ingest-grid-search');
+  if (gridSearch) {
+    gridSearch.onkeyup = (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('#ingest-grid-tbody tr').forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = text.includes(q) ? '' : 'none';
+      });
+    };
+  }
+
+  // Grid Quick Helpers: Auto-fill demo & Clear
+  const btnDemoFill = document.getElementById('btn-ingest-demo-fill');
+  if (btnDemoFill) {
+    btnDemoFill.onclick = () => {
+      const inputs = document.querySelectorAll('.grid-water-level-input');
+      inputs.forEach(inp => {
+        const sampleVal = (3.5 + Math.random() * 5.0).toFixed(2);
+        inp.value = sampleVal;
+      });
+      showToast(`Auto-filled sample water levels for ${inputs.length} stations!`, 'info');
+    };
+  }
+
+  const btnClearGrid = document.getElementById('btn-ingest-clear-grid');
+  if (btnClearGrid) {
+    btnClearGrid.onclick = () => {
+      document.querySelectorAll('.grid-water-level-input').forEach(inp => inp.value = '');
+    };
+  }
+
+  // Confirm Ingest & Update Portal Button
+  const btnConfirm = document.getElementById('btn-confirm-season-ingest');
+  if (btnConfirm) {
+    btnConfirm.onclick = executeSeasonIngestion;
+  }
+}
+
+function downloadSeasonTemplate(seasonName, year, districtFilter = 'ALL') {
+  const seasonCode = getSeasonCode(seasonName);
+  const targetSeasonKey = `${year}_${seasonCode}`;
+  
+  let targetWells = wellsData || [];
+  if (districtFilter && districtFilter !== 'ALL') {
+    targetWells = targetWells.filter(w => getDistrictFromWell(w).toUpperCase() === districtFilter.toUpperCase());
+  } else {
+    targetWells = getScopedWellsData();
+  }
+
+  const csvRows = [
+    "Well Number,District,BLOCK,Location of Observation wells,Well Type,Height of Parapet in mtr,DTGWL [mbgl],DTGWL [bmp],Dt_SiteVisit,Remarks"
+  ];
+
+  const defaultDate = (seasonName === 'Pre-Monsoon') ? `15/05/${year}` :
+                      (seasonName === 'Mid-Monsoon') ? `15/09/${year}` :
+                      (seasonName === 'Post-Monsoon') ? `15/11/${year}` : `15/01/${year}`;
+
+  targetWells.forEach(w => {
+    const wNum = (w.well_number || '').trim();
+    if (!wNum) return;
+    const dist = getDistrictFromWell(w);
+    const block = w.block || '';
+    const loc = (w.location || '').replace(/,/g, ' ').replace(/"/g, '');
+    const type = w.well_type || 'DW';
+    const parapet = w.parapet_height !== undefined ? w.parapet_height : 0.45;
+    
+    // Check if there is an existing measurement
+    let existingMbgl = '';
+    let existingBmp = '';
+    const existing = visitsHistory[wNum]?.[targetSeasonKey] || (w.history ? w.history[targetSeasonKey] : null);
+    if (existing) {
+      existingMbgl = existing.value !== undefined ? existing.value : existing;
+      existingBmp = (parseFloat(existingMbgl) + parseFloat(parapet)).toFixed(2);
+    }
+    
+    csvRows.push(`"${wNum}","${dist}","${block}","${loc}","${type}",${parapet},${existingMbgl},${existingBmp},"${defaultDate}","Active"`);
+  });
+
+  const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute('download', `GWD_Odisha_${seasonCode}_${year}_Station_Water_Level_Template.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast(`Downloaded station template for ${seasonName} ${year}!`);
+}
+
+function renderIngestGrid() {
+  const tbody = document.getElementById('ingest-grid-tbody');
+  if (!tbody) return;
+
+  const yr = document.getElementById('sel-ingest-year').value;
+  const sea = document.getElementById('sel-ingest-season').value;
+  const dist = document.getElementById('sel-ingest-district').value;
+  const code = getSeasonCode(sea);
+  const targetSeasonKey = `${yr}_${code}`;
+
+  let targetWells = wellsData || [];
+  if (dist !== 'ALL') {
+    targetWells = targetWells.filter(w => getDistrictFromWell(w).toUpperCase() === dist.toUpperCase());
+  } else {
+    targetWells = getScopedWellsData();
+  }
+
+  const defaultDate = (sea === 'Pre-Monsoon') ? `15/05/${yr}` :
+                      (sea === 'Mid-Monsoon') ? `15/09/${yr}` :
+                      (sea === 'Post-Monsoon') ? `15/11/${yr}` : `15/01/${yr}`;
+
+  const rowsHtml = targetWells.map((w, idx) => {
+    const wNum = (w.well_number || '').trim();
+    const d = getDistrictFromWell(w);
+    const b = w.block || '-';
+    const loc = w.location || '-';
+    const parapet = w.parapet_height !== undefined ? w.parapet_height : 0.45;
+    
+    // Check existing value
+    const existing = visitsHistory[wNum]?.[targetSeasonKey] || (w.history ? w.history[targetSeasonKey] : null);
+    const currentVal = existing ? (existing.value !== undefined ? existing.value : existing) : '';
+
+    return `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <td style="padding: 6px 12px; color: var(--text-muted);">${idx + 1}</td>
+        <td style="padding: 6px 12px; font-weight: 700; color: #38bdf8; font-family: monospace;">${wNum}</td>
+        <td style="padding: 6px 12px;">${d}</td>
+        <td style="padding: 6px 12px;">${b}</td>
+        <td style="padding: 6px 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${loc}</td>
+        <td style="padding: 4px 8px; text-align: center;">
+          <input 
+            type="number" 
+            step="0.01" 
+            class="form-control grid-water-level-input" 
+            data-well="${wNum}" 
+            data-parapet="${parapet}" 
+            value="${currentVal}" 
+            placeholder="e.g. 5.80" 
+            style="width: 100px; height: 32px; font-size: 0.82rem; padding: 4px 8px; text-align: right; background: #0f172a; border-color: rgba(56,189,248,0.3); color: #34d399; font-weight: 700; margin: 0 auto;"
+          >
+        </td>
+        <td style="padding: 6px 12px; text-align: center; color: var(--text-muted); font-size: 0.75rem;">${defaultDate}</td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml;
+}
+
+async function executeSeasonIngestion() {
+  const yr = document.getElementById('sel-ingest-year').value;
+  const sea = document.getElementById('sel-ingest-season').value;
+  const code = getSeasonCode(sea);
+  const seasonKey = `${yr}_${code}`;
+  const defaultDate = (sea === 'Pre-Monsoon') ? `15/05/${yr}` :
+                      (sea === 'Mid-Monsoon') ? `15/09/${yr}` :
+                      (sea === 'Post-Monsoon') ? `15/11/${yr}` : `15/01/${yr}`;
+
+  let recordsToIngest = [];
+
+  if (activeIngestMode === 'file') {
+    recordsToIngest = parsedSeasonRecords;
+  } else {
+    // Mode B: Grid input
+    const inputs = document.querySelectorAll('.grid-water-level-input');
+    inputs.forEach(inp => {
+      const val = parseFloat(inp.value);
+      if (!isNaN(val)) {
+        const wNum = inp.getAttribute('data-well');
+        const parapet = parseFloat(inp.getAttribute('data-parapet') || 0.45);
+        recordsToIngest.push({
+          well_number: wNum,
+          dtgwl_mbgl: Number(val.toFixed(2)),
+          dtgwl_bmp: Number((val + parapet).toFixed(2)),
+          parapet: parapet,
+          date: defaultDate,
+          remarks: 'Active'
+        });
+      }
+    });
+  }
+
+  if (recordsToIngest.length === 0) {
+    showToast("Please upload a spreadsheet or enter water levels in the grid first.", "warning");
+    return;
+  }
+
+  const btnConfirm = document.getElementById('btn-confirm-season-ingest');
+  btnConfirm.disabled = true;
+  btnConfirm.innerHTML = '<span>⚡ Ingesting & Updating Portal...</span>';
+
+  // 1. Ingest into in-memory visitsHistory
+  recordsToIngest.forEach(r => {
+    const wNum = (r.well_number || '').trim().toUpperCase();
+    if (!wNum) return;
+
+    if (!visitsHistory[wNum]) {
+      visitsHistory[wNum] = {};
+    }
+    visitsHistory[wNum][seasonKey] = {
+      value: r.dtgwl_mbgl,
+      date: r.date || defaultDate,
+      remarks: r.remarks || 'Active'
+    };
+
+    // Update wellsData entry in-memory
+    const well = wellsData.find(w => (w.well_number || '').toUpperCase() === wNum);
+    if (well) {
+      if (!well.history) well.history = {};
+      well.history[seasonKey] = r.dtgwl_mbgl;
+
+      well.dtgwl_mbgl = r.dtgwl_mbgl;
+      well.dtgwl_bmp = r.dtgwl_bmp;
+      well.date = r.date || defaultDate;
+    }
+  });
+
+  // 2. Persist to localStorage for immediate offline and static deployment reflection
+  try {
+    localStorage.setItem('gw_visits_history', JSON.stringify(visitsHistory));
+  } catch (e) {
+    console.warn("Could not save to localStorage:", e);
+  }
+
+  // 3. Sync to central PostgreSQL backend if online
+  if (!isStandaloneMode && navigator.onLine) {
+    try {
+      const payloadRecords = recordsToIngest.map(r => ({
+        well_number: r.well_number,
+        season_key: seasonKey,
+        dtgwl_mbgl: r.dtgwl_mbgl,
+        dtgwl_bmp: r.dtgwl_bmp,
+        parapet: r.parapet,
+        date: r.date || defaultDate,
+        remarks: r.remarks || 'Active'
+      }));
+
+      await fetch('api/wells/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: payloadRecords })
+      });
+    } catch (err) {
+      console.warn("Backend sync notice (saved in local memory):", err);
+    }
+  }
+
+  // 4. Automatically switch global season & year to the ingested season
+  selectedSeason = sea;
+  selectedYear = yr;
+  const globalSeasonSel = document.getElementById('global-filter-season');
+  const globalYearSel = document.getElementById('global-filter-year');
+  if (globalSeasonSel) globalSeasonSel.value = sea;
+  if (globalYearSel) globalYearSel.value = yr;
+  updateGlobalBanner();
+
+  // 5. Instantly reflect across the entire portal!
+  renderDashboard();
+  applyFilters();
+  if (mainMap) plotMarkersOnMap();
+  if (activeTab === 'trends-view') updateTrendsTab();
+
+  // Close modal
+  const modal = document.getElementById('modal-season-ingest');
+  if (modal) modal.classList.remove('open', 'show-modal');
+
+  btnConfirm.disabled = false;
+  btnConfirm.innerHTML = '<span>⚡ Ingest & Reflect Across Portal</span>';
+
+  showToast(`🎉 Ingested ${recordsToIngest.length} water levels for ${sea} ${yr}! Dashboard, Map & Trends updated.`, 'success');
 }
 
 
