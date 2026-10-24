@@ -1168,17 +1168,29 @@ body.light-theme .block-text {
   height: 100vh;
   background-color: rgba(11, 15, 25, 0.85);
   backdrop-filter: blur(8px);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 99999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-.modal-backdrop.open {
-  opacity: 1;
+.modal-backdrop.open,
+.modal-backdrop.show-modal {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 99999 !important;
+}
+
+.modal-backdrop.open *,
+.modal-backdrop.show-modal * {
   pointer-events: auto;
 }
 
@@ -1186,16 +1198,22 @@ body.light-theme .block-text {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
-  width: 90%;
+  width: 95%;
   max-width: 960px;
-  max-height: 90vh;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  transform: scale(0.95);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
+  transform: scale(0.98);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin: auto;
+  position: relative;
+  z-index: 100000;
 }
 
-.modal-backdrop.open .modal-box {
+.modal-backdrop.open .modal-box,
+.modal-backdrop.show-modal .modal-box {
   transform: scale(1);
 }
 
@@ -1237,9 +1255,12 @@ body.light-theme .block-text {
 }
 
 .modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(90vh - 80px);
+  padding: 20px 24px;
+  overflow-y: auto !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(92vh - 140px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-grid-layout {
@@ -2701,17 +2722,65 @@ body.light-theme .badge-rose {
   transition: all 0.2s ease;
 }
 
-.modal-backdrop.show-modal {
+.modal-backdrop.show-modal,
+.modal-backdrop.open {
   display: flex !important;
   opacity: 1 !important;
   visibility: visible !important;
+  pointer-events: auto !important;
+  overflow-y: auto !important;
+  padding: 16px 8px !important;
   animation: fadeInModal 0.25s ease-out forwards;
+}
+
+.modal-backdrop.show-modal .modal-box,
+.modal-backdrop.open .modal-box {
+  pointer-events: auto !important;
+  transform: scale(1) !important;
+  max-height: 92vh !important;
+  width: 95% !important;
+  max-width: 860px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  margin: auto !important;
+  position: relative !important;
+  z-index: 100000 !important;
+}
+
+.modal-backdrop.show-modal .modal-body,
+.modal-backdrop.open .modal-body {
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: calc(92vh - 135px) !important;
+  pointer-events: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 20px 24px !important;
+}
+
+.modal-backdrop.show-modal .modal-footer,
+.modal-backdrop.open .modal-footer {
+  flex-shrink: 0 !important;
+  pointer-events: auto !important;
+}
+
+.modal-backdrop.show-modal input,
+.modal-backdrop.show-modal button,
+.modal-backdrop.show-modal select,
+.modal-backdrop.show-modal textarea,
+.modal-backdrop.open input,
+.modal-backdrop.open button,
+.modal-backdrop.open select,
+.modal-backdrop.open textarea {
+  pointer-events: auto !important;
 }
 
 @keyframes fadeInModal {
   from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
+
 
 
 /* --- Auth User Profile Styling --- */

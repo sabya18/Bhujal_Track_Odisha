@@ -519,6 +519,21 @@ async function loadAllData() {
     }
     wellsData = fetchedWells;
     
+    // Load local storage custom registered stations
+    const customWells = localStorage.getItem('gw_custom_wells');
+    if (customWells) {
+      try {
+        const parsed = JSON.parse(customWells);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(cw => {
+            if (!wellsData.some(w => w.well_number.toUpperCase() === cw.well_number.toUpperCase())) {
+              wellsData.push(cw);
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
     // Load local storage custom visit history
     const storedHistory = localStorage.getItem('gw_visits_history');
     if (storedHistory) {
@@ -2090,18 +2105,46 @@ function setupModalEventListeners() {
   const form = document.getElementById('frm-record-visit');
   
   const hideModal = () => {
-    modal.classList.remove('show-modal');
+    if (modal) modal.classList.remove('show-modal', 'open');
     stopCamera();
   };
   
   if (closeBtn) closeBtn.onclick = hideModal;
   if (cancelBtn) cancelBtn.onclick = hideModal;
 
+  // Backdrop click to close modal
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) hideModal();
+    });
+  }
+
+  // Escape key to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (modal && (modal.classList.contains('show-modal') || modal.classList.contains('open'))) {
+        hideModal();
+      }
+      const fbModal = document.getElementById('modal-fieldbook-import');
+      if (fbModal && (fbModal.classList.contains('show-modal') || fbModal.classList.contains('open'))) {
+        fbModal.classList.remove('show-modal', 'open');
+      }
+    }
+  });
+
   // Bind click listeners to all Add Water Level Data triggers
   document.querySelectorAll('.btn-add-water-level-trigger, #btn-add-water-level').forEach(btn => {
     btn.onclick = (e) => {
       e.preventDefault();
       openAddWaterLevelModal();
+    };
+  });
+
+  // Bind click listeners to all Register/Add New Station triggers
+  document.querySelectorAll('.btn-add-new-well-trigger, #btn-top-add-well, #btn-directory-add-well').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openRegisterNewWellModal();
     };
   });
 
@@ -2189,21 +2232,9 @@ function setupModalEventListeners() {
   // Toggle New Station Mode Button
   const toggleNewBtn = document.getElementById('btn-toggle-new-well');
   if (toggleNewBtn) {
-    toggleNewBtn.onclick = () => {
-      isNewWellMode = !isNewWellMode;
-      const newSec = document.getElementById('section-new-well-inputs');
-      const sumSec = document.getElementById('well-metadata-summary-box');
-      if (isNewWellMode) {
-        if (newSec) newSec.style.display = 'block';
-        if (sumSec) sumSec.style.display = 'none';
-        toggleNewBtn.textContent = '🔍 Select Existing Station';
-        toggleNewBtn.className = 'btn btn-primary btn-sm';
-      } else {
-        if (newSec) newSec.style.display = 'none';
-        if (sumSec) sumSec.style.display = 'flex';
-        toggleNewBtn.textContent = '➕ Register New Station';
-        toggleNewBtn.className = 'btn btn-secondary btn-sm';
-      }
+    toggleNewBtn.onclick = (e) => {
+      if (e) e.preventDefault();
+      setNewWellMode(!isNewWellMode);
     };
   }
   
@@ -2386,10 +2417,12 @@ function setupModalEventListeners() {
       }
       
       // Update or insert into local wellsData cache
+      // Update or insert into local wellsData cache
       let wellIdx = wellsData.findIndex(w => w.well_number.toUpperCase() === targetWellNumber.toUpperCase());
       if (wellIdx === -1) {
         const newWellObj = {
           well_number: targetWellNumber,
+          sheet: targetDistrict,
           district: targetDistrict,
           block: targetBlock,
           location: targetLocation,
@@ -2407,6 +2440,18 @@ function setupModalEventListeners() {
         };
         wellsData.push(newWellObj);
         selectedWell = newWellObj;
+
+        // Persist new well to custom registered stations in localStorage
+        try {
+          let customWellsList = JSON.parse(localStorage.getItem('gw_custom_wells') || '[]');
+          const existIdx = customWellsList.findIndex(w => w.well_number.toUpperCase() === targetWellNumber.toUpperCase());
+          if (existIdx >= 0) {
+            customWellsList[existIdx] = newWellObj;
+          } else {
+            customWellsList.push(newWellObj);
+          }
+          localStorage.setItem('gw_custom_wells', JSON.stringify(customWellsList));
+        } catch (e) {}
       } else {
         wellsData[wellIdx].parapet_height = parapetVal;
         wellsData[wellIdx].date = formattedDate;
@@ -2435,18 +2480,95 @@ function setupModalEventListeners() {
   setupFieldBookImportModalListeners();
 }
 
-function openAddWaterLevelModal() {
-  isNewWellMode = false;
+// Mode toggle helper for new station registration
+function setNewWellMode(enable) {
+  isNewWellMode = !!enable;
   const newSec = document.getElementById('section-new-well-inputs');
   const sumSec = document.getElementById('well-metadata-summary-box');
   const toggleNewBtn = document.getElementById('btn-toggle-new-well');
-  
-  if (newSec) newSec.style.display = 'none';
-  if (sumSec) sumSec.style.display = 'flex';
-  if (toggleNewBtn) {
-    toggleNewBtn.textContent = '➕ Register New Station';
-    toggleNewBtn.className = 'btn btn-secondary btn-sm';
+  const stationSearchInput = document.getElementById('select-station-search');
+  const modalTitle = document.getElementById('modal-well-title');
+
+  if (isNewWellMode) {
+    if (newSec) newSec.style.display = 'block';
+    if (sumSec) sumSec.style.display = 'none';
+    if (toggleNewBtn) {
+      toggleNewBtn.textContent = '🔍 Select Existing Station';
+      toggleNewBtn.className = 'btn btn-primary btn-sm';
+    }
+    if (modalTitle) modalTitle.textContent = '➕ Register New Station & Groundwater Data';
+    if (stationSearchInput) {
+      stationSearchInput.value = '';
+      stationSearchInput.placeholder = '(Registering New Station - Fill Details Below)';
+      stationSearchInput.disabled = true;
+    }
+    const idInput = document.getElementById('input-new-well-id');
+    if (idInput) {
+      setTimeout(() => idInput.focus(), 80);
+    }
+  } else {
+    if (newSec) newSec.style.display = 'none';
+    if (sumSec) sumSec.style.display = 'flex';
+    if (toggleNewBtn) {
+      toggleNewBtn.textContent = '➕ Register New Station';
+      toggleNewBtn.className = 'btn btn-secondary btn-sm';
+    }
+    if (modalTitle) modalTitle.textContent = 'Record Site Visit & Groundwater Levels';
+    if (stationSearchInput) {
+      stationSearchInput.disabled = false;
+      stationSearchInput.placeholder = 'Type or search Station ID, District, Block...';
+      if (selectedWell) {
+        stationSearchInput.value = `${selectedWell.well_number} - ${selectedWell.district || ''} ${selectedWell.block || ''}`;
+      }
+    }
   }
+}
+
+// Directly open modal configured for New Station registration
+function openRegisterNewWellModal() {
+  const modal = document.getElementById('edit-well-modal');
+  if (modal) modal.classList.add('show-modal', 'open');
+  setNewWellMode(true);
+
+  // Set date to today
+  const inputDate = document.getElementById('input-visit-date');
+  const today = new Date().toISOString().split('T')[0];
+  if (inputDate) {
+    inputDate.value = today;
+    const { season, year } = inferSeasonNameFromDate(today);
+    const badgeEl = document.getElementById('lbl-auto-season-badge');
+    const seasonSelect = document.getElementById('input-season-override');
+    if (badgeEl) badgeEl.textContent = `${season} (${year})`;
+    if (seasonSelect) seasonSelect.value = season;
+  }
+
+  // Clear inputs for new well
+  const idInput = document.getElementById('input-new-well-id');
+  if (idInput) { idInput.value = ''; setTimeout(() => idInput.focus(), 100); }
+  const distInput = document.getElementById('input-new-well-district');
+  if (distInput) distInput.value = '';
+  const blkInput = document.getElementById('input-new-well-block');
+  if (blkInput) blkInput.value = '';
+  const locInput = document.getElementById('input-new-well-location');
+  if (locInput) locInput.value = '';
+  const latInput = document.getElementById('input-well-lat');
+  if (latInput) latInput.value = '';
+  const lonInput = document.getElementById('input-well-lon');
+  if (lonInput) lonInput.value = '';
+  const bmpInput = document.getElementById('input-dtgwl-bmp');
+  if (bmpInput) bmpInput.value = '';
+  const mbglInput = document.getElementById('input-dtgwl-mbgl');
+  if (mbglInput) mbglInput.value = '';
+  const mslInput = document.getElementById('input-msl-elevation');
+  if (mslInput) mslInput.value = '';
+  const rlInput = document.getElementById('input-calculated-rl');
+  if (rlInput) rlInput.value = '-';
+  const parapetInput = document.getElementById('input-parapet-height');
+  if (parapetInput) parapetInput.value = '0.45';
+}
+
+function openAddWaterLevelModal() {
+  setNewWellMode(false);
 
   // Populate datalist for autocomplete
   const datalist = document.getElementById('list-stations-autocomplete');
@@ -2462,7 +2584,7 @@ function openAddWaterLevelModal() {
     openVisitEditModal(targetWell);
   } else {
     const modal = document.getElementById('edit-well-modal');
-    if (modal) modal.classList.add('show-modal');
+    if (modal) modal.classList.add('show-modal', 'open');
   }
 }
 
@@ -2472,7 +2594,7 @@ function openVisitEditModal(well) {
   isNewWellMode = false;
   
   const modal = document.getElementById('edit-well-modal');
-  if (modal) modal.classList.add('show-modal');
+  if (modal) modal.classList.add('show-modal', 'open');
   
   // Set UI labels
   const lblNum = document.getElementById('lbl-well-number');
@@ -2570,7 +2692,7 @@ function openVisitEditModal(well) {
 // --- Bulk Field Book Import Handlers ---
 function openFieldBookModal() {
   const modal = document.getElementById('modal-fieldbook-import');
-  if (modal) modal.classList.add('show-modal');
+  if (modal) modal.classList.add('show-modal', 'open');
   parsedFieldBookRecords = [];
   const countLbl = document.getElementById('lbl-fieldbook-count');
   const summaryBox = document.getElementById('fieldbook-parse-summary');
@@ -2589,7 +2711,7 @@ function setupFieldBookImportModalListeners() {
   const confirmBtn = document.getElementById('btn-upload-fieldbook-confirm');
 
   const hideModal = () => {
-    if (modal) modal.classList.remove('show-modal');
+    if (modal) modal.classList.remove('show-modal', 'open');
   };
 
   if (closeBtn) closeBtn.onclick = hideModal;
