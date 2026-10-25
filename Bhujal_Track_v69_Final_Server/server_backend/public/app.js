@@ -97,13 +97,13 @@ function getDistrictFromSheet(sheet) {
   if (s.includes('jharsug')) return 'Jharsuguda';
   if (s.includes('kalahandi')) return 'Kalahandi';
   if (s.includes('kandhamal')) return 'Kandhamal';
-  if (s.includes('kendrapara')) return 'Kendrapara';
+  if (s.includes('kendrapara') || s.includes('kdp')) return 'Kendrapara';
   if (s.includes('keonjhar') || s.includes('kendujhar')) return 'Keonjhar';
   if (s.includes('khurda') || s.includes('khordha')) return 'Khordha';
   if (s.includes('koraput')) return 'Koraput';
   if (s.includes('malkangiri')) return 'Malkangiri';
   if (s.includes('mayurbhanj')) return 'Mayurbhanj';
-  if (s.includes('nabarang') || s.includes('nawarang')) return 'Nabarangpur';
+  if (s.includes('nabarang') || s.includes('nawarang') || s.includes('nowrang')) return 'Nabarangpur';
   if (s.includes('nayagarh')) return 'Nayagarh';
   if (s.includes('nuapada')) return 'Nuapada';
   if (s.includes('puri')) return 'Puri';
@@ -135,13 +135,13 @@ function getDistrictFromWell(well) {
     if (s.includes('jharsug')) return 'Jharsuguda';
     if (s.includes('kalahandi')) return 'Kalahandi';
     if (s.includes('kandhamal') || s.includes('phulbani')) return 'Kandhamal';
-    if (s.includes('kendrapara')) return 'Kendrapara';
+    if (s.includes('kendrapara') || s.includes('kdp')) return 'Kendrapara';
     if (s.includes('keonjhar') || s.includes('kendujhar')) return 'Keonjhar';
     if (s.includes('khurda') || s.includes('khordha')) return 'Khordha';
     if (s.includes('koraput')) return 'Koraput';
     if (s.includes('malkangiri')) return 'Malkangiri';
     if (s.includes('mayurbhanj')) return 'Mayurbhanj';
-    if (s.includes('nabarang') || s.includes('nawarang')) return 'Nabarangpur';
+    if (s.includes('nabarang') || s.includes('nawarang') || s.includes('nowrang')) return 'Nabarangpur';
     if (s.includes('nayagarh')) return 'Nayagarh';
     if (s.includes('nuapada')) return 'Nuapada';
     if (s.includes('puri')) return 'Puri';
@@ -817,27 +817,78 @@ function updateDivisionBadge() {
 const getDivisionForDistrict = (district) => {
   if (!district) return null;
   const d = district.toLowerCase().replace(/[\s_\.\-]+/g, '');
-  if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('jagatsingh') || d.includes('jspur')) return 'CUTTACK DIVISION';
-  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj') || d.includes('keonjhar') || d.includes('kendujhar')) return 'BARIPADA DIVISION';
-  if (d.includes('ganjam') || d.includes('gajapati')) return 'BERHAMPUR DIVISION';
-  if (d.includes('sambal') || d.includes('jharsug') || d.includes('sundar') || d.includes('sunder') || d.includes('deogarh') || d.includes('debagarh')) return 'SAMBALPUR DIVISION';
-  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur')) return 'BOLANGIR DIVISION';
-  if (d.includes('koraput') || d.includes('malkangiri')) return 'KORAPUT DIVISION';
-  if (d.includes('kalahandi') || d.includes('nuapada') || d.includes('nabarang') || d.includes('nawarang')) return 'BHAWANIPATNA DIVISION';
-  if (d.includes('angul') || d.includes('dhenkanal')) return 'ANGUL DIVISION';
-  if (d.includes('puri') || d.includes('nayagarh')) return 'RS DIVISION';
-  if (d.includes('khordha') || d.includes('khurda')) return 'AD HP DIVISION';
-  if (d.includes('phulbani') || d.includes('kandhamal') || d.includes('boudh') || d.includes('baudh')) return 'PHULBANI DIVISION';
-  if (d.includes('rayagada')) return 'RAYAGADA DIVISION';
+
+  // 1. AD HP DIVISION (Hydrology Project HQ): Khordha / Khurda / Bhubaneswar
+  if (d.includes('khordha') || d.includes('khurda') || d.includes('bhubaneswar')) {
+    return 'AD HP DIVISION';
+  }
+
+  // 2. RS DIVISION (Remote Sensing / Coastal): Puri, Nayagarh
+  if (d.includes('puri') || d.includes('nayagarh')) {
+    return 'RS DIVISION';
+  }
+
+  // 3. CUTTACK DIVISION: Strictly Cuttack, Jajpur, Kendrapara, Jagatsinghpur
+  if (d.includes('cuttack') || d.includes('jajpur') || d.includes('kendrapara') || d.includes('kdp') || d.includes('jagatsingh') || d.includes('jspur')) {
+    return 'CUTTACK DIVISION';
+  }
+
+  // 4. BHAWANIPATNA DIVISION: Kalahandi, Nuapada, Nabarangpur / Nawarangpur
+  if (d.includes('kalahandi') || d.includes('nuapada') || d.includes('nabarang') || d.includes('nawarang') || d.includes('nowrang')) {
+    return 'BHAWANIPATNA DIVISION';
+  }
+
+  // 5. PHULBANI DIVISION: Kandhamal / Phulbani, Boudh
+  if (d.includes('phulbani') || d.includes('kandhamal') || d.includes('boudh') || d.includes('baudh')) {
+    return 'PHULBANI DIVISION';
+  }
+
+  // 6. RAYAGADA DIVISION: Rayagada
+  if (d.includes('rayagada')) {
+    return 'RAYAGADA DIVISION';
+  }
+
+  // 7. KORAPUT DIVISION: Koraput, Malkangiri
+  if (d.includes('koraput') || d.includes('malkangiri')) {
+    return 'KORAPUT DIVISION';
+  }
+
+  // 8. BERHAMPUR DIVISION: Ganjam, Gajapati
+  if (d.includes('ganjam') || d.includes('gajapati')) {
+    return 'BERHAMPUR DIVISION';
+  }
+
+  // 9. ANGUL DIVISION: Angul, Dhenkanal
+  if (d.includes('angul') || d.includes('dhenkanal')) {
+    return 'ANGUL DIVISION';
+  }
+
+  // 10. BARIPADA / BALASORE DIVISION: Mayurbhanj, Balasore, Bhadrak, Keonjhar
+  if (d.includes('balasore') || d.includes('baleshwar') || d.includes('balesore') || d.includes('bhadrak') || d.includes('mayurbhanj') || d.includes('keonjhar') || d.includes('kendujhar')) {
+    return 'BARIPADA DIVISION';
+  }
+
+  // 11. SAMBALPUR DIVISION: Sambalpur, Jharsuguda, Sundargarh, Deogarh
+  if (d.includes('sambal') || d.includes('jharsug') || d.includes('sundar') || d.includes('sunder') || d.includes('deogarh') || d.includes('debagarh')) {
+    return 'SAMBALPUR DIVISION';
+  }
+
+  // 12. BOLANGIR DIVISION: Balangir, Bargarh, Subarnapur / Sonepur
+  if (d.includes('bolangir') || d.includes('balangir') || d.includes('bargarh') || d.includes('subarnapur') || d.includes('sonepur')) {
+    return 'BOLANGIR DIVISION';
+  }
+
   return null;
 };
 
+const getDivisionForDistrictLocal = (district) => getDivisionForDistrict(district);
+
 function getScopedWellsData() {
   const userDiv = getUserDivision();
-  if (userDiv === 'ALL') return wellsData;
-  return wellsData.filter(well => {
+  if (userDiv === 'ALL') return wellsData || [];
+  return (wellsData || []).filter(well => {
     const dist = getDistrictFromWell(well);
-    const div = getDivisionForDistrictLocal(dist);
+    const div = getDivisionForDistrict(dist);
     if (userDiv === div) return true;
     if ((userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') && (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')) return true;
     return false;
@@ -889,6 +940,12 @@ function renderDashboard() {
   document.getElementById('val-monitored-wells').textContent = monitored;
   document.getElementById('val-pending-wells').textContent = pending;
   
+  const userDiv = getUserDivision();
+  const totalBadge = document.getElementById('lbl-total-scope-badge');
+  if (totalBadge) {
+    totalBadge.textContent = userDiv === 'ALL' ? 'Statewide Network' : `${userDiv.replace(' DIVISION', '')} Division`;
+  }
+
   const percent = active > 0 ? Math.round((monitored / active) * 100) : 0;
   document.getElementById('val-monitored-percent').textContent = `${percent}% of active wells completed`;
   
@@ -915,8 +972,11 @@ function selectDashboardDistrict(distName) {
 }
 
 function renderDistrictBreakdown(statsByDistrict) {
+  const userDiv = getUserDivision();
   const detailsTitle = document.getElementById('lbl-block-details-title');
-  if (detailsTitle) detailsTitle.textContent = 'District Details (All Division)';
+  if (detailsTitle) {
+    detailsTitle.textContent = userDiv === 'ALL' ? 'District Details (All Division)' : `District Details (${userDiv.replace(' DIVISION', '')} Division)`;
+  }
   
   const breakdownList = document.getElementById('district-breakdown-list');
   if (!breakdownList) return;
@@ -1056,6 +1116,29 @@ function renderDashboardMap(statsByDistrict) {
       });
     }
   }).addTo(miniMap);
+  
+  // Auto-focus miniMap onto current division's districts
+  const currentDiv = getUserDivision();
+  if (currentDiv !== 'ALL' && Object.keys(mapStats).length > 0) {
+    const activeLayers = [];
+    miniBoundaryLayer.eachLayer(layer => {
+      const rawName = layer.feature?.properties?.Dist_Name || layer.feature?.properties?.dtname || '';
+      const key = normalizeGeoJSONDistrict(rawName);
+      if (mapStats[key]) {
+        activeLayers.push(layer);
+      }
+    });
+    if (activeLayers.length > 0) {
+      try {
+        const group = L.featureGroup(activeLayers);
+        miniMap.fitBounds(group.getBounds(), { padding: [20, 20], maxZoom: 9 });
+      } catch (e) {
+        miniMap.setView([20.4, 84.5], 6.5);
+      }
+    }
+  } else {
+    miniMap.setView([20.4, 84.5], 6.5);
+  }
   
   // Set Map mode button listeners
   const progressBtn = document.getElementById('btn-mode-progress');
@@ -5309,20 +5392,7 @@ const getDistrictFromSheetLocal = (sheet) => {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 };
 
-const getDivisionForDistrictLocal = (district) => {
-  const d = (district || '').toLowerCase().trim();
-  if (d.includes('rs') || d.includes('research')) return 'RS DIVISION';
-  if (d.includes('hp') || d.includes('hydrology')) return 'AD HP DIVISION';
-  if (['cuttack', 'cuttack urban', 'kendrapara', 'kendrapara urban', 'jajpur', 'jajpur urban', 'jagatsinghpur', 'jspur', 'khordha', 'puri', 'nayagarh'].some(x => d.includes(x))) return 'CUTTACK DIVISION';
-  if (['sambalpur', 'jharsuguda', 'sundargarh', 'deogarh'].includes(d)) return 'SAMBALPUR DIVISION';
-  if (['ganjam', 'gajapati', 'kandhamal', 'boudh'].includes(d)) return 'BERHAMPUR DIVISION';
-  if (['balasore', 'bhadrak', 'mayurbhanj'].includes(d)) return 'BALASORE DIVISION';
-  if (['balangir', 'bolangir', 'subarnapur', 'bargarh'].includes(d)) return 'BOLANGIR DIVISION';
-  if (['koraput', 'nabarangpur', 'malkangiri'].includes(d)) return 'KORAPUT DIVISION';
-  if (['kalahandi', 'nuapada', 'rayagada'].includes(d)) return 'BHAWANIPATNA DIVISION';
-  if (['angul', 'dhenkanal', 'keonjhar'].includes(d)) return 'ANGUL DIVISION';
-  return 'CUTTACK DIVISION';
-};
+// Unified getDivisionForDistrictLocal (already defined at top of file)
 
 const districtSheetsMap = {
   'Kendrapara': ['KDP_BLOCK', 'Kendrapara_Blocks'],
@@ -5572,17 +5642,7 @@ function downloadExcelFromBase64(base64, filename) {
   URL.revokeObjectURL(url);
 }
 
-// Helper: Extract district name from well object
-function getDistrictFromWell(well) {
-  if (!well) return '';
-  if (well.district && typeof well.district === 'string' && well.district.trim() !== '') {
-    return well.district.trim();
-  }
-  if (well.sheet && typeof getDistrictFromSheetLocal === 'function') {
-    return getDistrictFromSheetLocal(well.sheet);
-  }
-  return 'Cuttack';
-}
+// Main getDistrictFromWell is used (defined at top of file)
 
 // --- WTTO Role-Based Excel Download Handler ---
 function initWTTOExportModal() {
