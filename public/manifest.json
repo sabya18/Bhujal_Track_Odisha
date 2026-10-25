@@ -1,18 +1,51 @@
 {
-  "name": "Groundwater Monitoring Automation",
-  "short_name": "GW Monitor",
-  "description": "Automated groundwater level directory and mapping tool",
-  "start_url": "/",
+  "id": "bhujal-track-odisha",
+  "name": "Bhujal Track - Ground Water Monitoring Odisha",
+  "short_name": "Bhujal Track",
+  "description": "Groundwater Level Monitoring, Field Survey & Real-time Telemetry Portal - Directorate of Ground Water Development, Department of Water Resources, Government of Odisha",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+  "orientation": "portrait-primary",
+  "background_color": "#060a12",
   "theme_color": "#0284c7",
-  "orientation": "any",
+  "categories": ["government", "productivity", "utilities"],
   "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Station Map",
+      "short_name": "Map",
+      "description": "View live groundwater monitoring stations map",
+      "url": "index.html#map-view",
+      "icons": [{ "src": "icon-512.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Add Water Level",
+      "short_name": "Add Data",
+      "description": "Record field water level measurement",
+      "url": "index.html#add-data",
+      "icons": [{ "src": "icon-512.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Trends & Forecast",
+      "short_name": "Trends",
+      "description": "Hydrological vitals, hydrograph and 5-year forecast",
+      "url": "index.html#trends-view",
+      "icons": [{ "src": "icon-512.png", "sizes": "192x192" }]
     }
   ]
 }

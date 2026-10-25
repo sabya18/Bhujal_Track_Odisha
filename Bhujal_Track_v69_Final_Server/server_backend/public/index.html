@@ -30,15 +30,19 @@
     })();
   </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Groundwater Level Monitoring Automation</title>
   
   <!-- PWA & Mobile Web App Manifest -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bhujal Track">
   <link rel="apple-touch-icon" href="icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,7 +56,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=116">
+  <link rel="stylesheet" href="styles.css?v=117">
 </head>
 <body class="light-theme">
   
@@ -60,22 +64,40 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo-icon" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 28px; height: 28px; filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.4));">
-            <defs>
-              <linearGradient id="dropletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#00f2fe" />
-                <stop offset="100%" stop-color="#0284c7" />
-              </linearGradient>
-            </defs>
-            <path fill="url(#dropletGrad)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-          </svg>
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+          <div class="logo-icon" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 28px; height: 28px; filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.4));">
+              <defs>
+                <linearGradient id="dropletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00f2fe" />
+                  <stop offset="100%" stop-color="#0284c7" />
+                </linearGradient>
+              </defs>
+              <path fill="url(#dropletGrad)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h2>GW-MONITOR</h2>
+            <span id="lbl-sidebar-subtitle">GWD Odisha</span>
+          </div>
         </div>
-        <div class="logo-text">
-          <h2>GW-MONITOR</h2>
-          <span id="lbl-sidebar-subtitle">GWD Odisha</span>
-        </div>
+        <button id="btn-sidebar-close" class="btn-sidebar-close" aria-label="Close Navigation Drawer" title="Close">✕</button>
       </div>
+
+      <!-- PWA Install Banner inside Drawer -->
+      <div id="pwa-install-banner" class="pwa-drawer-banner" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">📲</span>
+          <div>
+            <div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8;">Install Android App</div>
+            <div style="font-size: 0.70rem; color: #94a3b8;">Standalone screen & faster access</div>
+          </div>
+        </div>
+        <button id="btn-pwa-drawer-install" class="btn btn-sm btn-primary" style="margin-top: 8px; width: 100%; font-size: 0.78rem; font-weight: 700; background: linear-gradient(135deg, #0284c7, #0ea5e9); border: none; padding: 6px; border-radius: 6px;">
+          📲 Install App Now
+        </button>
+      </div>
+
       <nav class="nav-menu">
         <button class="nav-item active" data-tab="dashboard">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
@@ -131,14 +153,31 @@
       </div>
     </aside>
 
+    <!-- Mobile Drawer Backdrop Overlay -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
     <!-- Main Content Area -->
     <main class="main-content">
       
       <!-- Top Action Bar -->
       <header class="top-bar">
-        <h1 id="page-title">Dashboard</h1>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="btn-mobile-sidebar-toggle" class="btn-mobile-menu" aria-label="Toggle Navigation Drawer" title="Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 id="page-title">Dashboard</h1>
+        </div>
         <div class="top-bar-actions">
           
+          <!-- Android PWA Install Pill Button -->
+          <button id="btn-pwa-install" class="btn-pwa-install" style="display: none;" title="Install Bhujal Track App on your Android Phone">
+            <span>📲</span> <span class="install-text">Install App</span>
+          </button>
+
           <button id="btn-add-water-level" class="btn btn-primary btn-sm btn-add-water-level-trigger" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; color: #fff; padding: 7px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3); cursor: pointer;">
             <span style="font-size: 1.1rem;">➕</span> Add Water Level Data
           </button>
@@ -1548,11 +1587,11 @@
 
   <!-- Mobile Bottom Navigation Bar (Visible only on mobile devices) -->
   <nav class="mobile-nav">
-    <button class="mobile-nav-item active" data-tab="dashboard">📊 <span>Dashboard</span></button>
+    <button class="mobile-nav-item active" data-tab="dashboard">📊 <span>Dash</span></button>
     <button class="mobile-nav-item" data-tab="map-view">🗺️ <span>Map</span></button>
     <button class="mobile-nav-item" data-tab="directory">📁 <span>Directory</span></button>
     <button class="mobile-nav-item" data-tab="trends-view">📈 <span>Trends</span></button>
-    <button class="mobile-nav-item" data-tab="news-view">📰 <span>News</span></button>
+    <button class="mobile-nav-item" id="mobile-nav-menu-btn" type="button">☰ <span>Menu</span></button>
   </nav>
 
   <!-- Leaflet Map JS -->
@@ -1562,6 +1601,6 @@
   <!-- SheetJS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main application script -->
-  <script src="app.js?v=116"></script>
+  <script src="app.js?v=117"></script>
 </body>
 </html>

@@ -455,6 +455,8 @@ function getDepthColor(avgMbgl) {
 // --- Initialize App ---
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
+  setupMobileDrawer();
+  setupPWA();
   setupThemeToggle();
   setupGlobalFilters();
   setupActionButtons();
@@ -713,6 +715,147 @@ function setConnectionStatus(status, text) {
   statusText.textContent = text;
 }
 
+// --- Mobile Drawer Controls ---
+function openMobileDrawer() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileDrawer() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function toggleMobileDrawer() {
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    closeMobileDrawer();
+  } else {
+    openMobileDrawer();
+  }
+}
+
+function setupMobileDrawer() {
+  const toggleBtn = document.getElementById('btn-mobile-sidebar-toggle');
+  const closeBtn = document.getElementById('btn-sidebar-close');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const menuBottomBtn = document.getElementById('mobile-nav-menu-btn');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMobileDrawer();
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      closeMobileDrawer();
+    });
+  }
+
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      closeMobileDrawer();
+    });
+  }
+
+  if (menuBottomBtn) {
+    menuBottomBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMobileDrawer();
+    });
+  }
+
+  // Also close drawer when clicking any action trigger buttons inside sidebar
+  document.querySelectorAll('.sidebar .btn-add-water-level-trigger, .sidebar .btn-season-ingest-trigger, .sidebar .btn-add-new-well-trigger, .sidebar #btn-export-sidebar, .sidebar #btn-logout-sidebar, .sidebar #btn-toggle-theme').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMobileDrawer();
+    });
+  });
+}
+
+// --- PWA Installation & Service Worker Integration ---
+let deferredInstallPrompt = null;
+
+function setupPWA() {
+  // 1. Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => {
+          console.log('[Bhujal Track PWA] Service Worker registered successfully:', reg.scope);
+        })
+        .catch(err => {
+          console.warn('[Bhujal Track PWA] SW registration note:', err);
+        });
+    });
+  }
+
+  // 2. Android beforeinstallprompt Capture
+  const btnInstallTop = document.getElementById('btn-pwa-install');
+  const btnInstallDrawer = document.getElementById('btn-pwa-drawer-install');
+  const bannerDrawer = document.getElementById('pwa-install-banner');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent default mini-infobar on Android Chrome
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    // Show Install button in top action bar and in drawer
+    if (btnInstallTop) btnInstallTop.style.display = 'inline-flex';
+    if (bannerDrawer) bannerDrawer.style.display = 'block';
+    console.log('[Bhujal Track PWA] Android beforeinstallprompt captured.');
+  });
+
+  async function triggerInstall() {
+    if (!deferredInstallPrompt) {
+      alert("To install Bhujal Track on Android:\n1. Open Google Chrome menu (⋮) at top-right.\n2. Tap 'Install app' or 'Add to Home screen'.");
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    console.log(`[Bhujal Track PWA] User install choice: ${outcome}`);
+    if (outcome === 'accepted') {
+      if (btnInstallTop) btnInstallTop.style.display = 'none';
+      if (bannerDrawer) bannerDrawer.style.display = 'none';
+    }
+    deferredInstallPrompt = null;
+  }
+
+  if (btnInstallTop) btnInstallTop.addEventListener('click', triggerInstall);
+  if (btnInstallDrawer) btnInstallDrawer.addEventListener('click', () => {
+    closeMobileDrawer();
+    triggerInstall();
+  });
+
+  // 3. Listen for app installed event
+  window.addEventListener('appinstalled', () => {
+    console.log('[Bhujal Track PWA] Installed to home screen!');
+    if (btnInstallTop) btnInstallTop.style.display = 'none';
+    if (bannerDrawer) bannerDrawer.style.display = 'none';
+    if (typeof showToast === 'function') {
+      showToast('Bhujal Track installed to home screen! You can now launch it directly as an app.', 'success');
+    }
+  });
+
+  // 4. Standalone detection (running as installed app)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isStandalone) {
+    console.log('[Bhujal Track PWA] Running in Standalone Android App mode');
+    if (btnInstallTop) btnInstallTop.style.display = 'none';
+    if (bannerDrawer) bannerDrawer.style.display = 'none';
+    document.body.classList.add('pwa-standalone');
+  }
+}
+
 // --- Navigation Tabs ---
 function setupTabs() {
   const navItems = document.querySelectorAll('.nav-item');
@@ -720,6 +863,8 @@ function setupTabs() {
   const tabs = document.querySelectorAll('.tab-content');
   
   function switchTab(targetTab, labelText) {
+    closeMobileDrawer();
+
     navItems.forEach(n => {
       if (n.getAttribute('data-tab') === targetTab) n.classList.add('active');
       else n.classList.remove('active');
@@ -768,11 +913,13 @@ function setupTabs() {
   mobileNavItems.forEach(item => {
     item.addEventListener('click', () => {
       const target = item.getAttribute('data-tab');
+      if (!target) return;
       let label = 'Dashboard';
       if (target.includes('map')) label = 'Station Map';
       else if (target.includes('directory')) label = 'Wells Directory';
       else if (target.includes('trends')) label = 'Trends Analysis';
       else if (target.includes('news')) label = 'Groundwater News';
+      else if (target.includes('telemetry')) label = 'Live Telemetry';
       switchTab(target, label);
     });
   });
