@@ -521,15 +521,24 @@ async function loadAllData() {
       }
     }
     
-    if (fetchedWells.length === 0) {
-      const wellsRes = await fetch('data/wells.json');
-      fetchedWells = await wellsRes.json();
+    if (!fetchedWells || fetchedWells.length === 0) {
+      try {
+        const wellsRes = await fetch('data/wells.json');
+        if (wellsRes.ok) {
+          fetchedWells = await wellsRes.json();
+        }
+      } catch (e) {
+        console.warn("data/wells.json fetch error:", e);
+      }
     }
-    wellsData = fetchedWells;
+    
+    if (fetchedWells && fetchedWells.length > 0) {
+      wellsData = fetchedWells;
+    }
     
     // Load local storage custom registered stations
     const customWells = localStorage.getItem('gw_custom_wells');
-    if (customWells) {
+    if (customWells && wellsData) {
       try {
         const parsed = JSON.parse(customWells);
         if (Array.isArray(parsed)) {
@@ -545,13 +554,17 @@ async function loadAllData() {
     // Load local storage custom visit history
     const storedHistory = localStorage.getItem('gw_visits_history');
     if (storedHistory) {
-      visitsHistory = JSON.parse(storedHistory);
+      try {
+        visitsHistory = JSON.parse(storedHistory);
+      } catch (e) {}
     }
     
     // Fetch central visits history from PostgreSQL server
     if (!isStandaloneMode) {
       try {
-        const historyRes = await fetch('api/visits/history');
+        const token = sessionStorage.getItem('gwd_session_token');
+        const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const historyRes = await fetch('api/visits/history', { headers: authHeaders });
         if (historyRes.ok) {
           const serverHistory = await historyRes.json();
           visitsHistory = { ...visitsHistory, ...serverHistory };
@@ -562,28 +575,48 @@ async function loadAllData() {
     }
     
     // 2. Fetch GeoJSON boundaries
-    const distRes = await fetch('data/odisha_districts_complete.json');
-    odishaDistrictsGeoJSON = await distRes.json();
+    try {
+      const distRes = await fetch('data/odisha_districts_complete.json');
+      if (distRes.ok) odishaDistrictsGeoJSON = await distRes.json();
+    } catch (e) {
+      console.warn("District GeoJSON fetch failed:", e);
+    }
     
-    const blockRes = await fetch('data/ODISHA_BLOCK_BOUNDARY.geojson');
-    odishaBlocksGeoJSON = await blockRes.json();
+    try {
+      const blockRes = await fetch('data/ODISHA_BLOCK_BOUNDARY.geojson');
+      if (blockRes.ok) odishaBlocksGeoJSON = await blockRes.json();
+    } catch (e) {
+      console.warn("Block GeoJSON fetch failed:", e);
+    }
     
     // 3. Fetch Trend datasets
-    const trendsRes = await fetch('data/historical_trends.json');
-    historicalTrends = await trendsRes.json();
+    try {
+      const trendsRes = await fetch('data/historical_trends.json');
+      if (trendsRes.ok) historicalTrends = await trendsRes.json();
+    } catch (e) {}
     
-    const rainRes = await fetch('data/rainfall_data.json');
-    rainfallData = await rainRes.json();
+    try {
+      const rainRes = await fetch('data/rainfall_data.json');
+      if (rainRes.ok) rainfallData = await rainRes.json();
+    } catch (e) {}
     
-    const gwraRes = await fetch('data/gwra_data.json');
-    gwraData = await gwraRes.json();
+    try {
+      const gwraRes = await fetch('data/gwra_data.json');
+      if (gwraRes.ok) gwraData = await gwraRes.json();
+    } catch (e) {}
     
-    const gwraHistRes = await fetch('data/gwra_historical.json');
-    gwraHistorical = await gwraHistRes.json();
+    try {
+      const gwraHistRes = await fetch('data/gwra_historical.json');
+      if (gwraHistRes.ok) gwraHistorical = await gwraHistRes.json();
+    } catch (e) {}
     
-    // 4. Fetch WTTO preloaded data
-    const wttoRes = await fetch('data/wtto_preloaded.json');
-    wttoData = await wttoRes.json();
+    // 4. Fetch WTTO preloaded data (2,433 stations statewide)
+    try {
+      const wttoRes = await fetch('data/wtto_preloaded.json');
+      if (wttoRes.ok) wttoData = await wttoRes.json();
+    } catch (e) {
+      console.warn("WTTO preloaded fetch error:", e);
+    }
 
     // Merge WTTO preloaded history & stations into wellsData for 100% data parity
     if (wttoData && Array.isArray(wttoData)) {
@@ -612,11 +645,10 @@ async function loadAllData() {
       }
     }
 
-    console.log("All data assets fetched and initialized successfully!");
+    console.log(`All data assets initialized! Total wells loaded: ${wellsData ? wellsData.length : 0}`);
   } catch (err) {
     console.error("Failed to load databases. Falling back to preloaded caches:", err);
-    // If local caches exist, load them
-    if (typeof initialWellsData !== 'undefined') {
+    if ((!wellsData || wellsData.length === 0) && typeof initialWellsData !== 'undefined') {
       wellsData = initialWellsData;
     }
   }

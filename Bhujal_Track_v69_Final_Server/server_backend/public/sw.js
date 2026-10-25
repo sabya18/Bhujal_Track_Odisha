@@ -1,12 +1,12 @@
-const CACHE_NAME = 'bhujal-track-pwa-v117';
+const CACHE_NAME = 'bhujal-track-pwa-v118';
 
 // Critical frontend shell assets with relative paths
 const STATIC_ASSETS = [
   './',
   'index.html',
   'login.html',
-  'styles.css?v=117',
-  'app.js?v=117',
+  'styles.css?v=118',
+  'app.js?v=118',
   'manifest.json',
   'wells_initial.js',
   'icon-512.png',

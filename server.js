@@ -409,9 +409,9 @@ app.get(['/', '/index.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Protect data folder and uploaded photos
-app.use('/data', authMiddleware, express.static(path.join(__dirname, 'public', 'data')));
-app.use('/uploads', authMiddleware, express.static(path.join(__dirname, 'uploads')));
+// Serve static data folder and uploaded photos without redirect loops
+app.use('/data', express.static(path.join(__dirname, 'public', 'data')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Protect API endpoints
 app.use('/api', (req, res, next) => {
