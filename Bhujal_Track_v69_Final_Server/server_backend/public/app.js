@@ -3640,6 +3640,10 @@ function calculateMannKendallAndSensSlope(valuesList) {
 }
 
 function updateTrendsTab() {
+  if (typeof renderTrendsView === 'function') {
+    renderTrendsView();
+    return;
+  }
   const isDark = theme === 'dark'; // Fix: Define isDark inside updateTrendsTab!
 
   const cardPanel = document.getElementById('trends-well-card');
@@ -6168,20 +6172,27 @@ function renderTrendsView() {
     });
   });
 
+  let well = null;
   if (lvl === 'station') {
     if (!targetWellNum) {
-      card.style.display = 'none';
-      contentBox.style.display = 'none';
-      return;
+      if (stationSelect.options.length > 1) {
+        stationSelect.selectedIndex = 1;
+        targetWellNum = stationSelect.value;
+      } else {
+        card.style.display = 'none';
+        contentBox.style.display = 'none';
+        return;
+      }
     }
 
-    const well = getScopedWellsData().find(w => w.well_number === targetWellNum);
+    well = getScopedWellsData().find(w => w.well_number === targetWellNum);
     if (!well) return;
+    selectedWell = well;
 
     card.style.display = 'flex';
     contentBox.style.display = 'grid';
 
-    document.getElementById('trends-well-id').textContent = `Station ID: ${well.well_number}`;
+    document.getElementById('trends-well-id').textContent = well.well_number;
     document.getElementById('trends-well-desc').textContent = `${well.location || 'Observation Well'}, ${well.block || ''} Block`;
     document.getElementById('trends-well-dist').textContent = getDistrictFromWell(well);
     document.getElementById('trends-well-block').textContent = well.block || '-';
@@ -6342,6 +6353,164 @@ function renderTrendsView() {
     mkStatusBox.style.borderRadius = '8px';
     mkStatusBox.style.fontWeight = 'bold';
     mkStatusBox.style.marginTop = '10px';
+  }
+
+  // --- Dynamic Monitoring Scope Card Vitals & Depth Gauge Engine ---
+  // 1. Header Trend Badge & GPS
+  const scopeTrendBadge = document.getElementById('trends-scope-trend-badge');
+  const scopeTrendText = document.getElementById('trends-scope-trend-text');
+  if (scopeTrendBadge && scopeTrendText) {
+    const slopeNum = parseFloat(mkResult.sensSlope) || 0;
+    const slopeStr = (slopeNum > 0 ? '+' : '') + slopeNum.toFixed(3) + ' m/yr';
+    scopeTrendText.textContent = `${mkResult.trendText} (${slopeStr})`;
+    scopeTrendBadge.style.color = mkResult.trendColor;
+    scopeTrendBadge.style.borderColor = mkResult.trendColor;
+    scopeTrendBadge.style.backgroundColor = mkResult.trendColor === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : (mkResult.trendColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.15)');
+    const dot = scopeTrendBadge.querySelector('span');
+    if (dot) dot.style.backgroundColor = mkResult.trendColor;
+  }
+
+  const gpsEl = document.getElementById('trends-scope-gps');
+  if (gpsEl) {
+    if (lvl === 'station' && well) {
+      const lat = well.latitude !== undefined ? well.latitude : well.lat;
+      const lon = well.longitude !== undefined ? well.longitude : well.lon;
+      if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+        const latVal = parseFloat(lat);
+        const lonVal = parseFloat(lon);
+        gpsEl.textContent = `📍 ${Math.abs(latVal).toFixed(4)}° ${latVal >= 0 ? 'N' : 'S'}, ${Math.abs(lonVal).toFixed(4)}° ${lonVal >= 0 ? 'E' : 'W'}`;
+      } else {
+        gpsEl.textContent = '📍 Coords N/A';
+      }
+    } else if (lvl === 'block') {
+      gpsEl.textContent = `📍 ${targetBlk} Composite Network`;
+    } else {
+      const distName = targetDist === 'ALL' ? 'Odisha State' : targetDist;
+      gpsEl.textContent = `📍 ${distName} District Composite`;
+    }
+  }
+
+  // 2. Hydrological Vitals Calculation (From actual non-null values)
+  const validValsForVitals = values.filter(v => v !== null && v !== undefined && !isNaN(v) && v > 0);
+  const latestVal = validValsForVitals.length > 0 ? validValsForVitals[validValsForVitals.length - 1] : null;
+  const shallowVal = validValsForVitals.length > 0 ? Math.min(...validValsForVitals) : null;
+  const deepVal = validValsForVitals.length > 0 ? Math.max(...validValsForVitals) : null;
+  const flucVal = (shallowVal !== null && deepVal !== null) ? (deepVal - shallowVal) : null;
+
+  const latestEl = document.getElementById('trends-scope-latest-level');
+  if (latestEl) {
+    latestEl.innerHTML = latestVal !== null ? `${latestVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  const flucEl = document.getElementById('trends-scope-fluctuation');
+  if (flucEl) {
+    flucEl.innerHTML = flucVal !== null ? `Δ ${flucVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">m</span>` : '-';
+  }
+
+  const shallowEl = document.getElementById('trends-scope-shallowest');
+  if (shallowEl) {
+    shallowEl.innerHTML = shallowVal !== null ? `${shallowVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  const deepEl = document.getElementById('trends-scope-deepest');
+  if (deepEl) {
+    deepEl.innerHTML = deepVal !== null ? `${deepVal.toFixed(2)} <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">mbgl</span>` : '-';
+  }
+
+  // 3. Dynamic Depth Gauge Bar & Needle Position
+  const gaugeShallow = document.getElementById('trends-gauge-shallow-lbl');
+  const gaugeCurrent = document.getElementById('trends-gauge-current-lbl');
+  const gaugeDeep = document.getElementById('trends-gauge-deep-lbl');
+  const needle = document.getElementById('trends-scope-gauge-needle');
+
+  if (gaugeShallow) gaugeShallow.textContent = shallowVal !== null ? `Shallow: ${shallowVal.toFixed(2)}m` : 'Shallow: -';
+  if (gaugeCurrent) gaugeCurrent.textContent = latestVal !== null ? `Current: ${latestVal.toFixed(2)} mbgl` : 'Current: -';
+  if (gaugeDeep) gaugeDeep.textContent = deepVal !== null ? `Deep: ${deepVal.toFixed(2)}m` : 'Deep: -';
+
+  if (needle) {
+    if (shallowVal !== null && deepVal !== null && deepVal > shallowVal && latestVal !== null) {
+      const pct = Math.max(5, Math.min(95, ((latestVal - shallowVal) / (deepVal - shallowVal)) * 100));
+      needle.style.left = `${pct.toFixed(1)}%`;
+    } else {
+      needle.style.left = '50%';
+    }
+  }
+
+  // 4. Parapet, Elevation & Reduced Level (RL)
+  const parapetEl = document.getElementById('trends-scope-parapet');
+  const elevationEl = document.getElementById('trends-scope-elevation');
+  const rlEl = document.getElementById('trends-scope-rl');
+
+  if (lvl === 'station' && well) {
+    const pVal = well.parapet_height !== undefined && well.parapet_height !== null ? parseFloat(well.parapet_height) : 0.45;
+    if (parapetEl) parapetEl.textContent = `${pVal.toFixed(2)} m`;
+    
+    const rawElev = well.msl_elevation || well.elevation || well.msl;
+    const elevVal = rawElev !== undefined && rawElev !== null && !isNaN(parseFloat(rawElev)) ? parseFloat(rawElev) : null;
+    
+    if (elevationEl) elevationEl.textContent = elevVal !== null ? `${elevVal.toFixed(1)} m MSL` : '108.0 m MSL (Ref)';
+    
+    if (rlEl) {
+      const baseElev = elevVal !== null ? elevVal : 108.0;
+      if (latestVal !== null) {
+        rlEl.textContent = `${(baseElev - latestVal).toFixed(2)} m`;
+      } else {
+        rlEl.textContent = '-';
+      }
+    }
+  } else {
+    if (parapetEl) parapetEl.textContent = 'Avg 0.45 m';
+    if (elevationEl) elevationEl.textContent = 'Regional Datum';
+    if (rlEl) rlEl.textContent = 'Regional Avg';
+  }
+
+  // 5. Action Buttons Wiring
+  const btnMap = document.getElementById('btn-trends-scope-map');
+  if (btnMap) {
+    btnMap.onclick = () => {
+      switchTab('map-view', 'Station Map');
+      if (lvl === 'station' && well) {
+        const lat = well.latitude !== undefined ? well.latitude : well.lat;
+        const lon = well.longitude !== undefined ? well.longitude : well.lon;
+        if (lat && lon && typeof mainMap !== 'undefined' && mainMap) {
+          setTimeout(() => {
+            mainMap.setView([lat, lon], 14);
+          }, 300);
+        }
+      }
+    };
+  }
+
+  const btnAdd = document.getElementById('btn-trends-scope-add');
+  if (btnAdd) {
+    btnAdd.onclick = () => {
+      if (lvl === 'station' && well) {
+        openVisitEditModal(well);
+      } else {
+        openAddWaterLevelModal();
+      }
+    };
+  }
+
+  const btnExport = document.getElementById('btn-trends-scope-export');
+  if (btnExport) {
+    btnExport.onclick = () => {
+      const activeChart = trendChartInstance || chartHistorical;
+      if (activeChart && typeof activeChart.toBase64Image === 'function') {
+        try {
+          const a = document.createElement('a');
+          a.href = activeChart.toBase64Image();
+          a.download = `Hydrograph_${(lvl === 'station' ? (well ? well.well_number : 'Station') : titleStr).replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (err) {
+          document.getElementById('chart-historical-trends')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        document.getElementById('chart-historical-trends')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
   }
 
   // Render Forecast years list
