@@ -6,6 +6,7 @@ const fs = require('fs');
 const { execFile } = require('child_process');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -85,6 +86,7 @@ async function initDB() {
     const defaultUsers = [
       ['admin', 'admin_password_2026', 'admin', 'ALL'],
       ['gwd_officer', 'gwd_password_2026', 'admin', 'ALL'],
+      ['admin_cuttack', 'cuttack_pass_99', 'division', 'CUTTACK DIVISION'],
       ['cuttack_div', 'cuttack2026', 'division', 'CUTTACK DIVISION'],
       ['balasore_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
       ['baripada_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
@@ -98,6 +100,7 @@ async function initDB() {
       ['ad_hp_div', 'adhp2026', 'division', 'AD HP DIVISION'],
       ['phulbani_div', 'phulbani2026', 'division', 'PHULBANI DIVISION'],
       ['rayagada_div', 'rayagada_2026', 'division', 'RAYAGADA DIVISION'],
+      ['gwd_odisha', 'PASSWORD_2026', 'admin', 'ALL'],
     ];
 
     for (const [u, p, r, d] of defaultUsers) {
@@ -199,8 +202,46 @@ async function initDB() {
 }
 initDB();
 
-// In-memory active session tracking (Map of token -> { username, role, division })
+// Active session tracking & stateless HMAC verification so sessions survive Render restarts
 const activeSessions = new Map();
+const SESSION_SECRET = process.env.SESSION_SECRET || 'gwd_odisha_super_secret_key_2026';
+
+function createSessionToken(user) {
+  const payload = {
+    u: user.username,
+    r: user.role || 'division',
+    d: user.division || 'ALL',
+    t: Date.now()
+  };
+  const str = Buffer.from(JSON.stringify(payload)).toString('base64');
+  const hmac = require('crypto').createHmac('sha256', SESSION_SECRET).update(str).digest('hex');
+  return `gwd_${str}.${hmac}`;
+}
+
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string' || !token.startsWith('gwd_')) return null;
+  const raw = token.substring(4);
+  const dotIdx = raw.indexOf('.');
+  if (dotIdx === -1) {
+    return activeSessions.get(token) || null;
+  }
+  const str = raw.substring(0, dotIdx);
+  const sig = raw.substring(dotIdx + 1);
+  const expectedSig = require('crypto').createHmac('sha256', SESSION_SECRET).update(str).digest('hex');
+  if (sig !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(str, 'base64').toString('utf8'));
+    // 30 days validity
+    if (Date.now() - payload.t > 30 * 24 * 60 * 60 * 1000) return null;
+    return {
+      username: payload.u,
+      role: payload.r,
+      division: payload.d
+    };
+  } catch (e) {
+    return null;
+  }
+}
 
 // --- Auth Middleware ---
 function authMiddleware(req, res, next) {
@@ -212,8 +253,9 @@ function authMiddleware(req, res, next) {
     }
   }
 
-  if (token && activeSessions.has(token)) {
-    req.user = activeSessions.get(token);
+  const user = verifySessionToken(token);
+  if (user) {
+    req.user = user;
     return next();
   }
   
@@ -239,6 +281,9 @@ app.get('/styles.css', (req, res) => {
 app.get('/icon-512.png', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'icon-512.png'));
 });
+app.get('/logo.png', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logo.png'));
+});
 app.get('/xlsx.full.min.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'xlsx.full.min.js'));
 });
@@ -248,10 +293,18 @@ app.get('/wells_initial.js', (req, res) => {
 app.get('/manifest.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+app.get('/app.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.js'));
+});
 
 const defaultUsersMap = {
   'admin': { password: 'admin_password_2026', role: 'admin', division: 'ALL' },
   'gwd_officer': { password: 'gwd_password_2026', role: 'admin', division: 'ALL' },
+  'admin_cuttack': { password: 'cuttack_pass_99', role: 'division', division: 'CUTTACK DIVISION' },
   'cuttack_div': { password: 'cuttack2026', role: 'division', division: 'CUTTACK DIVISION' },
   'balasore_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
   'baripada_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
@@ -265,6 +318,7 @@ const defaultUsersMap = {
   'ad_hp_div': { password: 'adhp2026', role: 'division', division: 'AD HP DIVISION' },
   'phulbani_div': { password: 'phulbani2026', role: 'division', division: 'PHULBANI DIVISION' },
   'rayagada_div': { password: 'rayagada_2026', role: 'division', division: 'RAYAGADA DIVISION' },
+  'gwd_odisha': { password: 'PASSWORD_2026', role: 'admin', division: 'ALL' },
 };
 
 // Auth check API
@@ -274,8 +328,12 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ message: "Missing username or password" });
   }
 
-  const trimmedUser = username.trim().toLowerCase();
+  const trimmedUser = String(username).trim().toLowerCase();
+  const rawPass = String(password);
+  const trimmedPass = rawPass.trim();
   const defaultUser = defaultUsersMap[trimmedUser];
+
+  let authenticatedUser = null;
 
   try {
     const dbResult = await pgPool.query(
@@ -284,46 +342,43 @@ app.post('/api/login', async (req, res) => {
     );
     
     if (dbResult.rows.length > 0) {
-      const user = dbResult.rows[0];
-      if (user.password === password) {
-        const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        const userSession = {
-          username: user.username,
-          role: user.role || 'division',
-          division: user.division || 'ALL'
+      const u = dbResult.rows[0];
+      if (u.password === rawPass || u.password === trimmedPass) {
+        authenticatedUser = {
+          username: u.username,
+          role: u.role || 'division',
+          division: u.division || 'ALL'
         };
-        activeSessions.set(token, userSession);
-
-        res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
-        return res.json({ 
-          success: true, 
-          username: user.username, 
-          role: userSession.role, 
-          division: userSession.division, 
-          token: token 
-        });
       }
     }
   } catch (err) {
-    console.warn("Database query failed, evaluating default login fallback:", err.message);
+    console.warn("Database login check fallback:", err.message);
   }
 
   // Fallback to default user authentication
-  if (defaultUser && defaultUser.password === password) {
-    const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const userSession = {
-      username: trimmedUser,
-      role: defaultUser.role,
-      division: defaultUser.division
-    };
-    activeSessions.set(token, userSession);
+  if (!authenticatedUser && defaultUser) {
+    if (defaultUser.password === rawPass || defaultUser.password === trimmedPass) {
+      authenticatedUser = {
+        username: trimmedUser,
+        role: defaultUser.role,
+        division: defaultUser.division
+      };
+    }
+  }
 
-    res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
+  if (authenticatedUser) {
+    const token = createSessionToken(authenticatedUser);
+    activeSessions.set(token, authenticatedUser);
+
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const cookieFlags = `Max-Age=${30 * 24 * 60 * 60}; Path=/; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+    res.setHeader('Set-Cookie', `gwd_session_token=${token}; ${cookieFlags}`);
+
     return res.json({ 
       success: true, 
-      username: trimmedUser, 
-      role: userSession.role, 
-      division: userSession.division, 
+      username: authenticatedUser.username, 
+      role: authenticatedUser.role, 
+      division: authenticatedUser.division, 
       token: token 
     });
   }
@@ -336,16 +391,22 @@ app.post('/api/logout', (req, res) => {
   if (token) {
     activeSessions.delete(token);
   }
-  res.setHeader('Set-Cookie', 'gwd_session_token=; Max-Age=0; Path=/; HttpOnly');
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `gwd_session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`);
   res.json({ success: true });
 });
 
-// Protect the main page and redirects
-app.get('/', authMiddleware, (req, res) => {
+// Protect the main page and index.html
+app.get(['/', '/index.html'], (req, res) => {
+  let token = getCookie(req, 'gwd_session_token');
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+  const user = verifySessionToken(token);
+  if (user) {
+    req.user = user;
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-app.get('/index.html', authMiddleware, (req, res) => {
-  res.redirect('/');
 });
 
 // Protect data folder and uploaded photos

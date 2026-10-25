@@ -6,6 +6,7 @@ const fs = require('fs');
 const { execFile } = require('child_process');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -85,6 +86,7 @@ async function initDB() {
     const defaultUsers = [
       ['admin', 'admin_password_2026', 'admin', 'ALL'],
       ['gwd_officer', 'gwd_password_2026', 'admin', 'ALL'],
+      ['admin_cuttack', 'cuttack_pass_99', 'division', 'CUTTACK DIVISION'],
       ['cuttack_div', 'cuttack2026', 'division', 'CUTTACK DIVISION'],
       ['balasore_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
       ['baripada_div', 'balasore2026', 'division', 'BARIPADA DIVISION'],
@@ -98,6 +100,7 @@ async function initDB() {
       ['ad_hp_div', 'adhp2026', 'division', 'AD HP DIVISION'],
       ['phulbani_div', 'phulbani2026', 'division', 'PHULBANI DIVISION'],
       ['rayagada_div', 'rayagada_2026', 'division', 'RAYAGADA DIVISION'],
+      ['gwd_odisha', 'PASSWORD_2026', 'admin', 'ALL'],
     ];
 
     for (const [u, p, r, d] of defaultUsers) {
@@ -187,6 +190,10 @@ async function initDB() {
       console.log("Baseline wells & status remarks synced successfully into PostgreSQL!");
     }
 
+    // Clean unmonitored 2026 Mid/Post monsoon records from visits table
+    await pgPool.query(`DELETE FROM visits WHERE season_key LIKE '2026_Mid%' OR season_key LIKE '2026_Post%';`);
+    console.log("Deleted 2026 Mid/Post monsoon entries from PostgreSQL visits table.");
+
     console.log("Database tables & default users initialized successfully.");
   } catch (err) {
     loadError = err.message;
@@ -195,8 +202,46 @@ async function initDB() {
 }
 initDB();
 
-// In-memory active session tracking (Map of token -> { username, role, division })
+// Active session tracking & stateless HMAC verification so sessions survive Render restarts
 const activeSessions = new Map();
+const SESSION_SECRET = process.env.SESSION_SECRET || 'gwd_odisha_super_secret_key_2026';
+
+function createSessionToken(user) {
+  const payload = {
+    u: user.username,
+    r: user.role || 'division',
+    d: user.division || 'ALL',
+    t: Date.now()
+  };
+  const str = Buffer.from(JSON.stringify(payload)).toString('base64');
+  const hmac = require('crypto').createHmac('sha256', SESSION_SECRET).update(str).digest('hex');
+  return `gwd_${str}.${hmac}`;
+}
+
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string' || !token.startsWith('gwd_')) return null;
+  const raw = token.substring(4);
+  const dotIdx = raw.indexOf('.');
+  if (dotIdx === -1) {
+    return activeSessions.get(token) || null;
+  }
+  const str = raw.substring(0, dotIdx);
+  const sig = raw.substring(dotIdx + 1);
+  const expectedSig = require('crypto').createHmac('sha256', SESSION_SECRET).update(str).digest('hex');
+  if (sig !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(str, 'base64').toString('utf8'));
+    // 30 days validity
+    if (Date.now() - payload.t > 30 * 24 * 60 * 60 * 1000) return null;
+    return {
+      username: payload.u,
+      role: payload.r,
+      division: payload.d
+    };
+  } catch (e) {
+    return null;
+  }
+}
 
 // --- Auth Middleware ---
 function authMiddleware(req, res, next) {
@@ -208,8 +253,9 @@ function authMiddleware(req, res, next) {
     }
   }
 
-  if (token && activeSessions.has(token)) {
-    req.user = activeSessions.get(token);
+  const user = verifySessionToken(token);
+  if (user) {
+    req.user = user;
     return next();
   }
   
@@ -235,6 +281,9 @@ app.get('/styles.css', (req, res) => {
 app.get('/icon-512.png', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'icon-512.png'));
 });
+app.get('/logo.png', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logo.png'));
+});
 app.get('/xlsx.full.min.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'xlsx.full.min.js'));
 });
@@ -244,10 +293,18 @@ app.get('/wells_initial.js', (req, res) => {
 app.get('/manifest.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+app.get('/app.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.js'));
+});
 
 const defaultUsersMap = {
   'admin': { password: 'admin_password_2026', role: 'admin', division: 'ALL' },
   'gwd_officer': { password: 'gwd_password_2026', role: 'admin', division: 'ALL' },
+  'admin_cuttack': { password: 'cuttack_pass_99', role: 'division', division: 'CUTTACK DIVISION' },
   'cuttack_div': { password: 'cuttack2026', role: 'division', division: 'CUTTACK DIVISION' },
   'balasore_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
   'baripada_div': { password: 'balasore2026', role: 'division', division: 'BARIPADA DIVISION' },
@@ -261,6 +318,7 @@ const defaultUsersMap = {
   'ad_hp_div': { password: 'adhp2026', role: 'division', division: 'AD HP DIVISION' },
   'phulbani_div': { password: 'phulbani2026', role: 'division', division: 'PHULBANI DIVISION' },
   'rayagada_div': { password: 'rayagada_2026', role: 'division', division: 'RAYAGADA DIVISION' },
+  'gwd_odisha': { password: 'PASSWORD_2026', role: 'admin', division: 'ALL' },
 };
 
 // Auth check API
@@ -270,8 +328,12 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ message: "Missing username or password" });
   }
 
-  const trimmedUser = username.trim().toLowerCase();
+  const trimmedUser = String(username).trim().toLowerCase();
+  const rawPass = String(password);
+  const trimmedPass = rawPass.trim();
   const defaultUser = defaultUsersMap[trimmedUser];
+
+  let authenticatedUser = null;
 
   try {
     const dbResult = await pgPool.query(
@@ -280,47 +342,43 @@ app.post('/api/login', async (req, res) => {
     );
     
     if (dbResult.rows.length > 0) {
-      const user = dbResult.rows[0];
-      if (user.password === password) {
-        const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        const userSession = {
-          username: user.username,
-          role: user.role || 'division',
-          division: user.division || 'ALL'
+      const u = dbResult.rows[0];
+      if (u.password === rawPass || u.password === trimmedPass) {
+        authenticatedUser = {
+          username: u.username,
+          role: u.role || 'division',
+          division: u.division || 'ALL'
         };
-        activeSessions.set(token, userSession);
-
-        // Set Cookie: Max age 7 days, HttpOnly to protect against XSS
-        res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
-        return res.json({ 
-          success: true, 
-          username: user.username, 
-          role: userSession.role, 
-          division: userSession.division, 
-          token: token 
-        });
       }
     }
   } catch (err) {
-    console.warn("Database query failed, evaluating default login fallback:", err.message);
+    console.warn("Database login check fallback:", err.message);
   }
 
   // Fallback to default user authentication
-  if (defaultUser && defaultUser.password === password) {
-    const token = 'gwd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const userSession = {
-      username: trimmedUser,
-      role: defaultUser.role,
-      division: defaultUser.division
-    };
-    activeSessions.set(token, userSession);
+  if (!authenticatedUser && defaultUser) {
+    if (defaultUser.password === rawPass || defaultUser.password === trimmedPass) {
+      authenticatedUser = {
+        username: trimmedUser,
+        role: defaultUser.role,
+        division: defaultUser.division
+      };
+    }
+  }
 
-    res.setHeader('Set-Cookie', `gwd_session_token=${token}; Max-Age=${7 * 24 * 60 * 60}; Path=/; HttpOnly`);
+  if (authenticatedUser) {
+    const token = createSessionToken(authenticatedUser);
+    activeSessions.set(token, authenticatedUser);
+
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const cookieFlags = `Max-Age=${30 * 24 * 60 * 60}; Path=/; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+    res.setHeader('Set-Cookie', `gwd_session_token=${token}; ${cookieFlags}`);
+
     return res.json({ 
       success: true, 
-      username: trimmedUser, 
-      role: userSession.role, 
-      division: userSession.division, 
+      username: authenticatedUser.username, 
+      role: authenticatedUser.role, 
+      division: authenticatedUser.division, 
       token: token 
     });
   }
@@ -333,16 +391,22 @@ app.post('/api/logout', (req, res) => {
   if (token) {
     activeSessions.delete(token);
   }
-  res.setHeader('Set-Cookie', 'gwd_session_token=; Max-Age=0; Path=/; HttpOnly');
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `gwd_session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`);
   res.json({ success: true });
 });
 
-// Protect the main page and redirects
-app.get('/', authMiddleware, (req, res) => {
+// Protect the main page and index.html
+app.get(['/', '/index.html'], (req, res) => {
+  let token = getCookie(req, 'gwd_session_token');
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+  const user = verifySessionToken(token);
+  if (user) {
+    req.user = user;
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-app.get('/index.html', authMiddleware, (req, res) => {
-  res.redirect('/');
 });
 
 // Protect data folder and uploaded photos
@@ -665,57 +729,157 @@ function inferSeasonKeyFromDate(dateStr) {
   return `${year}_${season}`;
 }
 
-// API: Update groundwater level measurements
+// API: Update or Insert groundwater level measurements
 app.post('/api/wells/update', async (req, res) => {
-  const { date, bmp, mbgl, parapet, well_number, lat, lon } = req.body;
+  const { date, bmp, mbgl, parapet, well_number, lat, lon, district, block, location, well_type, season_key, msl, remarks } = req.body;
   
   if (!well_number) {
     return res.status(400).json({ error: "Missing well_number parameter" });
   }
   
+  const formattedWellNum = well_number.trim().toUpperCase();
+  const pHeight = parapet !== undefined && parapet !== null && parapet !== '' ? parseFloat(parapet) : 0.0;
+  const mslVal = msl !== undefined && msl !== null && msl !== '' ? parseFloat(msl) : null;
+  const latVal = lat !== undefined && lat !== null && lat !== '' ? parseFloat(lat) : null;
+  const lonVal = lon !== undefined && lon !== null && lon !== '' ? parseFloat(lon) : null;
+
   try {
-    // 1. Update well coordinates and parapet height in wells table if provided
-    if (lat !== undefined && lat !== null && lat !== '' && lon !== undefined && lon !== null && lon !== '') {
-      const pHeight = parapet !== undefined && parapet !== null && parapet !== '' ? parseFloat(parapet) : 0.0;
+    // 1. Ensure well exists or update well master info in PostgreSQL if DB is available
+    if (usePostgres && pgPool) {
+      const wellExists = await pgPool.query(`SELECT well_number FROM wells WHERE well_number = $1`, [formattedWellNum]);
+      if (wellExists.rows.length === 0) {
+        // Insert new well
+        await pgPool.query(
+          `INSERT INTO wells (well_number, district, block, location, well_type, lat, lon, lat_raw, lon_raw, parapet_height, msl_elevation)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            formattedWellNum,
+            district || 'ALL',
+            block || 'ALL',
+            location || formattedWellNum,
+            well_type || 'DW',
+            latVal,
+            lonVal,
+            latVal ? latVal.toString() : '',
+            lonVal ? lonVal.toString() : '',
+            pHeight,
+            mslVal
+          ]
+        );
+      } else {
+        // Update existing well details
+        if (latVal !== null && lonVal !== null) {
+          await pgPool.query(
+            `UPDATE wells 
+             SET lat = $1, lon = $2, lat_raw = $3, lon_raw = $4, parapet_height = $5, msl_elevation = COALESCE($6, msl_elevation)
+             WHERE well_number = $7`,
+            [latVal, lonVal, latVal.toString(), lonVal.toString(), pHeight, mslVal, formattedWellNum]
+          );
+        } else if (parapet !== undefined && parapet !== null && parapet !== '') {
+          await pgPool.query(
+            `UPDATE wells SET parapet_height = $1, msl_elevation = COALESCE($2, msl_elevation) WHERE well_number = $3`,
+            [pHeight, mslVal, formattedWellNum]
+          );
+        }
+      }
+
+      // 2. Insert or update the visit measurement
+      const targetSeasonKey = season_key || inferSeasonKeyFromDate(date);
       await pgPool.query(
-        `UPDATE wells 
-         SET lat = $1, lon = $2, lat_raw = $3, lon_raw = $4, parapet_height = $5
-         WHERE well_number = $6`,
-        [parseFloat(lat), parseFloat(lon), lat.toString(), lon.toString(), pHeight, well_number.toUpperCase()]
-      );
-    } else if (parapet !== undefined && parapet !== null && parapet !== '') {
-      await pgPool.query(
-        `UPDATE wells SET parapet_height = $1 WHERE well_number = $2`,
-        [parseFloat(parapet), well_number.toUpperCase()]
+        `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (well_number, season_key) DO UPDATE
+         SET date = EXCLUDED.date,
+             dtgwl_bmp = EXCLUDED.dtgwl_bmp,
+             dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
+             remarks = EXCLUDED.remarks;`,
+        [
+          formattedWellNum,
+          targetSeasonKey,
+          date || '',
+          bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null,
+          mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null,
+          remarks || ''
+        ]
       );
     }
     
-    // 2. Insert or update the visit measurement
-    const seasonKey = inferSeasonKeyFromDate(date);
-    await pgPool.query(
-      `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (well_number, season_key) DO UPDATE
-       SET date = EXCLUDED.date,
-           dtgwl_bmp = EXCLUDED.dtgwl_bmp,
-           dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
-           remarks = EXCLUDED.remarks;`,
-      [
-        well_number.toUpperCase(),
-        seasonKey,
-        date || '',
-        bmp !== undefined && bmp !== null && bmp !== '' ? parseFloat(bmp) : null,
-        mbgl !== undefined && mbgl !== null && mbgl !== '' ? parseFloat(mbgl) : null,
-        ''
-      ]
-    );
-    
-    res.json({ success: true });
+    res.json({ success: true, well_number: formattedWellNum });
   } catch (err) {
     console.error("Error updating well measurement in PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
+// API: Bulk import groundwater level measurements from Field Book
+app.post('/api/wells/bulk-import', async (req, res) => {
+  const { records } = req.body;
+  if (!Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ error: "Invalid or empty records array" });
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const rec of records) {
+    const well_number = (rec.well_id || rec.well_number || rec.station_code || '').trim().toUpperCase();
+    if (!well_number) {
+      errorCount++;
+      continue;
+    }
+
+    try {
+      const date = rec.date || rec.visit_date || '';
+      const bmp = rec.dtgwl_bmp !== undefined ? parseFloat(rec.dtgwl_bmp) : null;
+      const mbgl = rec.dtgwl_mbgl !== undefined ? parseFloat(rec.dtgwl_mbgl) : (bmp !== null && rec.parapet ? bmp - parseFloat(rec.parapet) : null);
+      const parapet = rec.parapet !== undefined ? parseFloat(rec.parapet) : 0.0;
+      const lat = rec.lat ? parseFloat(rec.lat) : null;
+      const lon = rec.lon ? parseFloat(rec.lon) : null;
+      const seasonKey = rec.season_key || inferSeasonKeyFromDate(date);
+      const remarks = rec.remarks || 'Active';
+
+      if (usePostgres && pgPool) {
+        const wellExists = await pgPool.query(`SELECT well_number FROM wells WHERE well_number = $1`, [well_number]);
+        if (wellExists.rows.length === 0) {
+          await pgPool.query(
+            `INSERT INTO wells (well_number, district, block, location, well_type, lat, lon, lat_raw, lon_raw, parapet_height)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              well_number,
+              rec.district || 'ALL',
+              rec.block || 'ALL',
+              rec.location || well_number,
+              rec.well_type || 'DW',
+              lat,
+              lon,
+              lat ? lat.toString() : '',
+              lon ? lon.toString() : '',
+              parapet
+            ]
+          );
+        }
+
+        await pgPool.query(
+          `INSERT INTO visits (well_number, season_key, date, dtgwl_bmp, dtgwl_mbgl, remarks)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (well_number, season_key) DO UPDATE
+           SET date = EXCLUDED.date,
+               dtgwl_bmp = EXCLUDED.dtgwl_bmp,
+               dtgwl_mbgl = EXCLUDED.dtgwl_mbgl,
+               remarks = EXCLUDED.remarks;`,
+          [well_number, seasonKey, date, bmp, mbgl, remarks]
+        );
+      }
+      successCount++;
+    } catch (err) {
+      console.error(`Error processing bulk record for ${well_number}:`, err);
+      errorCount++;
+    }
+  }
+
+  res.json({ success: true, imported: successCount, failed: errorCount });
+});
+
 
 // Configure Multer for photo uploads
 const storage = multer.diskStorage({

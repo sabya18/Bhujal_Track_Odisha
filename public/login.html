@@ -417,7 +417,8 @@
       
       const rawUser = document.getElementById('input-officer-id').value || '';
       const username = rawUser.trim().toLowerCase();
-      const password = document.getElementById('input-officer-password').value || '';
+      const rawPass = document.getElementById('input-officer-password').value || '';
+      const password = rawPass.trim();
       const errorBanner = document.getElementById('login-error-alert');
       const errorText = document.getElementById('login-error-text');
       const submitBtn = document.getElementById('btn-submit-login');
@@ -447,7 +448,8 @@
         "rs_div": "RS DIVISION",
         "ad_hp_div": "AD HP DIVISION",
         "phulbani_div": "PHULBANI DIVISION",
-        "rayagada_div": "RAYAGADA DIVISION"
+        "rayagada_div": "RAYAGADA DIVISION",
+        "gwd_odisha": "ALL"
       };
 
       // 1. Try server API login first (if backend is active)
@@ -464,18 +466,19 @@
           sessionStorage.setItem('gwd_authenticated', 'true');
           sessionStorage.setItem('gwd_username', username);
           sessionStorage.setItem('gwd_user_division', userDiv);
+          if (authData.token) {
+            sessionStorage.setItem('gwd_session_token', authData.token);
+          }
           window.location.href = 'index.html';
           return;
-        } else if (res.status === 401) {
-          const errData = await res.json();
-          showError(errData.message || "Invalid credentials.");
-          return;
+        } else {
+          console.warn(`Server auth endpoint returned status ${res.status}. Checking local credentials fallback...`);
         }
       } catch (err) {
-        console.warn("Server auth endpoint unavailable. Falling back to local offline validator...");
+        console.warn("Server auth endpoint unavailable. Falling back to local offline validator...", err);
       }
 
-      // 2. Client-side static fallback (offline validator for all GWD Divisions & Admin accounts)
+      // 2. Client-side static fallback (guaranteed offline validator for all GWD Divisions & Admin accounts)
       const validUsers = {
         "admin": "admin_password_2026",
         "gwd_officer": "gwd_password_2026",
@@ -492,10 +495,11 @@
         "rs_div": "rsdiv2026",
         "ad_hp_div": "adhp2026",
         "phulbani_div": "phulbani2026",
-        "rayagada_div": "rayagada_2026"
+        "rayagada_div": "rayagada_2026",
+        "gwd_odisha": "PASSWORD_2026"
       };
 
-      if (validUsers[username] && validUsers[username] === password) {
+      if (validUsers[username] && (validUsers[username] === password || validUsers[username] === rawPass)) {
         const userDiv = divisionMap[username] || 'ALL';
         sessionStorage.setItem('gwd_authenticated', 'true');
         sessionStorage.setItem('gwd_username', username);

@@ -507,13 +507,18 @@ async function loadAllData() {
     // 1. Fetch wells from server API or static wells fallback
     let fetchedWells = [];
     if (!isStandaloneMode) {
-      const res = await fetch('api/wells');
-      if (res.status === 401) {
-        sessionStorage.clear();
-        window.location.href = 'login.html';
-        return;
+      try {
+        const token = sessionStorage.getItem('gwd_session_token');
+        const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch('api/wells', { headers: authHeaders });
+        if (res.ok) {
+          fetchedWells = await res.json();
+        } else {
+          console.warn(`api/wells returned status ${res.status}. Falling back to static wells database.`);
+        }
+      } catch (err) {
+        console.warn("api/wells request failed. Falling back to static wells database:", err);
       }
-      if (res.ok) fetchedWells = await res.json();
     }
     
     if (fetchedWells.length === 0) {
