@@ -577,7 +577,12 @@ async function loadAllData() {
     // 2. Fetch GeoJSON boundaries
     try {
       const distRes = await fetch('data/odisha_districts_complete.json');
-      if (distRes.ok) odishaDistrictsGeoJSON = await distRes.json();
+      if (distRes.ok) {
+        odishaDistrictsGeoJSON = await distRes.json();
+        if (activeTab === 'dashboard') {
+          renderDashboard();
+        }
+      }
     } catch (e) {
       console.warn("District GeoJSON fetch failed:", e);
     }
@@ -829,6 +834,7 @@ function setupPWA() {
       navigator.serviceWorker.register('sw.js')
         .then(reg => {
           console.log('[Bhujal Track PWA] Service Worker registered successfully:', reg.scope);
+          reg.update();
         })
         .catch(err => {
           console.warn('[Bhujal Track PWA] SW registration note:', err);
@@ -1206,10 +1212,18 @@ function renderDistrictBreakdown(statsByDistrict) {
 let dashboardMapMode = 'progress'; // 'progress' or 'depth'
 
 function renderDashboardMap(statsByDistrict) {
-  if (!odishaDistrictsGeoJSON) return;
+  const container = document.getElementById('mini-leaflet-map');
+  if (!container || !odishaDistrictsGeoJSON) return;
   
   if (miniMap) {
-    miniMap.remove();
+    try {
+      miniMap.off();
+      miniMap.remove();
+    } catch(e) {}
+    miniMap = null;
+  }
+  if (container._leaflet_id) {
+    container._leaflet_id = null;
   }
   
   const isDark = theme === 'dark';
@@ -1323,6 +1337,12 @@ function renderDashboardMap(statsByDistrict) {
   } else {
     miniMap.setView([20.4, 84.5], 6.5);
   }
+  
+  setTimeout(() => {
+    if (miniMap && typeof miniMap.invalidateSize === 'function') {
+      miniMap.invalidateSize();
+    }
+  }, 150);
   
   // Set Map mode button listeners
   const progressBtn = document.getElementById('btn-mode-progress');

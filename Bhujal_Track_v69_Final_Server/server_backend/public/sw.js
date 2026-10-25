@@ -1,12 +1,12 @@
-const CACHE_NAME = 'bhujal-track-pwa-v118';
+const CACHE_NAME = 'bhujal-track-pwa-v119';
 
 // Critical frontend shell assets with relative paths
 const STATIC_ASSETS = [
   './',
   'index.html',
   'login.html',
-  'styles.css?v=118',
-  'app.js?v=118',
+  'styles.css?v=119',
+  'app.js?v=119',
   'manifest.json',
   'wells_initial.js',
   'icon-512.png',
@@ -64,6 +64,22 @@ self.addEventListener('fetch', event => {
           headers: { 'Content-Type': 'application/json' }
         });
       })
+    );
+    return;
+  }
+
+  // Network-first for GeoJSON and data assets (ensures fresh datasets without stale redirect caches)
+  if (url.pathname.includes('/data/')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
