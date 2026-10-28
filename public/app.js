@@ -495,6 +495,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   populateFilterDropdowns();
   applyFilters();
   renderNews();
+
+  // Re-populate export district dropdowns now that wellsData is available
+  refreshExportDistrictSelects();
+
   window.populateTrendsDropdown = function() {
     if (typeof initTrendsView === 'function') initTrendsView();
   };
@@ -5044,6 +5048,66 @@ function plotTelemetryChart(sortedRecords) {
 
 // --- Advanced Export Features & Parity Port ---
 
+// Global helper: repopulate all export district dropdowns after wellsData is available.
+// Called once after loadAllData() to ensure all 30 districts (or division-scoped districts)
+// appear instead of an empty list, since initAdvancedExportFeatures runs before data loads.
+function refreshExportDistrictSelects() {
+  const userDiv = getUserDivision();
+
+  // Build the district list filtered by user's division
+  const allDistricts = Array.from(
+    new Set((wellsData || []).map(w => getDistrictFromWell(w)).filter(Boolean))
+  ).sort();
+
+  const availableDistricts = userDiv === 'ALL'
+    ? allDistricts
+    : allDistricts.filter(dist => {
+        const div = getDivisionForDistrictLocal(dist);
+        if (div === userDiv) return true;
+        if (
+          (userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') &&
+          (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')
+        ) return true;
+        return false;
+      });
+
+  function fillSelect(selId) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const current = sel.value; // preserve current selection if possible
+    sel.innerHTML = '';
+    availableDistricts.forEach(dist => {
+      const opt = document.createElement('option');
+      opt.value = dist;
+      opt.textContent = dist;
+      sel.appendChild(opt);
+    });
+    // Restore previous selection if it still exists
+    if (current && availableDistricts.includes(current)) sel.value = current;
+  }
+
+  fillSelect('sel-export-grasp-district');
+  fillSelect('sel-export-wtto-district');
+  fillSelect('sel-template-target');
+
+  // Refresh template status display after dropdown is filled
+  const templateStatusMsg = document.getElementById('template-status-msg');
+  const selTemplate = document.getElementById('sel-template-target');
+  if (selTemplate && templateStatusMsg) {
+    const target = selTemplate.value;
+    const key = `gw_custom_excel_template_${target}`;
+    const data = localStorage.getItem(key);
+    if (data) {
+      templateStatusMsg.textContent = `✅ WTTO Template Loaded (${(data.length / 1024).toFixed(0)} KB)`;
+      templateStatusMsg.style.color = '#10b981';
+    } else {
+      templateStatusMsg.textContent = '❌ No template loaded';
+      templateStatusMsg.style.color = '#ef4444';
+    }
+  }
+}
+
+
 function initAdvancedExportFeatures() {
   const selExportDivision = document.getElementById('sel-export-division');
   const btnExportFieldBook = document.getElementById('btn-export-fieldbook');
@@ -5053,12 +5117,82 @@ function initAdvancedExportFeatures() {
   const selExportWttoDistrict = document.getElementById('sel-export-wtto-district');
   const selExportWttoOption = document.getElementById('sel-export-wtto-option');
   const btnExportWtto = document.getElementById('btn-export-wtto');
+  const btnDownloadCompleteWtto = document.getElementById('btn-download-complete-wtto');
   
   const selTemplateTarget = document.getElementById('sel-template-target');
   const btnTriggerUploadTemplate = document.getElementById('btn-trigger-upload-template');
   const btnRemoveTemplate = document.getElementById('btn-remove-template');
   const inputFileWttoTemplate = document.getElementById('input-file-wtto-template');
   const templateStatusMsg = document.getElementById('template-status-msg');
+
+  // --- Dynamic District Population (Role-aware) ---
+  // Builds a sorted list of all districts available to the current user.
+  // Admin (ALL) → all 30 Odisha districts from wellsData.
+  // Division user → only districts belonging to their division.
+  function getAvailableDistrictsForUser() {
+    const userDiv = getUserDivision();
+    const allDistricts = Array.from(
+      new Set((wellsData || []).map(w => getDistrictFromWell(w)).filter(Boolean))
+    ).sort();
+
+    if (userDiv === 'ALL') return allDistricts;
+
+    return allDistricts.filter(dist => {
+      const div = getDivisionForDistrictLocal(dist);
+      if (div === userDiv) return true;
+      // BARIPADA and BALASORE share the same pool of districts
+      if (
+        (userDiv === 'BARIPADA DIVISION' || userDiv === 'BALASORE DIVISION') &&
+        (div === 'BARIPADA DIVISION' || div === 'BALASORE DIVISION')
+      ) return true;
+      return false;
+    });
+  }
+
+  // Populate a <select> element with district options.
+  // Optionally prepend an "All Districts" option.
+  function populateDistrictSelect(selectEl, { includeAll = false, allLabel = 'All Districts' } = {}) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    if (includeAll) {
+      const optAll = document.createElement('option');
+      optAll.value = 'ALL_DISTRICTS';
+      optAll.textContent = allLabel;
+      selectEl.appendChild(optAll);
+    }
+    getAvailableDistrictsForUser().forEach(dist => {
+      const opt = document.createElement('option');
+      opt.value = dist;
+      opt.textContent = dist;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  // Populate all three district selectors with role-aware data
+  populateDistrictSelect(selExportGraspDistrict);
+  populateDistrictSelect(selExportWttoDistrict);
+  populateDistrictSelect(selTemplateTarget);
+
+  // "Download Complete WTTO File" button — opens the WTTO download modal
+  if (btnDownloadCompleteWtto) {
+    btnDownloadCompleteWtto.onclick = () => {
+      const modalWtto = document.getElementById('modal-wtto-export');
+      if (modalWtto) {
+        // Trigger the same populateWTTOOptions that initWTTOExportModal uses
+        // We call executeWTTOExcelDownload directly for ALL scope as a shortcut
+        // Or open the modal if it exists for full scope selection
+        const btnExportSidebar = document.getElementById('btn-export-sidebar');
+        if (btnExportSidebar) {
+          btnExportSidebar.click();
+        } else {
+          // Fallback: trigger download directly
+          executeWTTOExcelDownload();
+        }
+      } else {
+        executeWTTOExcelDownload();
+      }
+    };
+  }
 
   // Update template upload status display
   function updateTemplateStatus() {

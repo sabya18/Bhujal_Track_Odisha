@@ -390,17 +390,10 @@
                 <!-- Section 2: GRASP Export -->
                 <div class="export-box export-box-grasp">
                   <h3>📊 GRASP Export (CSV)</h3>
-                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Export CSV formatted for GRASP data submission by district.</p>
+                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Export CSV formatted for GRASP data submission by district. Districts shown are based on your division access.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
                     <select id="sel-export-grasp-district" class="form-control">
-                      <option value="Cuttack">Cuttack</option>
-                      <option value="Jagatsinghpur">Jagatsinghpur</option>
-                      <option value="Jajpur">Jajpur</option>
-                      <option value="Kendrapara">Kendrapara</option>
-                      <option value="Mayurbhanj">Mayurbhanj</option>
-                      <option value="Bhadrak">Bhadrak</option>
-                      <option value="Balasore">Balasore</option>
-                      <option value="Bolangir">Bolangir</option>
+                      <!-- Populated dynamically by JS based on user division -->
                     </select>
                     <button id="btn-export-grasp" class="btn btn-success w-100">Export CSV</button>
                   </div>
@@ -418,13 +411,10 @@
                 <!-- Section 4: WTTO Custom Export -->
                 <div class="export-box export-box-wtto">
                   <h3>📄 WTTO Custom Export</h3>
-                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Fill and download a custom WTTO template with monitoring data.</p>
+                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Fill and download a custom WTTO template with monitoring data. Districts shown match your division access.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
                     <select id="sel-export-wtto-district" class="form-control">
-                      <option value="Cuttack">Cuttack</option>
-                      <option value="Jagatsinghpur">Jagatsinghpur</option>
-                      <option value="Jajpur">Jajpur</option>
-                      <option value="Kendrapara">Kendrapara</option>
+                      <!-- Populated dynamically by JS based on user division -->
                     </select>
                     <select id="sel-export-wtto-option" class="form-control">
                       <option value="all">All Sheets</option>
@@ -432,19 +422,17 @@
                       <option value="urban">Urban Sheet Only</option>
                     </select>
                     <button id="btn-export-wtto" class="btn btn-purple w-100">Export WTTO Excel</button>
+                    <button id="btn-download-complete-wtto" class="btn btn-primary w-100" style="background: linear-gradient(135deg,#0ea5e9,#7c3aed); border: none;">📥 Download Complete WTTO File</button>
                   </div>
                 </div>
 
                 <!-- Section 5: WTTO Template Manager -->
                 <div class="export-box export-box-template">
                   <h3>⚙️ WTTO Template Manager</h3>
-                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Upload raw WTTO workbooks to serve as templates for custom export.</p>
+                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Upload raw WTTO workbooks to serve as templates for custom export. Districts shown match your division access.</p>
                   <div style="display: flex; gap: 10px; flex-direction: column;">
                     <select id="sel-template-target" class="form-control">
-                      <option value="Cuttack">Cuttack / Cuttack Division</option>
-                      <option value="Jagatsinghpur">Jagatsinghpur</option>
-                      <option value="Jajpur">Jajpur</option>
-                      <option value="Kendrapara">Kendrapara</option>
+                      <!-- Populated dynamically by JS based on user division -->
                     </select>
                     <div style="display: flex; gap: 10px;">
                       <button id="btn-trigger-upload-template" class="btn btn-secondary w-50" style="font-size: 0.8rem;">📤 Upload</button>
