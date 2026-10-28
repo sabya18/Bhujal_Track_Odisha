@@ -571,7 +571,16 @@ async function loadAllData() {
         const historyRes = await fetch('api/visits/history', { headers: authHeaders });
         if (historyRes.ok) {
           const serverHistory = await historyRes.json();
-          visitsHistory = { ...visitsHistory, ...serverHistory };
+          // Deep merge: combine per season-key so localStorage entries (e.g. MidMon)
+          // are NOT overwritten by the server's shallower history for the same well.
+          Object.keys(serverHistory).forEach(wellNum => {
+            if (!visitsHistory[wellNum]) {
+              visitsHistory[wellNum] = serverHistory[wellNum];
+            } else {
+              // Merge season keys: server fills gaps, localStorage seasons survive
+              visitsHistory[wellNum] = { ...serverHistory[wellNum], ...visitsHistory[wellNum] };
+            }
+          });
         }
       } catch (err) {
         console.log("Could not fetch visits history from Postgres, using local memory:", err);
@@ -3947,7 +3956,8 @@ function updateTrendsTab() {
   let blockStr = '';
   let aquiferStr = '';
 
-  const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2016 + 2 }, (_, i) => 2016 + i);
   const seasons = ['PreMon', 'MidMon', 'PostMon', 'Winter'];
 
   if (trendAnalysisLevel === 'station') {
@@ -6126,15 +6136,17 @@ function executeWTTOExcelDownload() {
 
       const wb = XLSX.utils.book_new();
 
-      // Collect all unique historical seasons up to 2026_PreMon
+      // Collect all unique seasons from both static history AND live visitsHistory (newly ingested data)
       const seasonsSet = new Set();
       targetWells.forEach(w => {
+        // 1. Static/preloaded history
         if (w.history && typeof w.history === 'object') {
-          Object.keys(w.history).forEach(k => {
-            if (!k.includes('2026_Mid') && !k.includes('2026_Post')) {
-              seasonsSet.add(k);
-            }
-          });
+          Object.keys(w.history).forEach(k => seasonsSet.add(k));
+        }
+        // 2. Live visitsHistory from DB / ingestion (this is what was missing for new seasons)
+        const liveHistory = visitsHistory[w.well_number];
+        if (liveHistory && typeof liveHistory === 'object') {
+          Object.keys(liveHistory).forEach(k => seasonsSet.add(k));
         }
       });
 
@@ -6178,10 +6190,17 @@ function executeWTTOExcelDownload() {
             'End Monitoring': w.end_mon || ''
           };
 
-          // Append historical water level columns matching standard WTTO format
+          // Append water level columns — check live visitsHistory first, then static history
           sortedSeasons.forEach(sKey => {
             let val = '';
-            if (w.history && w.history[sKey] !== undefined) {
+            // Primary: live visitsHistory (captures newly ingested monsoon data)
+            const liveEntry = visitsHistory[w.well_number]?.[sKey];
+            if (liveEntry !== undefined && liveEntry !== null) {
+              if (typeof liveEntry === 'number') val = liveEntry;
+              else if (typeof liveEntry === 'object') val = liveEntry.value ?? liveEntry.dtgwl_mbgl ?? liveEntry.dtgwl_bmp ?? '';
+            }
+            // Fallback: static/preloaded history
+            if (val === '' && w.history && w.history[sKey] !== undefined) {
               const hVal = w.history[sKey];
               if (typeof hVal === 'number') val = hVal;
               else if (hVal && typeof hVal === 'object') val = hVal.dtgwl_mbgl ?? hVal.dtgwl_bmp ?? '';

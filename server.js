@@ -190,9 +190,7 @@ async function initDB() {
       console.log("Baseline wells & status remarks synced successfully into PostgreSQL!");
     }
 
-    // Clean unmonitored 2026 Mid/Post monsoon records from visits table
-    await pgPool.query(`DELETE FROM visits WHERE season_key LIKE '2026_Mid%' OR season_key LIKE '2026_Post%';`);
-    console.log("Deleted 2026 Mid/Post monsoon entries from PostgreSQL visits table.");
+    // NOTE: Mid/Post monsoon data is now preserved — do NOT delete ingested records on startup.
 
     console.log("Database tables & default users initialized successfully.");
   } catch (err) {
